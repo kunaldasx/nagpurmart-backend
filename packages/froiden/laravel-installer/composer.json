@@ -1,0 +1,31 @@
+{
+  "name": "froiden/laravel-installer",
+  "description": "Laravel web installer",
+  "license": "MIT",
+  "type": "library",
+  "version": "11.0.0",
+
+  "authors": [
+    {
+      "name": "Meet Ahir",
+      "email": "meet2110ahir.@gmail.com"
+    }
+  ],
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "Froiden\\LaravelInstaller\\": "src/"
+    },
+    "files": [
+      "src/functions.php"
+    ]
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Froiden\\LaravelInstaller\\Providers\\LaravelInstallerServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev"
+}
