@@ -14,10 +14,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-//            CountriesSeeder::class,
+            CountriesSeeder::class,
 //            CategoriesSeeder::class,
-//            DefaultRolesSeeder::class,
-            SystemVendorTypeSeeder::class,
+            DefaultRolesSeeder::class,
+//            SystemVendorTypeSeeder::class,
         ]);
 //        super_admin
 //        try {

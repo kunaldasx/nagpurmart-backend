@@ -72,7 +72,7 @@ Route::middleware('auth:sanctum')->prefix('delivery-boy')->group(function () {
             // Cash Collection routes
             Route::get('/cash-collections', [DeliveryBoyCashCollectionApiController::class, 'getCashCollections'])->name('cash-collections.index');
             Route::get('/cash-collections/statistics', [DeliveryBoyCashCollectionApiController::class, 'getStatistics'])->name('cash-collections.statistics');
-            Route::get('/cash-collections/date-range', [DeliveryBoyCashCollectionApiController::class, 'getEarningsByDateRange'])->name('cash-collections.date-range');
+            Route::get('/cash-collections/date-range', [DeliveryBoyCashCollectionApiController::class, 'getEarningsByDateRange'])->name('earnings.date-range');
         });
 
         Route::prefix('feedback')->group(function () {
