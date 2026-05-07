@@ -13,7 +13,14 @@ class LicenseRevalidateController extends Controller
     public function form(Request $request)
     {
         $domain = request()->getSchemeAndHttpHost();
-        $intended = $request->get('intended', url('/'));
+        // $intended = $request->get('intended', url('/'));
+
+        $intended = $request->get('intended');
+
+        if (!$intended || str_contains($intended, '/license/revalidate')) {
+            $intended = url('/');
+        }
+
         return view('license.revalidate', compact('domain', 'intended'));
     }
 
@@ -24,7 +31,13 @@ class LicenseRevalidateController extends Controller
         ]);
         $purchaseCode = $validated['purchase_code'];
         $domainUrl = request()->getSchemeAndHttpHost();
-        $intended = (string)$request->get('intended', url('/'));
+        // $intended = (string)$request->get('intended', url('/'));
+
+        $intended = (string)$request->get('intended');
+
+        if (!$intended || str_contains($intended, '/license/revalidate')) {
+            $intended = url('/');
+        }
 
         try {
             $validator = new LicenseValidator();
