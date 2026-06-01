@@ -32,7 +32,20 @@
         </div>
     </form>
     <script>
+        // Restore saved license data from localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedPurchaseCode = localStorage.getItem('license_purchase_code');
+            if (savedPurchaseCode) {
+                document.querySelector('input[name="purchase_code"]').value = savedPurchaseCode;
+            }
+        });
+
         function verifyLicense() {
+            const purchaseCode = document.querySelector('input[name="purchase_code"]').value;
+            
+            // Save purchase code to localStorage before verification
+            localStorage.setItem('license_purchase_code', purchaseCode);
+            
             $.easyAjax({
                 url: "{!! route('LaravelInstaller::license.verify') !!}",
                 type: "GET",
