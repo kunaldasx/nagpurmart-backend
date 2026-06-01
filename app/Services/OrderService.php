@@ -51,6 +51,7 @@ class OrderService
     protected PaymentService $paymentService;
     protected SellerStatementService $sellerStatementService;
     protected WalletService $walletService;
+    protected SmsService $smsService;
 
     public function __construct(
         StockService           $stockService,
@@ -58,7 +59,8 @@ class OrderService
         SettingService         $settingService,
         PaymentService         $paymentService,
         SellerStatementService $sellerStatementService,
-        WalletService          $walletService
+        WalletService          $walletService,
+        SmsService             $smsService
     )
     {
         $this->settingService = $settingService;
@@ -67,6 +69,7 @@ class OrderService
         $this->paymentService = $paymentService;
         $this->sellerStatementService = $sellerStatementService;
         $this->walletService = $walletService;
+        $this->smsService = $smsService;
     }
 
     /**
@@ -1878,33 +1881,39 @@ class OrderService
 
             // Check if OTP verification is required for this product when delivering
             if ($status === OrderItemStatusEnum::DELIVERED() && $orderItem->product->requires_otp) {
-                // If no OTP provided
-                if (!$otp) {
-                    return [
-                        'success' => false,
-                        'message' => __('labels.otp_required'),
-                        'data' => []
-                    ];
-                }
 
-                // If OTP doesn't match or hasn't been set yet
-                if ($orderItem->otp && $orderItem->otp !== $otp) {
-                    return [
-                        'success' => false,
-                        'message' => __('labels.invalid_otp'),
-                        'data' => []
-                    ];
-                }
+    // STEP 1: Rider requested OTP
+    if (!$otp) {
 
-                // If OTP hasn't been set yet, set it now (first delivery attempt)
-                if (!$orderItem->otp) {
-                    $orderItem->otp = $otp;
-                }
+        $generatedOtp = mt_rand(100000, 999999);
 
-                // Mark as OTP verified
-                $orderItem->otp_verified = true;
-                $orderItem->save();
-            }
+        $orderItem->otp = $generatedOtp;
+        $orderItem->save();
+
+        $this->smsService->sendSms(
+            $orderItem->order->shipping_phone,
+            "Your delivery OTP is: {$generatedOtp}"
+        );
+
+        return [
+            'success' => false,
+            'message' => 'OTP sent to customer',
+            'data' => []
+        ];
+    }
+
+    // STEP 2: Verify OTP
+    if ($orderItem->otp != $otp) {
+        return [
+            'success' => false,
+            'message' => __('labels.invalid_otp'),
+            'data' => []
+        ];
+    }
+
+    $orderItem->otp_verified = true;
+    $orderItem->save();
+}
 
             $currentStatus = $orderItem->status;
             $updateStatus = $this->mapStatusToEnum($status, 'delivery_boy');

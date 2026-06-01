@@ -138,14 +138,14 @@
         </nav>
 
         <!-- CTA -->
-        <a
+        <!-- <a
             target="_blank"
             href="https://codecanyon.net/item/hyperlocal-multivendor-delivery-platform-flutter-mobile-apps-nextjs-website-laravel-admin-panel/61119699&ref=infinitietech"
             class="hidden md:inline-block bg-white text-black font-semibold px-6 lg:px-10 py-2 rounded-lg text-base lg:text-lg"
             title="Purchase Hyperlocal on CodeCanyon"
         >
             BUY NOW
-        </a>
+        </a> -->
     </div>
 
     <!-- Mobile Menu -->
@@ -179,14 +179,14 @@
                 title="Check resources and technology"
             >Resources</a
             >
-            <a
+            <!-- <a
                 target="_blank"
                 href="https://codecanyon.net/item/hyperlocal-multivendor-delivery-platform-flutter-mobile-apps-nextjs-website-laravel-admin-panel/61119699"
                 class="bg-white text-black font-semibold px-6 py-2 rounded-lg text-center mt-2"
                 title="Purchase Hyperlocal on CodeCanyon"
             >
                 BUY NOW
-            </a>
+            </a> -->
         </nav>
     </div>
 </header>
@@ -1002,14 +1002,14 @@
                     Your All in one License for Commercial Project
                 </h3>
             </div>
-            <a
+            <!-- <a
                 href="https://codecanyon.net/item/hyperlocal-multivendor-delivery-platform-flutter-mobile-apps-nextjs-website-laravel-admin-panel/61119699?license=extended&ref=infinitietech"
                 class="px-6 md:px-8 py-3 bg-blue-600 hover:bg-blue-700 transition-colors rounded-lg font-semibold text-white whitespace-nowrap text-sm md:text-base"
                 target="_blank"
                 title="Purchase Extended License for commercial projects"
             >
                 Get Extended License Now
-            </a>
+            </a> -->
         </div>
     </div>
 </section>
@@ -1270,10 +1270,10 @@
                             />
                         </svg>
                         <a
-                            href="tel:+919974692496"
+                            href="tel:+917588282589"
                             class="hover:text-white transition-colors"
-                            title="Call us at +919974692496"
-                        >+919974692496</a
+                            title="Call us at +917588282589"
+                        >+917588282589</a
                         >
                     </li>
                     <li class="flex items-center gap-2 text-gray-400 text-sm">

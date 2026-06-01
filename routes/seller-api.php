@@ -28,7 +28,7 @@ Route::prefix('seller')->name('seller-api.')->group(function () {
 
 Route::middleware(['auth:sanctum',
 //    'ensure.seller.subscription'
-])->prefix('seller')->name('seller.api')->group(function () {
+])->prefix('seller')->name('seller.api.')->group(function () {
     Route::post('logout', [SellerAuthApiController::class, 'logout']);
 
     // Dashboard (single endpoint only)

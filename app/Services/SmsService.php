@@ -208,15 +208,36 @@ class SmsService
                 }
             }
 
+
+	    preg_match('/\b\d{6}\b/', $message, $matches);
+
+            $extractedOtp = $matches[0] ?? '';
+
             // Replace placeholders in params
             foreach ($params as $key => $value) {
                 if (is_string($value)) {
-                    $params[$key] = str_replace(['{mobile}', '{message}'], [$mobile, $message], $value);
+                    $params[$key] = str_replace(
+  		   	 ['{mobile}', '{message}', '{otp}'],
+   			 [
+       			    $mobile,
+        		    $message,
+       			    $extractedOtp
+    			],
+   			$value
+		   );
                 }
             }
 
             // Also replace in URL if needed
-            $url = str_replace(['{mobile}', '{message}'], [urlencode($mobile), urlencode($message)], $url);
+            $url = str_replace(
+    		['{mobile}', '{message}', '{otp}'],
+      		[
+                    urlencode($mobile),
+                    urlencode($message),
+        	    $extractedOtp
+    		],
+    		$url
+	   );
 
             $request = Http::withHeaders($headers);
 
