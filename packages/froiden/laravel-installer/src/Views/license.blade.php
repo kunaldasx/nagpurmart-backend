@@ -14,6 +14,7 @@
             <label class="col-sm-2 control-label">Purchase Code</label>
             <div class="col-sm-10">
                 <input type="text" name="purchase_code" class="form-control" placeholder="Enter your purchase code" required>
+                <script>document.querySelector('input[name="purchase_code"]').value = localStorage.getItem('license_purchase_code') || '';</script>
             </div>
         </div>
         <div class="form-group">
@@ -32,14 +33,6 @@
         </div>
     </form>
     <script>
-        // Restore saved license data from localStorage
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedPurchaseCode = localStorage.getItem('license_purchase_code');
-            if (savedPurchaseCode) {
-                document.querySelector('input[name="purchase_code"]').value = savedPurchaseCode;
-            }
-        });
-
         function verifyLicense() {
             const purchaseCode = document.querySelector('input[name="purchase_code"]').value;
             
