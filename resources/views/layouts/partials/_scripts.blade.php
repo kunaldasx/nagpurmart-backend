@@ -64,44 +64,36 @@
         }
     });
 
-    // Theme switching functions
+    // Theme switching functions - LIGHT THEME ONLY (forced)
     function getCurrentTheme() {
-        // Check localStorage first, then data attribute, fallback to 'light'
-        const storedTheme = localStorage.getItem('tabler-theme');
-        const dataTheme = document.documentElement.getAttribute('data-bs-theme');
-        return storedTheme || dataTheme || 'light';
+        // Always return 'light' theme - no dark mode allowed
+        return 'light';
     }
 
     function setTheme(theme) {
-        // Store in localStorage
-        localStorage.setItem('tabler-theme', theme);
+        // Force light theme always
+        const forcedTheme = 'light';
+        localStorage.setItem('tabler-theme', forcedTheme);
 
-        // Update data attribute
-        if (theme === 'light') {
-            document.documentElement.removeAttribute('data-bs-theme');
-        } else {
-            document.documentElement.setAttribute('data-bs-theme', theme);
-        }
+        // Always remove dark theme attribute
+        document.documentElement.removeAttribute('data-bs-theme');
 
         // Update icon
-        updateThemeIcon(theme);
+        updateThemeIcon(forcedTheme);
     }
 
     function updateThemeIcon(theme) {
         const themeIcon = document.getElementById('theme-icon');
         if (themeIcon) {
-            if (theme === 'dark') {
-                themeIcon.className = 'ti ti-sun fs-2';
-            } else {
-                themeIcon.className = 'ti ti-moon fs-2';
-            }
+            // Always show moon icon (indicating light theme)
+            themeIcon.className = 'ti ti-moon fs-2';
         }
     }
 
     function toggleTheme() {
-        const currentTheme = getCurrentTheme();
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        setTheme(newTheme);
+        // Theme toggle disabled - light theme only
+        // Do nothing
+        return false;
     }
 
     // Initialize theme icon on page load

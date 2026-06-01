@@ -39,13 +39,13 @@
                         </a>
                     @endif
 
-                    <!-- Theme switcher -->
-                    <div class="nav-item dropdown d-flex me-3">
+                    <!-- Theme switcher (hidden) -->
+                    {{-- <div class="nav-item dropdown d-flex me-3">
                         <a href="#" onclick="toggleTheme()" class="nav-link px-0" tabindex="-1"
                            aria-label="Switch theme">
                             <i id="theme-icon" class="ti ti-moon fs-2"></i>
                         </a>
-                    </div>
+                    </div> --}}
                     <!-- Seller active subscription badge (via model helper) -->
                     @if($currentPanel === 'seller' && $userAuth && !Setting::isSystemVendorTypeSingle() && Setting::isSubscriptionEnabled())
                         @php
