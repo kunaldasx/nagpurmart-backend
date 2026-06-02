@@ -2,7 +2,26 @@
 {{-- Header --}}
 <x-slot:header>
 <x-mail::header :url="config('app.url')">
-{{ config('mail.from.name', config('app.name')) }}
+    <span style="
+            font-family: Poppins, Arial, sans-serif;
+            font-size: 52px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: #333864;
+        ">
+        nagpur
+    </span>
+    <span
+        style="
+            font-family: Poppins, Arial, sans-serif;
+            font-size: 52px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: #004dff;
+        "
+    >
+        mart.in
+    </span>
 </x-mail::header>
 </x-slot:header>
 
