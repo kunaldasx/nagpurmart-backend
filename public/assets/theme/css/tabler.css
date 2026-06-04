@@ -17681,8 +17681,9 @@ a.badge {
     background: transparent;
 }
 .breadcrumb a {
-    color: var(--tblr-breadcrumb-link-color);
+    color: #2d70ef;
 }
+
 .breadcrumb a:hover {
     text-decoration: underline;
 }
