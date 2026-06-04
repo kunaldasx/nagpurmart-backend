@@ -25502,16 +25502,8 @@ Chart sparkline
 }
 
 .bg-blue-lt {
-    color: color-mix(
-        in srgb,
-        var(--tblr-blue) calc(var(--tblr-text-opacity, 1) * 100%),
-        transparent
-    ) !important;
-    background-color: color-mix(
-        in srgb,
-        var(--tblr-blue-lt) calc(var(--tblr-bg-opacity, 1) * 100%),
-        transparent
-    ) !important;
+    color: #2d70ef !important;
+    background-color: #eaf2ff !important;
 }
 
 .border-blue {
