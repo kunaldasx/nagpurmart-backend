@@ -17681,7 +17681,7 @@ a.badge {
     background: transparent;
 }
 .breadcrumb a {
-    color: #2d70ef;
+    color: #014bfb;
 }
 
 .breadcrumb a:hover {
@@ -17788,7 +17788,7 @@ a.badge {
     --tblr-btn-hover-border-color: transparent;
     --tblr-btn-active-border-color: transparent;
     --tblr-btn-color: var(--tblr-primary-fg, #ffffff);
-    --tblr-btn-bg: var(--tblr-primary);
+    --tblr-btn-bg: #014bfb;
     --tblr-btn-hover-color: var(--tblr-primary-fg);
     --tblr-btn-hover-bg: var(--tblr-primary-darken);
     --tblr-btn-active-color: var(--tblr-primary-fg);
@@ -25503,7 +25503,7 @@ Chart sparkline
 
 .bg-blue-lt {
     color: #2d70ef !important;
-    background-color: #eaf2ff !important;
+    background-color: #014bfb !important;
 }
 
 .border-blue {
@@ -25639,7 +25639,7 @@ Chart sparkline
 
 .bg-indigo-lt {
     color: #2d70ef !important;
-    background-color: #eaf2ff !important;
+    background-color: #014bfb !important;
 }
 
 .border-indigo {
