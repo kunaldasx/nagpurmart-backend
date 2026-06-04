@@ -43,7 +43,7 @@
     --tblr-gray-700: #374151;
     --tblr-gray-800: #1f2937;
     --tblr-gray-900: #111827;
-    --tblr-primary: #066fd1;
+    --tblr-primary: #014bfb;
     --tblr-secondary: #6b7280;
     --tblr-success: #2fb344;
     --tblr-info: #4299e1;
@@ -17799,16 +17799,16 @@ a.badge {
 }
 
 .btn-outline-primary {
-    --tblr-btn-color: var(--tblr-primary);
+    --tblr-btn-color: #014bfb;
     --tblr-btn-bg: transparent;
-    --tblr-btn-border-color: var(--tblr-primary);
+    --tblr-btn-border-color: #014bfb;
     --tblr-btn-hover-color: var(--tblr-primary-fg);
     --tblr-btn-hover-border-color: transparent;
-    --tblr-btn-hover-bg: var(--tblr-primary);
+    --tblr-btn-hover-bg: #014bfb;
     --tblr-btn-active-color: var(--tblr-primary-fg);
-    --tblr-btn-active-bg: var(--tblr-primary);
-    --tblr-btn-disabled-color: var(--tblr-primary);
-    --tblr-btn-disabled-border-color: var(--tblr-primary);
+    --tblr-btn-active-bg: #014bfb;
+    --tblr-btn-disabled-color: #014bfb;
+    --tblr-btn-disabled-border-color: #014bfb;
 }
 
 .btn-ghost-primary {
