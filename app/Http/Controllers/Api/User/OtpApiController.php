@@ -88,6 +88,16 @@ class OtpApiController extends Controller
 
     /**
      * Verify OTP and authenticate user
+     * 
+     * Implements Rapido-like phone+OTP flow:
+     * - Existing users: Auto-login with token
+     * - New users: Auto-create account with minimal data, users can complete profile later
+     * 
+     * Optional parameters (for profile completion during signup):
+     * - name: User's full name (can be set later)
+     * - email: User's email (can be set later)
+     * - password: User's password (can be set later via change-password endpoint)
+     * - country, iso_2: Location data
      */
     public function verifyOtp(Request $request): JsonResponse
     {
@@ -161,27 +171,15 @@ class OtpApiController extends Controller
                 ]);
             }
 
-            // New user - check if registration data provided
-            if (!$request->has('name') || !$request->has('password')) {
-                return ApiResponseType::sendJsonResponse(
-                    true,
-                     __('labels.verified_successfully'),
-                    [
-                        'new_user' => true,
-                        'mobile' => $mobile,
-                        'otp_verified' => true
-                    ]
-                );
-            }
-
-            // Create new user
+            // New user - auto-create with phone number only
+            // User can complete profile (name, email, password) later via dedicated endpoint
             $user = User::create([
-                'name' => $request->input('name'),
-                'email' => $request->input('email') ?? $mobile . '@zunof.app',
+                'name' => $request->input('name'),  // Optional - can be null
+                'email' => $request->input('email'), // Optional - can be null
                 'mobile' => $sanitizedMobile,
                 'iso_2' => $request->input('iso_2'),
-                'password' => Hash::make($request->input('password')),
                 'country' => $request->input('country'),
+                'password' => $request->has('password') ? Hash::make($request->input('password')) : null,
                 'mobile_verified_at' => now(),
             ]);
 
@@ -205,7 +203,7 @@ class OtpApiController extends Controller
 
             event(new UserRegistered($user));
 
-            $token = $user->createToken($mobile)->plainTextToken;
+            $token = $user->createToken($sanitizedMobile)->plainTextToken;
 
             return response()->json([
                 'success' => true,

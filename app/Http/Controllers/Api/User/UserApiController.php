@@ -137,6 +137,71 @@ class UserApiController extends Controller
     }
 
     /**
+     * Complete user profile after OTP signup
+     * 
+     * Allows users who signed up with phone+OTP to complete their profile
+     * by providing name, email, and optionally setting a password.
+     * This is part of the Rapido-like simplified signup flow.
+     */
+    public function completeProfile(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return ApiResponseType::sendJsonResponse(
+                    false,
+                    'labels.user_not_authenticated',
+                    []
+                );
+            }
+
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+                'name' => 'nullable|string|max:255',
+                'email' => 'nullable|email|unique:users,email,' . $user->id,
+                'password' => 'nullable|string|min:6|confirmed',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponseType::sendJsonResponse(
+                    false,
+                    'Validation failed',
+                    ['errors' => $validator->errors()]
+                );
+            }
+
+            // Update name if provided
+            if ($request->has('name') && !empty($request->input('name'))) {
+                $user->name = $request->input('name');
+            }
+
+            // Update email if provided
+            if ($request->has('email') && !empty($request->input('email'))) {
+                $user->email = $request->input('email');
+            }
+
+            // Set password if provided (for users who didn't set it during signup)
+            if ($request->has('password') && !empty($request->input('password'))) {
+                $user->password = Hash::make($request->input('password'));
+            }
+
+            $user->save();
+
+            return ApiResponseType::sendJsonResponse(
+                true,
+                'labels.profile_updated_successfully',
+                new UserResource($user)
+            );
+
+        } catch (\Exception $e) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'labels.something_went_wrong',
+                ['error' => $e->getMessage()]
+            );
+        }
+    }
+
+    /**
      * Change password for the authenticated user via API
      */
     public function changePassword(ChangePasswordRequest $request): JsonResponse

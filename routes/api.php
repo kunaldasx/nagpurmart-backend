@@ -79,6 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // profile
         Route::get('/profile', [UserApiController::class, 'getProfile']);
         Route::post('/profile', [UserApiController::class, 'updateProfile']);
+        // Complete profile after OTP signup (Rapido-like flow)
+        Route::post('/complete-profile', [UserApiController::class, 'completeProfile'])->name('complete-profile');
 
         // Notifications (app user)
         Route::prefix('notifications')->group(function () {
