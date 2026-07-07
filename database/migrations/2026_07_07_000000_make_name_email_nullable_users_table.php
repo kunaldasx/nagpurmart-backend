@@ -17,9 +17,12 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             // Make email nullable (currently unique)
             $table->string('email')->nullable()->change();
-            
+
             // Make name nullable
             $table->string('name')->nullable()->change();
+
+            // Make password nullable to support OTP-only signups
+            $table->string('password')->nullable()->change();
         });
     }
 
@@ -31,9 +34,12 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             // Revert email to non-nullable
             $table->string('email')->nullable(false)->change();
-            
+
             // Revert name to non-nullable
             $table->string('name')->nullable(false)->change();
+
+            // Revert password to non-nullable
+            $table->string('password')->nullable(false)->change();
         });
     }
 };

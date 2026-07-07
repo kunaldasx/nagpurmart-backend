@@ -173,13 +173,17 @@ class OtpApiController extends Controller
 
             // New user - auto-create with phone number only
             // User can complete profile (name, email, password) later via dedicated endpoint
+            $name = $request->filled('name') ? trim($request->input('name')) : null;
+            $email = $request->filled('email') ? trim($request->input('email')) : null;
+            $password = $request->filled('password') ? Hash::make($request->input('password')) : null;
+
             $user = User::create([
-                'name' => $request->input('name'),  // Optional - can be null
-                'email' => $request->input('email'), // Optional - can be null
+                'name' => $name,
+                'email' => $email,
                 'mobile' => $sanitizedMobile,
                 'iso_2' => $request->input('iso_2'),
                 'country' => $request->input('country'),
-                'password' => $request->has('password') ? Hash::make($request->input('password')) : null,
+                'password' => $password,
                 'mobile_verified_at' => now(),
             ]);
 
