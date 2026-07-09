@@ -328,7 +328,9 @@ class OrderService
      */
     private function processOrderCreation(User $user, Cart $cart, array $data): Order
     {
-        $data['minimumCartAmount'] = $setting->value['minimumCartAmount'] ?? 1;
+        $settings = $this->settingService->getSettingByVariable(SettingTypeEnum::SYSTEM());
+        $data['minimumCartAmount'] = $settings->value['minimumCartAmount'] ?? 1;
+
         return $this->createOrderFromCart($user, $cart, $data);
     }
 
@@ -446,8 +448,8 @@ class OrderService
 
         $mobile = trim((string) ($user->mobile ?? ''));
 
-        return $mobile !== '' ? $mobile : 'emails';
-    }s
+        return $mobile !== '' ? $mobile : '';
+    }
 
     /**
      * Create an order from cart data
