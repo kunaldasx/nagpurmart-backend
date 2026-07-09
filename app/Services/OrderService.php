@@ -434,6 +434,22 @@ class OrderService
     }
 
     /**
+     * Resolve a non-null email value for order persistence.
+     */
+    private function resolveOrderEmail(User $user): string
+    {
+        $email = trim((string) ($user->email ?? ''));
+
+        if ($email !== '') {
+            return $email;
+        }
+
+        $mobile = trim((string) ($user->mobile ?? ''));
+
+        return $mobile !== '' ? $mobile : 'emails';
+    }s
+
+    /**
      * Create an order from cart data
      *
      * @param User $user The user placing the order
@@ -458,7 +474,7 @@ class OrderService
             'uuid' => Str::uuid()->toString(),
             'user_id' => $user->id,
             'slug' => Str::slug('order-' . time() . '-' . $user->id),
-            'email' => $user->email,
+            'email' => $this->resolveOrderEmail($user),
             'ip_address' => request()->ip(),
             'currency_code' => 'USD', // This should be dynamic based on settings
             'currency_rate' => 1, // This should be dynamic based on settings
