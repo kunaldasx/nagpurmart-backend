@@ -374,9 +374,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [OrderController::class, 'index'])->name('index');
             Route::get('/datatable', [OrderController::class, 'getOrders'])->name('datatable');
             Route::get('invoice', [OrderController::class, 'orderInvoice']);
+            Route::post('/{order}/cancel', [OrderController::class, 'cancelOrder'])->name('cancel');
             Route::get('/{id}', [OrderController::class, 'show'])->name('show');
             Route::post('/{id}/{status}', [OrderController::class, 'updateStatus'])->name('update_status');
-            Route::post('/{order}/cancel', [OrderController::class, 'cancelOrder'])->name('cancel');
         });
 
         // products
