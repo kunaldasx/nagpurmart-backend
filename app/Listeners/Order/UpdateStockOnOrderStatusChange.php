@@ -37,11 +37,20 @@ class UpdateStockOnOrderStatusChange
             OrderItemStatusEnum::RETURNED(),
             OrderItemStatusEnum::REFUNDED(),
         ], true)) {
+            $orderItem = $event->orderItem;
+
+            if (!$orderItem) {
+                Log::info('Skipping stock update for order-level status change', [
+                    'old_status' => $event->oldStatus,
+                    'new_status' => $event->newStatus,
+                ]);
+
+                return;
+            }
+
             try {
                 DB::beginTransaction();
 
-                // Get the order item and its details
-                $orderItem = $event->orderItem;
                 $quantity = $orderItem->quantity;
                 $productVariantId = $orderItem->product_variant_id;
                 $storeId = $orderItem->store_id;
@@ -61,8 +70,11 @@ class UpdateStockOnOrderStatusChange
             } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error('Error updating stock after order item status change', [
-                    'order_item_id' => $event->orderItem->id,
-                    'error' => $e->getMessage()
+                    'order_item_id' => $orderItem?->id,
+                    'old_status' => $event->oldStatus,
+                    'new_status' => $event->newStatus,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
                 ]);
             }
         }
