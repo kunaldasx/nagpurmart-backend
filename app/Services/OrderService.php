@@ -1359,6 +1359,16 @@ class OrderService
             // Get the order
             $order = Order::findOrFail($orderId);
 
+            Log::info('Recalculating order amounts', [
+                'order_id' => $order->id,
+                'order_status' => $order->status,
+                'promo_code' => $order->promo_code,
+                'promo_discount' => $order->promo_discount,
+                'gift_card_discount' => $order->gift_card_discount,
+                'item_count' => $order->items()->count(),
+                'rejected_item_id' => $rejectedItem?->id,
+            ]);
+
             // Get all active items (excluding rejected and cancelled) for this order
             $query = $order->items()->with('store.seller')->whereNotIn('status', [
                 OrderItemStatusEnum::REJECTED(),
@@ -2100,6 +2110,13 @@ class OrderService
     public function cancelOrderByAdmin(Order $order, ?string $cancellationNote = null): array
     {
         try {
+            Log::info('Starting admin order cancellation', [
+                'order_id' => $order?->id,
+                'order_status' => $order?->status,
+                'delivery_boy_id' => $order?->delivery_boy_id,
+                'cancellation_note' => $cancellationNote,
+            ]);
+
             DB::beginTransaction();
 
             // Check if order is already in a terminal state
@@ -2168,8 +2185,13 @@ class OrderService
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('Error cancelling order by admin', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage()
+                'order_id' => $order?->id,
+                'order_status' => $order?->status,
+                'delivery_boy_id' => $order?->delivery_boy_id,
+                'cancellation_note' => $cancellationNote,
+                'exception_class' => get_class($e),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
