@@ -139,7 +139,7 @@ $(document).ready(function () {
 
             axios
                 .post(
-                    "/admin/orders/" + currentOrderId + "/cancel",
+                    "/admin/orders/cancel/" + currentOrderId,
                     {
                         cancellation_note: cancellationNote,
                     },
