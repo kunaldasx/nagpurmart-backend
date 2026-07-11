@@ -1406,28 +1406,32 @@ class OrderService
 
             // Update seller orders if they exist
             if ($rejectedItem) {
-                $sellerOrder = SellerOrder::where('order_id', $orderId)
-                    ->where('seller_id', $rejectedItem->store->seller_id)
-                    ->first();
+                $rejectedSellerId = $rejectedItem->store?->seller_id;
 
-                if ($sellerOrder) {
-                    // Calculate new seller order total (sum of all non-rejected items for this seller)
-                    $sellerItems = $activeItems->filter(function ($item) use ($sellerOrder) {
-                        return $item->store->seller_id == $sellerOrder->seller_id;
-                    });
+                if ($rejectedSellerId !== null) {
+                    $sellerOrder = SellerOrder::where('order_id', $orderId)
+                        ->where('seller_id', $rejectedSellerId)
+                        ->first();
 
-                    $newSellerTotal = $sellerItems->sum('subtotal');
+                    if ($sellerOrder) {
+                        // Calculate new seller order total (sum of all non-rejected items for this seller)
+                        $sellerItems = $activeItems->filter(function ($item) use ($sellerOrder) {
+                            return ($item->store?->seller_id ?? null) == $sellerOrder->seller_id;
+                        });
 
-                    // Update seller order total
-                    $sellerOrder->update([
-                        'total_price' => $newSellerTotal
-                    ]);
+                        $newSellerTotal = $sellerItems->sum('subtotal');
+
+                        // Update seller order total
+                        $sellerOrder->update([
+                            'total_price' => $newSellerTotal
+                        ]);
+                    }
                 }
             } else {
                 // Update all seller orders
                 foreach ($order->sellerOrders as $sellerOrder) {
                     $sellerItems = $activeItems->filter(function ($item) use ($sellerOrder) {
-                        return $item->store->seller_id == $sellerOrder->seller_id;
+                        return ($item->store?->seller_id ?? null) == $sellerOrder->seller_id;
                     });
 
                     $newSellerTotal = $sellerItems->sum('subtotal');

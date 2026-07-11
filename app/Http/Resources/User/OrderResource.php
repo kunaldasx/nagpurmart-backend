@@ -51,9 +51,9 @@ class OrderResource extends JsonResource
             'estimated_delivery_time' => $this->estimated_delivery_time,
             'delivery_time_slot_id' => $this->delivery_time_slot_id,
             'delivery_boy_id' => $this->delivery_boy_id,
-            'delivery_boy_name' => $this->deliveryBoy->full_name ?? "",
-            'delivery_boy_phone' => (float)($this->deliveryBoy->user->mobile ?? 0),
-            'delivery_boy_profile' => $this->deliveryBoy->user->profile_image ?? "",
+            'delivery_boy_name' => $this->deliveryBoy?->full_name ?? "",
+            'delivery_boy_phone' => (float)($this->deliveryBoy?->user?->mobile ?? 0),
+            'delivery_boy_profile' => $this->deliveryBoy?->user?->profile_image ?? "",
             'is_delivery_feedback_given' => $isDeliveryFeedbackGiven,
             'delivery_feedback' => $deliveryFeedback ?? null,
             'wallet_balance' => $this->wallet_balance,
@@ -105,11 +105,13 @@ class OrderResource extends JsonResource
             'seller_feedbacks' => OrderSellerFeedbackResource::collection($this->whenLoaded('sellerOrders')),
             'promo_line' => new PromoLineResource($this->whenLoaded('promoLine')),
             'user' => $this->when($this->relationLoaded('user'), function () {
-                return [
-                    'id' => $this->user->id,
-                    'name' => $this->user->name,
-                    'email' => $this->user->email,
-                ];
+                $user = $this->user;
+
+                return $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ] : null;
             }),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
