@@ -201,6 +201,7 @@ class OrderController extends Controller
                         <p class='m-0'>" . __('labels.is_rush_order') . ": " . ($sellerOrderItem->sellerOrder->order->is_rush_order ? 'Yes' : 'No') . "</p>
                         <p class='m-0'>" . __('labels.order_status') . ": " . Str::ucfirst(Str::replace("_", " ", $sellerOrderItem->sellerOrder->order->status)) . "</p>"
                         . $orderNote .
+                        ( !empty($sellerOrderItem->sellerOrder->order->cancellation_note) ? "<div class='mt-1'><small class='text-danger'>Cancellation reason: " . e($sellerOrderItem->sellerOrder->order->cancellation_note) . "</small></div>" : "") .
                         "</div></div>",
             'product_details' => "<div>
                         <a href='" . route($this->getPanel() . '.products.show', ['id' => $sellerOrderItem->product->id]) . "' class='m-0 fw-medium text-primary'>" . __('labels.product_name') . ": {$sellerOrderItem->product->title}</a>
@@ -217,6 +218,7 @@ class OrderController extends Controller
                 'panel' => $this->getPanel(),
                 'uuid' => $sellerOrderItem->sellerOrder->order->uuid,
                 'id' => $sellerOrderItem->orderItem->id,
+                'orderId' => $sellerOrderItem->sellerOrder->order->id,
                 'hierarchy' => OrderItem::getStatusHierarchy(),
                 'route' => route($this->panelView('orders.show'), $this->getPanel() === 'seller' ? $sellerOrderItem->sellerOrder->id : $sellerOrderItem->sellerOrder->order_id),
                 'title' => __('labels.edit_order') . $sellerOrderItem->sellerOrder->id,
