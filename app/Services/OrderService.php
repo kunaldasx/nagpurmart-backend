@@ -2102,7 +2102,7 @@ class OrderService
             if (in_array($order->status, [
                 OrderStatusEnum::CANCELLED(),
                 OrderStatusEnum::DELIVERED(),
-                OrderStatusEnum::REJECTED(),
+                OrderStatusEnum::REJECTED_BY_SELLER(),
                 OrderStatusEnum::FAILED()
             ])) {
                 return [
@@ -2201,7 +2201,7 @@ class OrderService
             if (in_array($order->status, [
                 OrderStatusEnum::CANCELLED(),
                 OrderStatusEnum::DELIVERED(),
-                OrderStatusEnum::REJECTED(),
+                OrderStatusEnum::REJECTED_BY_SELLER(),
                 OrderStatusEnum::FAILED()
             ])) {
                 return [
