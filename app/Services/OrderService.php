@@ -1360,7 +1360,7 @@ class OrderService
             $order = Order::findOrFail($orderId);
 
             // Get all active items (excluding rejected and cancelled) for this order
-            $query = $order->items()->whereNotIn('status', [
+            $query = $order->items()->with('store.seller')->whereNotIn('status', [
                 OrderItemStatusEnum::REJECTED(),
                 OrderItemStatusEnum::CANCELLED()
             ]);
