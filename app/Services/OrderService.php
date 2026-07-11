@@ -2150,7 +2150,7 @@ class OrderService
             }
 
             // Recalculate order pricing
-            $this->recalculateOrderAmounts($order->id);
+            // $this->recalculateOrderAmounts($order->id);
 
             DB::commit();
 
@@ -2261,7 +2261,7 @@ class OrderService
             }
 
             // Recalculate order pricing
-            $this->recalculateOrderAmounts($order->id);
+            // $this->recalculateOrderAmounts($order->id);ss
 
             DB::commit();
 
