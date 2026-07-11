@@ -2081,4 +2081,207 @@ class OrderService
         }
         return null;
     }
+
+    /**
+     * Cancel an order by admin with a reason/note
+     *
+     * @param Order $order The order to cancel
+     * @param string|null $cancellationNote The reason for cancellation
+     * @return array Result containing success status and message
+     */
+    public function cancelOrderByAdmin(Order $order, ?string $cancellationNote = null): array
+    {
+        try {
+            DB::beginTransaction();
+
+            // Check if order is already in a terminal state
+            if (in_array($order->status, [
+                OrderStatusEnum::CANCELLED(),
+                OrderStatusEnum::DELIVERED(),
+                OrderStatusEnum::REJECTED(),
+                OrderStatusEnum::FAILED()
+            ])) {
+                return [
+                    'success' => false,
+                    'message' => __('messages.order_cannot_be_cancelled_at_current_status'),
+                    'data' => []
+                ];
+            }
+
+            $oldStatus = $order->status;
+
+            // Update order status to cancelled and store the cancellation note
+            $order->update([
+                'status' => OrderStatusEnum::CANCELLED(),
+                'cancellation_note' => $cancellationNote
+            ]);
+
+            // Fire status updated event
+            event(new OrderStatusUpdated(
+                orderItem: null,
+                oldStatus: $oldStatus,
+                newStatus: OrderStatusEnum::CANCELLED()
+            ));
+
+            // Process refund for all items if payment was made in advance
+            foreach ($order->items as $orderItem) {
+                if (!in_array($orderItem->status, [
+                    OrderItemStatusEnum::CANCELLED(),
+                    OrderItemStatusEnum::REJECTED(),
+                    OrderItemStatusEnum::DELIVERED(),
+                    OrderItemStatusEnum::RETURNED(),
+                    OrderItemStatusEnum::REFUNDED(),
+                    OrderItemStatusEnum::FAILED()
+                ])) {
+                    // Update item status
+                    $orderItem->update(['status' => OrderItemStatusEnum::CANCELLED()]);
+
+                    // Process refund
+                    // $this->processOrderItemRefund($orderItem);
+                }
+            }
+
+            // Recalculate order pricing
+            $this->recalculateOrderAmounts($order->id);
+
+            DB::commit();
+
+            Log::info('Order cancelled by admin', [
+                'order_id' => $order->id,
+                'old_status' => $oldStatus,
+                'cancellation_note' => $cancellationNote
+            ]);
+
+            return [
+                'success' => true,
+                'message' => __('messages.order_cancelled_successfully'),
+                'data' => new OrderResource($order)
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Error cancelling order by admin', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => __('messages.something_went_wrong'),
+                'data' => []
+            ];
+        }
+    }
+
+    /**
+     * Cancel an order by delivery boy with a reason/note
+     *
+     * @param Order $order The order to cancel
+     * @param string|null $cancellationNote The reason for cancellation
+     * @return array Result containing success status and message
+     */
+    public function cancelOrderByDeliveryBoy(Order $order, ?string $cancellationNote = null): array
+    {
+        try {
+            DB::beginTransaction();
+
+            // Check if delivery boy is assigned to this order
+            if ($order->delivery_boy_id === null) {
+                return [
+                    'success' => false,
+                    'message' => __('messages.order_not_assigned_to_delivery_boy'),
+                    'data' => []
+                ];
+            }
+
+            // Check if order is already in a terminal state
+            if (in_array($order->status, [
+                OrderStatusEnum::CANCELLED(),
+                OrderStatusEnum::DELIVERED(),
+                OrderStatusEnum::REJECTED(),
+                OrderStatusEnum::FAILED()
+            ])) {
+                return [
+                    'success' => false,
+                    'message' => __('messages.order_cannot_be_cancelled_at_current_status'),
+                    'data' => []
+                ];
+            }
+
+            // Check if order can be cancelled by delivery boy (only out_for_delivery or assigned status)
+            if (!in_array($order->status, [
+                OrderStatusEnum::ASSIGNED(),
+                OrderStatusEnum::OUT_FOR_DELIVERY()
+            ])) {
+                return [
+                    'success' => false,
+                    'message' => __('messages.delivery_boy_cannot_cancel_order_at_current_status'),
+                    'data' => []
+                ];
+            }
+
+            $oldStatus = $order->status;
+
+            // Update order status to cancelled and store the cancellation note
+            $order->update([
+                'status' => OrderStatusEnum::CANCELLED(),
+                'cancellation_note' => $cancellationNote
+            ]);
+
+            // Fire status updated event
+            event(new OrderStatusUpdated(
+                orderItem: null,
+                oldStatus: $oldStatus,
+                newStatus: OrderStatusEnum::CANCELLED()
+            ));
+
+            // Process refund for all items if payment was made in advance
+            foreach ($order->items as $orderItem) {
+                if (!in_array($orderItem->status, [
+                    OrderItemStatusEnum::CANCELLED(),
+                    OrderItemStatusEnum::REJECTED(),
+                    OrderItemStatusEnum::DELIVERED(),
+                    OrderItemStatusEnum::RETURNED(),
+                    OrderItemStatusEnum::REFUNDED(),
+                    OrderItemStatusEnum::FAILED()
+                ])) {
+                    // Update item status
+                    $orderItem->update(['status' => OrderItemStatusEnum::CANCELLED()]);
+
+                    // Process refund
+                    // $this->processOrderItemRefund($orderItem);
+                }
+            }
+
+            // Recalculate order pricing
+            $this->recalculateOrderAmounts($order->id);
+
+            DB::commit();
+
+            Log::info('Order cancelled by delivery boy', [
+                'order_id' => $order->id,
+                'delivery_boy_id' => $order->delivery_boy_id,
+                'old_status' => $oldStatus,
+                'cancellation_note' => $cancellationNote
+            ]);
+
+            return [
+                'success' => true,
+                'message' => __('messages.order_cancelled_successfully'),
+                'data' => new OrderResource($order)
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Error cancelling order by delivery boy', [
+                'order_id' => $order->id,
+                'delivery_boy_id' => $order->delivery_boy_id ?? 'N/A',
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => __('messages.something_went_wrong'),
+                'data' => []
+            ];
+        }
+    }
 }

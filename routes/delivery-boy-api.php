@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->prefix('delivery-boy')->group(function () {
             Route::get('/orders/available', [DeliveryBoyOrderApiController::class, 'getAvailableOrders'])->name('orders.available');
             Route::post('/orders/{orderId}/accept', [DeliveryBoyOrderApiController::class, 'acceptOrder'])->name('orders.accept');
             Route::put('/order-items/{orderItemId}/status', [DeliveryBoyOrderApiController::class, 'updateOrderItemStatus'])->name('order-items.update-status');
+            Route::post('/orders/{order}/cancel', [DeliveryBoyOrderApiController::class, 'cancelOrder'])->name('orders.cancel');
 
             // Return pickup routes (similar structure to orders)
             Route::get('/return-pickups/available', [DeliveryBoyReturnPickupApiController::class, 'getAvailablePickups'])->name('return-pickups.available');

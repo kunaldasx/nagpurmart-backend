@@ -71,7 +71,8 @@ class Order extends Model
         'shipping_state',
         'shipping_country',
         'shipping_country_code',
-        'order_note'
+        'order_note',
+        'cancellation_note'
     ];
 
     protected $casts = [

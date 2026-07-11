@@ -45,6 +45,7 @@ class OrderResource extends JsonResource
                 'shipping_country' => $this->order->shipping_country,
                 'shipping_phone' => $this->order->shipping_phone,
                 'order_note' => $this->order->order_note,
+                'cancellation_note' => $this->order->cancellation_note,
                 'is_rush_order' => $this->order->is_rush_order,
                 'promo_line' => new PromoLineResource($this->whenLoaded('promoLine')),
 
@@ -126,6 +127,7 @@ class OrderResource extends JsonResource
             'shipping_country' => $this->shipping_country,
             'shipping_phone' => $this->shipping_phone,
             'order_note' => $this['order_note'],
+            'cancellation_note' => $this->cancellation_note,
             'is_rush_order' => $this->is_rush_order,
             'promo_line' => new PromoLineResource($this->whenLoaded('promoLine')),
 

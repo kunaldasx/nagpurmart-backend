@@ -221,6 +221,7 @@ class OrderController extends Controller
                 'route' => route($this->panelView('orders.show'), $this->getPanel() === 'seller' ? $sellerOrderItem->sellerOrder->id : $sellerOrderItem->sellerOrder->order_id),
                 'title' => __('labels.edit_order') . $sellerOrderItem->sellerOrder->id,
                 'status' => $sellerOrderItem->orderItem->status,
+                'orderStatus' => $sellerOrderItem->sellerOrder->order->status,
                 'editPermission' => $this->getPanel() === 'admin' ? false : $this->editPermission,
             ])->render(),
         ];
@@ -377,6 +378,46 @@ class OrderController extends Controller
             ]);
         } catch (AuthorizationException) {
             abort(403, __('messages.unauthorized_action'));
+        }
+    }
+
+    /**
+     * Cancel an order by admin
+     *
+     * @param Request $request
+     * @param Order $order
+     * @return JsonResponse
+     */
+    public function cancelOrder(Request $request, Order $order): JsonResponse
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'cancellation_note' => 'nullable|string|max:500'
+            ]);
+
+            $result = $this->orderService->cancelOrderByAdmin(
+                $order,
+                $request->input('cancellation_note')
+            );
+
+            return ApiResponseType::sendJsonResponse(
+                success: $result['success'],
+                message: $result['message'],
+                data: $result['data']
+            );
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.validation_error') . ":- " . $e->getMessage(),
+                data: ['errors' => $e->errors()]
+            );
+        } catch (\Exception $e) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.something_went_wrong') . ":- " . $e->getMessage(),
+                data: ['error' => $e->getMessage()]
+            );
         }
     }
 }

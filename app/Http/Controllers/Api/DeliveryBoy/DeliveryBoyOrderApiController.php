@@ -434,4 +434,56 @@ class DeliveryBoyOrderApiController extends Controller
             );
         }
     }
+
+    /**
+     * Cancel an order by delivery boy
+     *
+     * @param Request $request
+     * @param Order $order
+     * @return JsonResponse
+     */
+    public function cancelOrder(Request $request, Order $order): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $deliveryBoy = $user->deliveryBoy;
+
+            // Verify that the delivery boy is assigned to this order
+            if ($order->delivery_boy_id !== $deliveryBoy->id) {
+                return ApiResponseType::sendJsonResponse(
+                    success: false,
+                    message: __('messages.unauthorized_action'),
+                    data: []
+                );
+            }
+
+            // Validate the request
+            $request->validate([
+                'cancellation_note' => 'nullable|string|max:500'
+            ]);
+
+            $result = $this->orderService->cancelOrderByDeliveryBoy(
+                $order,
+                $request->input('cancellation_note')
+            );
+
+            return ApiResponseType::sendJsonResponse(
+                success: $result['success'],
+                message: $result['message'],
+                data: $result['data']
+            );
+        } catch (ValidationException $e) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.validation_error') . ":- " . $e->getMessage(),
+                data: ['errors' => $e->errors()]
+            );
+        } catch (\Exception $e) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.something_went_wrong') . ":- " . $e->getMessage(),
+                data: ['error' => $e->getMessage()]
+            );
+        }
+    }
 }

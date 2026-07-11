@@ -376,6 +376,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('invoice', [OrderController::class, 'orderInvoice']);
             Route::get('/{id}', [OrderController::class, 'show'])->name('show');
             Route::post('/{id}/{status}', [OrderController::class, 'updateStatus'])->name('update_status');
+            Route::post('/{order}/cancel', [OrderController::class, 'cancelOrder'])->name('cancel');
         });
 
         // products
