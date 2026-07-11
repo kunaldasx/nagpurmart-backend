@@ -1367,11 +1367,15 @@ class OrderService
             if ($rejectedItem) {
                 $query->where('id', '!=', $rejectedItem->id);
             }
-            $newPromoDiscount = $order->promo_discount;
+            $newPromoDiscount = $order->promo_discount ?? 0;
             if (!empty($order->promo_code)) {
                 $orderPromoLine = OrderPromoLine::where('order_id', $orderId)->get()->first();
-                $newPromoDiscount = $order->promo_discount - $rejectedItem->promo_discount;
-                $orderPromoLine->update(['discount_amount' => $newPromoDiscount]);
+                $rejectedPromoDiscount = $rejectedItem?->promo_discount ?? 0;
+                $newPromoDiscount = max(0, ($order->promo_discount ?? 0) - $rejectedPromoDiscount);
+
+                if ($orderPromoLine) {
+                    $orderPromoLine->update(['discount_amount' => $newPromoDiscount]);
+                }
             }
 
             $activeItems = $query->get();

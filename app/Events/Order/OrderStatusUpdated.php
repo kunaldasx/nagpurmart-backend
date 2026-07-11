@@ -12,14 +12,14 @@ class OrderStatusUpdated
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public OrderItem $orderItem;
+    public ?OrderItem $orderItem;
     public string $oldStatus;
     public string $newStatus;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(OrderItem $orderItem, string $oldStatus, string $newStatus)
+    public function __construct(?OrderItem $orderItem, string $oldStatus, string $newStatus)
     {
         $this->orderItem = $orderItem;
         $this->oldStatus = $oldStatus;

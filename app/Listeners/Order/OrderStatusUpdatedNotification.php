@@ -18,6 +18,10 @@ class OrderStatusUpdatedNotification
      */
     public function handle(OrderStatusUpdated $event): void
     {
+        if (!$event->orderItem) {
+            return;
+        }
+
         // Get the customer user from the order
         $customer = $event->orderItem->order->user;
 
