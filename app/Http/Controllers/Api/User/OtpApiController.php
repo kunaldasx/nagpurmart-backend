@@ -109,6 +109,7 @@ class OtpApiController extends Controller
             'password' => 'nullable|string|min:6|confirmed',
             'country' => 'nullable|string|max:255',
             'iso_2' => 'nullable|string|max:2',
+            'verify_only' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -147,6 +148,14 @@ class OtpApiController extends Controller
                 $verificationResult['message'],
                 $verificationResult
             );
+        }
+
+        if (($validated['verify_only'] ?? true)) {
+            return response()->json([
+                'success' => true,
+                'message' => __('labels.verified_successfully'),
+                'verification_result' => $verificationResult,
+            ]);
         }
 
         // OTP verified - now handle user authentication/registration
