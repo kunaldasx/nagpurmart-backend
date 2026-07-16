@@ -150,7 +150,7 @@ class OtpApiController extends Controller
             );
         }
 
-        if (($validated['verify_only'] ?? true)) {
+        if ($request->boolean('verify_only', true)) {
             return response()->json([
                 'success' => true,
                 'message' => __('labels.verified_successfully'),
