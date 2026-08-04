@@ -8,6 +8,7 @@ use App\Enums\NotificationTypeEnum;
 use App\Enums\SellerPermissionEnum;
 use App\Enums\SettingTypeEnum;
 use App\Http\Resources\NotificationResource;
+use App\Models\CustomerBroadcastNotification;
 use App\Models\Notification;
 use App\Models\Setting;
 use App\Models\User;
@@ -262,6 +263,110 @@ class NotificationController extends Controller
                 success: true,
                 message: __('labels.notification_deleted_successfully'),
                 data: []
+            );
+        } catch (ModelNotFoundException) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.notification_not_found'),
+                data: []
+            );
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.permission_denied'),
+                data: []
+            );
+        }
+    }
+
+    public function customerBroadcasts(Request $request): JsonResponse
+    {
+        try {
+            $this->authorize('create', Notification::class);
+
+            $broadcasts = CustomerBroadcastNotification::query()
+                ->orderByDesc('created_at')
+                ->paginate($request->integer('per_page', 15));
+
+            return ApiResponseType::sendJsonResponse(
+                success: true,
+                message: __('labels.notifications_retrieved_successfully'),
+                data: [
+                    'items' => $broadcasts->items(),
+                    'pagination' => [
+                        'current_page' => $broadcasts->currentPage(),
+                        'last_page' => $broadcasts->lastPage(),
+                        'per_page' => $broadcasts->perPage(),
+                        'total' => $broadcasts->total(),
+                    ],
+                ]
+            );
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.permission_denied'),
+                data: []
+            );
+        }
+    }
+
+    public function createCustomerBroadcast(Request $request): JsonResponse
+    {
+        try {
+            $this->authorize('create', Notification::class);
+
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'required|string',
+                'image_url' => 'nullable|url',
+                'image_file' => 'nullable|image|max:2048',
+                'action_url' => 'nullable|url',
+                'deep_link' => 'nullable|string|max:255',
+                'target_categories' => 'nullable|string',
+                'expires_at' => 'nullable|date',
+                'priority' => 'nullable|integer|min:0|max:5',
+                'is_active' => 'nullable|boolean',
+                'metadata' => 'nullable|array',
+            ]);
+
+            $broadcast = $this->notificationService->createCustomerBroadcastNotification(array_merge($validated, [
+                'created_by' => auth()->id(),
+            ]));
+
+            $this->notificationService->sendCustomerBroadcastNotification($broadcast);
+
+            return ApiResponseType::sendJsonResponse(
+                success: true,
+                message: __('labels.notification_created_successfully'),
+                data: $broadcast
+            );
+        } catch (ValidationException $e) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.validation_failed'),
+                data: $e->errors()
+            );
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.permission_denied'),
+                data: []
+            );
+        }
+    }
+
+    public function resendCustomerBroadcast(string $id): JsonResponse
+    {
+        try {
+            $this->authorize('create', Notification::class);
+
+            $broadcast = CustomerBroadcastNotification::findOrFail($id);
+            $this->notificationService->sendCustomerBroadcastNotification($broadcast);
+
+            return ApiResponseType::sendJsonResponse(
+                success: true,
+                message: __('labels.notification_created_successfully'),
+                data: $broadcast->fresh()
             );
         } catch (ModelNotFoundException) {
             return ApiResponseType::sendJsonResponse(

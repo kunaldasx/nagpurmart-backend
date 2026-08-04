@@ -2,11 +2,17 @@
 
 namespace App\Services;
 
+use App\Enums\GuardNameEnum;
 use App\Enums\NotificationTypeEnum;
+use App\Models\CustomerBroadcastNotification;
 use App\Models\Notification;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use App\Notifications\CustomerBroadcastNotification as CustomerBroadcastNotificationNotification;
 use Exception;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
+use Illuminate\Support\Facades\Storage;
 
 class NotificationService
 {
@@ -238,6 +244,159 @@ class NotificationService
             DB::rollBack();
             throw $e;
         }
+    }
+
+    public function createCustomerBroadcastNotification(array $data): CustomerBroadcastNotification
+    {
+        $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : [];
+        $targetCategories = $this->normalizeTargetCategories($data['target_categories'] ?? $metadata['target_categories'] ?? null);
+        $imageUrl = $data['image_url'] ?? null;
+
+        if (! empty($data['image_file']) && $data['image_file'] instanceof UploadedFile) {
+            $path = Storage::disk('public')->putFile('customer-broadcasts', $data['image_file']);
+            $imageUrl = Storage::disk('public')->url($path);
+        }
+
+        $expiresAt = $data['expires_at'] ?? null;
+        if (is_string($expiresAt) && trim($expiresAt) !== '') {
+            $expiresAt = \Carbon\Carbon::parse($expiresAt);
+        }
+
+        return CustomerBroadcastNotification::create([
+            'title' => $data['title'] ?? null,
+            'description' => $data['description'] ?? null,
+            'image_url' => $imageUrl,
+            'action_url' => $data['action_url'] ?? null,
+            'deep_link' => $data['deep_link'] ?? null,
+            'target_categories' => $targetCategories,
+            'expires_at' => $expiresAt,
+            'priority' => (int) ($data['priority'] ?? 0),
+            'is_active' => filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'status' => 'draft',
+            'sent_count' => 0,
+            'recipient_count' => 0,
+            'metadata' => array_merge($metadata, [
+                'target_categories' => $targetCategories,
+                'deep_link' => $data['deep_link'] ?? null,
+                'priority' => (int) ($data['priority'] ?? 0),
+                'is_active' => filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            ]),
+            'created_by' => $data['created_by'] ?? null,
+        ]);
+    }
+
+    public function sendCustomerBroadcastNotification(CustomerBroadcastNotification $broadcast): CustomerBroadcastNotification
+    {
+        if (! $broadcast->is_active) {
+            $broadcast->update([
+                'status' => 'inactive',
+                'sent_at' => null,
+                'recipient_count' => 0,
+                'sent_count' => 0,
+            ]);
+
+            return $broadcast;
+        }
+
+        if ($broadcast->expires_at && now()->greaterThanOrEqualTo($broadcast->expires_at)) {
+            $broadcast->update([
+                'status' => 'expired',
+                'sent_at' => null,
+                'recipient_count' => 0,
+                'sent_count' => 0,
+            ]);
+
+            return $broadcast;
+        }
+
+        $customerUsers = User::query()
+            ->where(function ($query) {
+                $query->whereNull('access_panel')
+                    ->orWhere('access_panel', GuardNameEnum::WEB()->value);
+            })
+            ->where('status', true)
+            ->get();
+
+        if ($customerUsers->isEmpty()) {
+            $broadcast->update([
+                'status' => 'sent',
+                'sent_at' => now(),
+                'recipient_count' => 0,
+                'sent_count' => 0,
+            ]);
+
+            return $broadcast;
+        }
+
+        $metadata = array_merge($broadcast->metadata ?? [], [
+            'broadcast_id' => $broadcast->id,
+            'image_url' => $broadcast->image_url,
+            'action_url' => $broadcast->action_url,
+            'deep_link' => $broadcast->deep_link,
+            'target_categories' => $broadcast->target_categories ?? [],
+            'expires_at' => $broadcast->expires_at?->toIso8601String(),
+            'priority' => $broadcast->priority,
+            'is_active' => $broadcast->is_active,
+        ]);
+
+        foreach ($customerUsers as $customer) {
+            NotificationFacade::send($customer, new CustomerBroadcastNotificationNotification(
+                title: $broadcast->title,
+                description: $broadcast->description,
+                imageUrl: $broadcast->image_url,
+                actionUrl: $broadcast->action_url,
+                deepLink: $broadcast->deep_link,
+                priority: $broadcast->priority,
+                isActive: $broadcast->is_active,
+                metadata: $metadata
+            ));
+        }
+
+        $broadcast->update([
+            'status' => 'sent',
+            'sent_at' => now(),
+            'recipient_count' => $customerUsers->count(),
+            'sent_count' => $customerUsers->count(),
+        ]);
+
+        return $broadcast;
+    }
+
+    public function getActiveCustomerCampaigns(int $perPage = 15): array
+    {
+        $campaigns = CustomerBroadcastNotification::query()
+            ->where('is_active', true)
+            ->where('status', 'sent')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->orderByDesc('priority')
+            ->orderByDesc('sent_at')
+            ->paginate($perPage);
+
+        return [
+            'items' => $campaigns->items(),
+            'pagination' => [
+                'current_page' => $campaigns->currentPage(),
+                'last_page' => $campaigns->lastPage(),
+                'per_page' => $campaigns->perPage(),
+                'total' => $campaigns->total(),
+            ],
+        ];
+    }
+
+    protected function normalizeTargetCategories(mixed $categories): array
+    {
+        if (is_array($categories)) {
+            return array_values(array_filter(array_map(fn ($category) => trim((string) $category), $categories)));
+        }
+
+        if (is_string($categories)) {
+            return array_values(array_filter(array_map(fn ($category) => trim($category), explode(',', $categories))));
+        }
+
+        return [];
     }
 
     public function getHeaderNotifications(int $userId, string $sentTo = null): array

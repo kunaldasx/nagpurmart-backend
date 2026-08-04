@@ -170,4 +170,23 @@ class NotificationApiController extends Controller
             );
         }
     }
+
+    public function activeCampaigns(Request $request): JsonResponse
+    {
+        try {
+            $result = $this->notificationService->getActiveCustomerCampaigns($request->integer('per_page', 15));
+
+            return ApiResponseType::sendJsonResponse(
+                success: true,
+                message: __('labels.notifications_retrieved_successfully'),
+                data: $result
+            );
+        } catch (\Throwable) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: __('labels.error_retrieving_notifications'),
+                data: []
+            );
+        }
+    }
 }

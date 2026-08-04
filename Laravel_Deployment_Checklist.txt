@@ -1,0 +1,44 @@
+Laravel Deployment Checklist (PHP 8.3 + Nginx)
+Deployment Steps:
+
+**Pull latest code**:
+
+git pull
+
+Install Composer dependencies:
+composer install --no-dev --optimize-autoloader
+
+**Run database migrations**:
+php artisan migrate --force
+
+**Clear and rebuild Laravel caches:**
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+php artisan cache:clear
+
+**Restart PHP-FPM:**
+sudo systemctl restart php8.3-fpm
+
+**Reload Nginx:**
+sudo systemctl reload nginx
+
+**Quick Deployment Commands:**
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+php artisan cache:clear 
+sudo systemctl restart php8.3-fpm
+sudo systemctl reload nginx
+
+**Useful Log Commands**
+● Laravel: tail -f storage/logs/laravel.log
+● Nginx: sudo tail -f /var/log/nginx/error.log
+● PHP-FPM: sudo journalctl -u php8.3-fpm -f
+
+**Check Service Status**
+sudo systemctl status php8.3-fpm --no-pager
+sudo systemctl status nginx --no-pager

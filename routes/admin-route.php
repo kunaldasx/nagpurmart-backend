@@ -298,6 +298,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('notifications')->name('notifications.')->group(function () {
             Route::get('/', [NotificationController::class, 'index'])->name('index');
             Route::get('/datatable', [NotificationController::class, 'getNotifications'])->name('datatable');
+            Route::get('/customer-broadcasts', [NotificationController::class, 'customerBroadcasts'])->name('customer-broadcasts');
+            Route::post('/customer-broadcasts', [NotificationController::class, 'createCustomerBroadcast'])->name('customer-broadcasts.store');
+            Route::post('/customer-broadcasts/{id}/resend', [NotificationController::class, 'resendCustomerBroadcast'])->name('customer-broadcasts.resend');
             Route::get('/{id}', [NotificationController::class, 'show'])->name('show');
             Route::post('/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('mark-read');
             Route::post('/{id}/mark-unread', [NotificationController::class, 'markAsUnread'])->name('mark-unread');

@@ -91,6 +91,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/{id}/unread', [UserNotificationApiController::class, 'markAsUnread']);
         });
 
+        Route::prefix('campaigns')->group(function () {
+            Route::get('/active', [UserNotificationApiController::class, 'activeCampaigns']);
+        });
+
         // Wallet routes
         Route::prefix('wallet')->name('wallet.')->group(function () {
             Route::get('/', [WalletApiController::class, 'getWallet']);

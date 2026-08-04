@@ -1,0 +1,13 @@
+DELETE FROM addresses WHERE user_id = 209; DELETE FROM app_notifications WHERE
+user_id = 209; DELETE FROM carts WHERE user_id = 209; DELETE FROM
+delivery_boy_withdrawal_requests WHERE user_id = 209 OR processed_by = 209;
+DELETE FROM delivery_feedback WHERE user_id = 209; DELETE FROM
+order_item_returns WHERE user_id = 209; DELETE FROM order_payment_transactions
+WHERE user_id = 209; DELETE FROM orders WHERE user_id = 209; DELETE FROM reviews
+WHERE user_id = 209; DELETE FROM seller_feedback WHERE user_id = 209; DELETE
+FROM seller_user WHERE user_id = 209; DELETE FROM seller_withdrawal_requests
+WHERE user_id = 209 OR processed_by = 209; DELETE FROM support_ticket_messages
+WHERE user_id = 209; DELETE FROM support_tickets WHERE user_id = 209; DELETE
+FROM user_fcm_tokens WHERE user_id = 209; DELETE FROM wallet_transactions WHERE
+user_id = 209; DELETE FROM wallets WHERE user_id = 209; DELETE FROM wishlists
+WHERE user_id = 209; DELETE FROM users WHERE id = 209;
