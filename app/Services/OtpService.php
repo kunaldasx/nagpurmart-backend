@@ -14,6 +14,23 @@ class OtpService
         $this->smsService = $smsService;
     }
 
+    protected function isDefaultOtpMobile(string $mobile): bool
+    {
+        $defaultMobile = trim((string) config('services.default_otp_mobile', ''));
+        if ($defaultMobile === '') {
+            return false;
+        }
+
+        return $this->sanitizeMobile($mobile) === $this->sanitizeMobile($defaultMobile);
+    }
+
+    protected function getDefaultOtpCode(): ?string
+    {
+        $defaultOtp = trim((string) config('services.default_otp_code', ''));
+
+        return $defaultOtp !== '' ? $defaultOtp : null;
+    }
+
     /**
      * Generate a 6-digit OTP code
      */
@@ -98,8 +115,20 @@ class OtpService
         try {
             $mobile = $this->sanitizeMobile($mobile);
 
-            // Generate new OTP
-            $otpCode = $this->generateOtpCode();
+            if ($this->isDefaultOtpMobile($mobile)) {
+                $defaultOtpCode = $this->getDefaultOtpCode();
+                if ($defaultOtpCode === null) {
+                    return [
+                        'success' => false,
+                        'message' => 'Default OTP code is not configured',
+                    ];
+                }
+
+                $otpCode = $defaultOtpCode;
+            } else {
+                $otpCode = $this->generateOtpCode();
+            }
+
             $expiresAt = now()->addMinutes(10);
 
             Log::info('Generating OTP', [
@@ -176,34 +205,42 @@ class OtpService
         $smsMobile = $mobileData['full_mobile'];
         $message = "Your OTP is: {$otpResult['otp_code']}. Valid for 10 minutes.";
 
-        Log::info('Sending SMS', [
-            'sms_mobile' => $smsMobile,
-            'country_code' => $mobileData['country_code'],
-            'otp_code' => $otpResult['otp_code'],
-            'message' => $message
-        ]);
-
-        $smsResult = $this->smsService->sendSms($smsMobile, $message);
-
-        if (!$smsResult['success']) {
-            Log::error('OTP SMS sending failed', [
-                'mobile' => $smsMobile,
+        if ($this->isDefaultOtpMobile($sanitizedMobile)) {
+            Log::info('Default OTP mobile detected; skipping SMS send', [
+                'mobile' => $sanitizedMobile,
+                'otp_code' => $otpResult['otp_code'],
+            ]);
+        } else {
+            Log::info('Sending SMS', [
+                'sms_mobile' => $smsMobile,
                 'country_code' => $mobileData['country_code'],
-                'error' => $smsResult
+                'otp_code' => $otpResult['otp_code'],
+                'message' => $message
             ]);
 
-            return [
-                'success' => false,
-                'message' => 'Failed to send OTP: ' . $smsResult['message'],
-                'debug' => $smsResult['debug'] ?? null
-            ];
+            $smsResult = $this->smsService->sendSms($smsMobile, $message);
+
+            if (!$smsResult['success']) {
+                Log::error('OTP SMS sending failed', [
+                    'mobile' => $smsMobile,
+                    'country_code' => $mobileData['country_code'],
+                    'error' => $smsResult
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => 'Failed to send OTP: ' . $smsResult['message'],
+                    'debug' => $smsResult['debug'] ?? null
+                ];
+            }
         }
 
         Log::info('OTP sent successfully', [
             'mobile' => $sanitizedMobile,
             'full_mobile' => $smsMobile,
             'country_code' => $mobileData['country_code'],
-            'otp_code' => $otpResult['otp_code']
+            'otp_code' => $otpResult['otp_code'],
+            'sms_sent' => !$this->isDefaultOtpMobile($sanitizedMobile),
         ]);
 
         return [
@@ -219,6 +256,21 @@ class OtpService
     public function verifyOtp(string $mobile, string $otpCode): array
     {
         $mobile = $this->sanitizeMobile($mobile);
+
+        if ($this->isDefaultOtpMobile($mobile)) {
+            $defaultOtpCode = $this->getDefaultOtpCode();
+            if ($defaultOtpCode !== null && (string) $otpCode === (string) $defaultOtpCode) {
+                Log::info('Default OTP verification bypass applied', [
+                    'mobile' => $mobile,
+                    'otp_code' => $otpCode,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'OTP verified successfully',
+                ];
+            }
+        }
 
         // Debug logging
         Log::info('OTP Verification Attempt', [
@@ -283,6 +335,18 @@ class OtpService
                 'success' => false,
                 'message' => 'Maximum verification attempts reached. Please request a new OTP.'
             ];
+        }
+
+        if ($this->isDefaultOtpMobile($mobile)) {
+            $defaultOtpCode = $this->getDefaultOtpCode();
+            if ($defaultOtpCode !== null && (string) $otpCode === (string) $defaultOtpCode) {
+                $userOtp->markAsVerified();
+
+                return [
+                    'success' => true,
+                    'message' => 'OTP verified successfully',
+                ];
+            }
         }
 
         // Verify OTP code
