@@ -55,9 +55,35 @@ $(document).ready(function () {
         }
     });
 
+    const showModal = function (selector) {
+        const $modal = $(selector);
+        if ($modal.length && typeof $modal.modal === "function") {
+            $modal.modal("show");
+            return;
+        }
+
+        const modalElement = document.querySelector(selector);
+        if (modalElement && window.bootstrap?.Modal) {
+            new bootstrap.Modal(modalElement).show();
+        }
+    };
+
+    const hideModal = function (selector) {
+        const $modal = $(selector);
+        if ($modal.length && typeof $modal.modal === "function") {
+            $modal.modal("hide");
+            return;
+        }
+
+        const modalElement = document.querySelector(selector);
+        if (modalElement && window.bootstrap?.Modal) {
+            bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+        }
+    };
+
     // Mark all as read button
     $("#mark-all-read-btn").on("click", function () {
-        $("#markAllReadModal").modal("show");
+        showModal("#markAllReadModal");
     });
 
     // Confirm mark all as read
@@ -112,7 +138,7 @@ $(document).ready(function () {
                     .html("Yes, Mark All");
 
                 // Hide the modal
-                $("#markAllReadModal").modal("hide");
+                hideModal("#markAllReadModal");
             });
     });
 
@@ -272,7 +298,7 @@ $(document).ready(function () {
 
     $("#create-broadcast-btn").on("click", function () {
         $("#broadcast-form")[0].reset();
-        $("#broadcastModal").modal("show");
+        showModal("#broadcastModal");
     });
 
     $("#save-broadcast-btn").on("click", function () {
@@ -303,7 +329,7 @@ $(document).ready(function () {
                 if (data.success) {
                     Toast.fire({ icon: "success", title: data.message });
                     loadBroadcasts();
-                    $("#broadcastModal").modal("hide");
+                    hideModal("#broadcastModal");
                 } else {
                     Toast.fire({ icon: "error", title: data.message });
                 }
