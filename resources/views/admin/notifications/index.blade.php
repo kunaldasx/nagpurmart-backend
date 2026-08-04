@@ -270,6 +270,6 @@
     </div>
 @endsection
 
-@push('scripts')
+@push('script')
     <script src="{{ asset('assets/js/notification.js') }}"></script>
 @endpush
