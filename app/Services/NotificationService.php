@@ -312,7 +312,7 @@ class NotificationService
         $customerUsers = User::query()
             ->where(function ($query) {
                 $query->whereNull('access_panel')
-                    ->orWhere('access_panel', GuardNameEnum::WEB()->value);
+                    ->orWhere('access_panel', GuardNameEnum::WEB());
             })
             ->where('status', true)
             ->get();
