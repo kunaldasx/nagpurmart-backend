@@ -31,8 +31,10 @@ use App\Models\TaxClass;
 use App\Models\TaxRate;
 use App\Models\User;
 use App\Models\Notification;
+use App\Models\OfferBanner;
 use App\Policies\BannerPolicy;
 use App\Policies\BrandPolicy;
+use App\Policies\OfferBannerPolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\DeliveryBoyPolicy;
@@ -90,6 +92,7 @@ class AuthServiceProvider extends ServiceProvider
         Promo::class => PromoPolicy::class,
         Faq::class => FaqPolicy::class,
         Banner::class => BannerPolicy::class,
+        OfferBanner::class => OfferBannerPolicy::class,
         Review::class => ReviewPolicy::class,
         DeliveryBoy::class => DeliveryBoyPolicy::class,
         DeliveryBoyAssignment::class => DeliveryBoyAssignmentPolicy::class,

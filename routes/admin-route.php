@@ -16,6 +16,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DeliveryBoyController;
 use App\Http\Controllers\DeliveryZoneController;
+use App\Http\Controllers\OfferBannerController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeaturedSectionController;
 use App\Http\Controllers\NotificationController;
@@ -252,6 +253,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{id}', [BannerController::class, 'update'])->name('update');
             Route::delete('/{id}', [BannerController::class, 'destroy'])->name('delete');
             Route::get('/datatable', [BannerController::class, 'getBanners'])->name('datatable');
+        });
+
+        // offer banners
+        Route::prefix('offer-banners')->name('offer-banners.')->group(function () {
+            Route::get('/', [OfferBannerController::class, 'index'])->name('index');
+            Route::post('/', [OfferBannerController::class, 'store'])->name('store');
+            Route::get('/create', [OfferBannerController::class, 'create'])->name('create');
+            Route::get('/{id}/edit', [OfferBannerController::class, 'edit'])->name('edit');
+            Route::post('/{id}', [OfferBannerController::class, 'update'])->name('update');
+            Route::delete('/{id}', [OfferBannerController::class, 'destroy'])->name('delete');
+            Route::get('/datatable', [OfferBannerController::class, 'getOfferBanners'])->name('datatable');
         });
 
         // wallet transactions and deposits
