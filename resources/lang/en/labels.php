@@ -818,6 +818,14 @@ return [
 
     // Banner form fields
     'enter_banner_title' => 'Enter banner title',
+    'banner_images' => 'Banner Images',
+    'offer_items' => 'Offer Items',
+    'add_offer_item' => 'Add Offer Item',
+    'select_offer_item_type' => 'Select offer item type',
+    'select_item' => 'Select Item',
+    'remove' => 'Remove',
+    'search_product' => 'Search Product',
+    'search_category' => 'Search Category',
     'enter_banner_slug' => 'Enter banner slug',
     'select_banner_type' => 'Select banner type',
     'select_banner_position' => 'Select banner position',

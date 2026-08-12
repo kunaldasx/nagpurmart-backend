@@ -14,7 +14,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class Banner extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia;
-    protected $appends = ['banner_image'];
+    protected $appends = ['banner_image', 'banner_images'];
     protected $fillable = [
         'type', 'title', 'slug', 'custom_url',
         'product_id', 'category_id', 'brand_id', 'position',
@@ -35,6 +35,13 @@ class Banner extends Model implements HasMedia
     public function getBannerImageAttribute(): string
     {
         return $this->getFirstMediaUrl(SpatieMediaCollectionName::BANNER_IMAGE());
+    }
+
+    public function getBannerImagesAttribute(): array
+    {
+        return $this->getMedia(SpatieMediaCollectionName::BANNER_IMAGE())
+            ->map(fn($media) => $media->getFullUrl())
+            ->toArray();
     }
 
     public function product(): BelongsTo
@@ -79,7 +86,7 @@ class Banner extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE())->singleFile();
+        $this->addMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
     }
     protected static function booted(): void
     {

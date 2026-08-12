@@ -47,7 +47,12 @@ class StoreUpdateBannerRequest extends FormRequest
             'visibility_status' => ['required', new Enum(BannerVisibilityStatusEnum::class)],
             'display_order' => 'nullable|integer|min:0',
             'metadata' => 'nullable|array',
-            'banner_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'banner_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'offer_items' => 'nullable|array',
+            'offer_items.*.title' => 'required_with:offer_items|string|max:255',
+            'offer_items.*.type' => ['required_with:offer_items', new Enum(BannerTypeEnum::class)],
+            'offer_items.*.entity_id' => 'required_with:offer_items|integer',
         ];
     }
 }

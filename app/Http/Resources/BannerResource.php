@@ -30,7 +30,9 @@ class BannerResource extends JsonResource
             'visibility_status' => $this->visibility_status,
             'display_order' => $this->display_order,
             'metadata' => $this->metadata,
+            'offer_items' => $this->metadata['offer_items'] ?? [],
             'banner_image' => $this->banner_image,
+            'banner_images' => $this->banner_images,
         ];
     }
 }

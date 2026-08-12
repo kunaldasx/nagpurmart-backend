@@ -28,6 +28,7 @@ class BannerApiController extends Controller
      * Display a listing of the banners.
      */
     #[QueryParameter('position', description: 'position filter', type: 'string', example: "top, carousel")]
+    #[QueryParameter('scope_type', description: 'scope type filter', type: 'string', example: 'global, category')]
     #[QueryParameter('scope_category_slug', description: 'if you pass slug then banners will be filtered by category', type: 'string', example: "apple, amul")]
     #[QueryParameter('latitude', description: 'Latitude of the user location for zone-wise availability', type: 'float', example: 23.11684540)]
     #[QueryParameter('longitude', description: 'Longitude of the user location for zone-wise availability', type: 'float', example: 70.02805670)]
@@ -65,7 +66,15 @@ class BannerApiController extends Controller
             }
         }
 
-        // Validate scope parameter
+        // Validate scope_type parameter
+        if ($request->has('scope_type')) {
+            $scopeType = $request->input('scope_type');
+            if (!in_array($scopeType, HomePageScopeEnum::values(), true)) {
+                return ApiResponseType::sendJsonResponse(success: false, message: __('labels.invalid_scope_type_entered'), data: []);
+            }
+        }
+
+        // Validate scope_category_slug parameter
         if ($request->has('scope_category_slug')) {
             $categorySlug = $request->input('scope_category_slug');
             if (empty($categorySlug)) {
@@ -98,6 +107,13 @@ class BannerApiController extends Controller
             $categorySlug = $request->input('scope_category_slug');
             $category = Category::where('slug', $categorySlug)->first();
             $query = Banner::scopeByCategory($query, $category->id);
+        } elseif ($request->has('scope_type')) {
+            $scopeType = $request->input('scope_type');
+            if ($scopeType === HomePageScopeEnum::CATEGORY()) {
+                $query->where('scope_type', HomePageScopeEnum::CATEGORY());
+            } else {
+                $query->where('scope_type', HomePageScopeEnum::GLOBAL());
+            }
         } else {
             $query->where('scope_type', HomePageScopeEnum::GLOBAL());
         }

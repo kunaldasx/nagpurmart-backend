@@ -128,8 +128,16 @@ class BannerController extends Controller
 
             // Handle media uploads if present
             if ($request->hasFile('banner_image')) {
+                $banner->clearMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
                 $banner->addMediaFromRequest('banner_image')->toMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
             }
+            if ($request->hasFile('banner_images')) {
+                foreach ($request->file('banner_images') as $file) {
+                    $banner->addMedia($file)->toMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
+                }
+            }
+            $banner->metadata = array_merge($banner->metadata ?? [], ['offer_items' => $request->input('offer_items', [])]);
+            $banner->save();
             DB::commit();
 
             return ApiResponseType::sendJsonResponse(
@@ -171,7 +179,7 @@ class BannerController extends Controller
             }
 
             // Add media URL if exists
-            $banner->banner_image = $banner->getFirstMediaUrl('banner') ?? null;
+            $banner->banner_image = $banner->getFirstMediaUrl(SpatieMediaCollectionName::BANNER_IMAGE()) ?? null;
 
             return ApiResponseType::sendJsonResponse(
                 success: true,
@@ -248,14 +256,16 @@ class BannerController extends Controller
 
             // Handle media uploads
             if ($request->hasFile('banner_image')) {
-                $newImageFile = $request->file('banner_image');
-                $existingImage = $banner->getFirstMedia('banner');
-
-                $newImageName = $newImageFile->getClientOriginalName();
-                if (!$existingImage || $existingImage->file_name !== $newImageName) {
-                    $banner->addMedia($newImageFile)->toMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
+                $banner->clearMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
+                $banner->addMediaFromRequest('banner_image')->toMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
+            }
+            if ($request->hasFile('banner_images')) {
+                foreach ($request->file('banner_images') as $file) {
+                    $banner->addMedia($file)->toMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
                 }
             }
+            $banner->metadata = array_merge($banner->metadata ?? [], ['offer_items' => $request->input('offer_items', [])]);
+            $banner->save();
 
             return ApiResponseType::sendJsonResponse(
                 success: true,
@@ -302,7 +312,7 @@ class BannerController extends Controller
 
         try {
             // Delete associated media
-            $banner->clearMediaCollection('banner');
+            $banner->clearMediaCollection(SpatieMediaCollectionName::BANNER_IMAGE());
 
             $banner->delete();
             return ApiResponseType::sendJsonResponse(

@@ -182,7 +182,7 @@
                                 <div class="mb-3">
                                     <label class="form-label required">{{ __('labels.custom_url') }}</label>
                                     <input type="text" class="form-control" name="custom_url" value="{{ $banner->custom_url ?? '' }}"/>
-                                    @error('brand_id')
+                                    @error('custom_url')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -240,10 +240,65 @@
                             </div>
                         </div>
 
+                        <div id="offer-items-section">
+                            <div class="mb-3 d-flex justify-content-between align-items-center">
+                                <label class="form-label">{{ __('labels.offer_items') }}</label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="add-offer-item">
+                                    {{ __('labels.add_offer_item') }}
+                                </button>
+                            </div>
+                            <div id="offer-items-list">
+                                @php
+                                    $offerItems = old('offer_items', $banner->metadata['offer_items'] ?? []);
+                                @endphp
+                                @foreach($offerItems as $index => $offerItem)
+                                    <div class="card mb-3 offer-item" data-index="{{ $index }}">
+                                        <div class="card-body">
+                                            <div class="row g-3 align-items-end">
+                                                <div class="col-md-4">
+                                                    <label class="form-label required">{{ __('labels.title') }}</label>
+                                                    <input type="text" name="offer_items[{{ $index }}][title]" class="form-control"
+                                                           value="{{ $offerItem['title'] ?? '' }}">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label required">{{ __('labels.type') }}</label>
+                                                    <select class="form-select offer-item-type" name="offer_items[{{ $index }}][type]">
+                                                        <option value="">{{ __('labels.select_offer_item_type') }}</option>
+                                                        @foreach($bannerTypes as $type)
+                                                            <option value="{{ $type->value }}"
+                                                                {{ ($offerItem['type'] ?? '') == $type->value ? 'selected' : '' }}>
+                                                                {{ ucfirst($type->value) }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label required">{{ __('labels.select_item') }}</label>
+                                                    <select class="form-select offer-item-entity" name="offer_items[{{ $index }}][entity_id]" data-selected="{{ $offerItem['entity_id'] ?? '' }}" data-selected-text="{{ $offerItem['entity_text'] ?? '' }}">
+                                                        @if(!empty($offerItem['entity_id']) && !empty($offerItem['entity_text']))
+                                                            <option value="{{ $offerItem['entity_id'] }}" selected>{{ $offerItem['entity_text'] }}</option>
+                                                        @endif
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-1 text-end">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-offer-item">{{ __('labels.remove') }}</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label">{{ __('labels.banner_image') }}</label>
                             <input type="file" class="filepond" name="banner_image" accept="image/*"
                                    data-max-files="1" data-image-url="{{ $banner->banner_image ?? "" }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('labels.banner_images') }}</label>
+                            <input type="file" class="filepond" name="banner_images[]" accept="image/*"
+                                   data-images='@json($banner->banner_images ?? [])' multiple>
                         </div>
                     </div>
                     <div class="card-footer text-end">
