@@ -23,7 +23,7 @@ class StoreUpdateOfferBannerRequest extends FormRequest
             'display_order' => ['nullable', 'integer', 'min:0'],
             'offer_items' => ['nullable', 'array'],
             'offer_items.*.title' => ['nullable', 'string', 'max:255'],
-            'offer_items.*.type' => ['nullable', 'in:product,category'],
+            'offer_items.*.item_type' => ['nullable', 'in:product,category'],
             'offer_items.*.item_id' => ['nullable', 'integer'],
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ];

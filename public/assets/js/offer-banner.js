@@ -56,7 +56,37 @@ document.addEventListener("DOMContentLoaded", function () {
     const offerItemsContainer = document.getElementById("offer-items");
     const addOfferItemBtn = document.getElementById("add-offer-item");
 
+    let offerItemRowIndex = 0;
+
+    function reindexOfferItemRows() {
+        offerItemRowIndex = 0;
+        offerItemsContainer
+            .querySelectorAll(".offer-item-row")
+            .forEach(function (row) {
+                const title = row.querySelector('input[name^="offer_items"]');
+                const type = row.querySelector(".item-type-select");
+                const itemSelect = row.querySelector(".tom-select-ajax");
+                if (title)
+                    title.setAttribute(
+                        "name",
+                        `offer_items[${offerItemRowIndex}][title]`,
+                    );
+                if (type)
+                    type.setAttribute(
+                        "name",
+                        `offer_items[${offerItemRowIndex}][item_type]`,
+                    );
+                if (itemSelect)
+                    itemSelect.setAttribute(
+                        "name",
+                        `offer_items[${offerItemRowIndex}][item_id]`,
+                    );
+                offerItemRowIndex++;
+            });
+    }
+
     function createOfferItemRow(
+        index,
         selectedType = "product",
         offerTitle = "",
         selectedItemTitle = "",
@@ -66,16 +96,16 @@ document.addEventListener("DOMContentLoaded", function () {
         row.className = "row offer-item-row mb-2";
         row.innerHTML = `
             <div class="col-md-4">
-                <input type="text" name="offer_items[][title]" class="form-control" placeholder="Offer Title" value="${offerTitle}">
+                <input type="text" name="offer_items[${index}][title]" class="form-control" placeholder="Offer Title" value="${offerTitle}">
             </div>
             <div class="col-md-3">
-                <select name="offer_items[][type]" class="form-select item-type-select">
+                <select name="offer_items[${index}][item_type]" class="form-select item-type-select">
                     <option value="product" ${selectedType === "product" ? "selected" : ""}>Product</option>
                     <option value="category" ${selectedType === "category" ? "selected" : ""}>Category</option>
                 </select>
             </div>
             <div class="col-md-4">
-                <select name="offer_items[][item_id]" class="form-select tom-select-ajax" data-type="${selectedType}">
+                <select name="offer_items[${index}][item_id]" class="form-select tom-select-ajax" data-type="${selectedType}">
                     ${id ? `<option value="${id}" selected>${selectedItemTitle}</option>` : ""}
                 </select>
             </div>
@@ -133,23 +163,27 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // initialize existing rows
+    // initialize existing rows and reindex names to indexed format
     offerItemsContainer
         ?.querySelectorAll(".offer-item-row")
         .forEach(function (row) {
             attachRowEvents(row);
         });
+    reindexOfferItemRows();
 
     addOfferItemBtn?.addEventListener("click", function () {
-        const row = createOfferItemRow();
+        const idx = offerItemRowIndex;
+        const row = createOfferItemRow(idx);
         offerItemsContainer.appendChild(row);
         attachRowEvents(row);
+        reindexOfferItemRows();
     });
 
     // delegate remove
     document.addEventListener("click", function (e) {
         if (e.target && e.target.classList.contains("remove-offer-item")) {
             e.target.closest(".offer-item-row")?.remove();
+            reindexOfferItemRows();
         }
     });
 });

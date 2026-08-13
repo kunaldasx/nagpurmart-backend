@@ -64,7 +64,7 @@
                                                 <input type="text" name="offer_items[][title]" class="form-control" value="{{ $item->title }}" placeholder="Offer Title">
                                             </div>
                                             <div class="col-md-3">
-                                                <select name="offer_items[][type]" class="form-select item-type-select">
+                                                <select name="offer_items[][item_type]" class="form-select item-type-select">
                                                     <option value="product" {{ $item->item_type=='product'?'selected':'' }}>Product</option>
                                                     <option value="category" {{ $item->item_type=='category'?'selected':'' }}>Category</option>
                                                 </select>

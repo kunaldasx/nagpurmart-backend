@@ -80,7 +80,7 @@ class OfferBannerController extends Controller
                     if (empty($title) && empty($itemId)) continue; // skip empty rows
                     $banner->items()->create([
                         'title' => $title ?: null,
-                        'item_type' => $item['type'] ?? null,
+                        'item_type' => $item['item_type'] ?? null,
                         'item_id' => $itemId ?: null,
                     ]);
                 }
@@ -94,7 +94,7 @@ class OfferBannerController extends Controller
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => __('labels.offer_banner_created_successfully'), 'data' => $banner], 201);
+            return response()->json(['success' => true, 'message' => __('labels.offer_banner_created_successfully'), 'data' => ['id' => $banner->id, 'redirect_url' => route('admin.offer-banners.index')]], 201);
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json(['success' => false, 'message' => __('labels.failed_to_create_offer_banner'), 'error' => $e->getMessage()], 500);
@@ -134,7 +134,7 @@ class OfferBannerController extends Controller
                     if (empty($title) && empty($itemId)) continue; // skip empty rows
                     $banner->items()->create([
                         'title' => $title ?: null,
-                        'item_type' => $item['type'] ?? null,
+                        'item_type' => $item['item_type'] ?? null,
                         'item_id' => $itemId ?: null,
                     ]);
                 }
@@ -150,7 +150,7 @@ class OfferBannerController extends Controller
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => __('labels.offer_banner_updated_successfully'), 'data' => $banner]);
+            return response()->json(['success' => true, 'message' => __('labels.offer_banner_updated_successfully'), 'data' => ['id' => $banner->id, 'redirect_url' => route('admin.offer-banners.index')]]);
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json(['success' => false, 'message' => __('labels.failed_to_update_offer_banner'), 'error' => $e->getMessage()], 500);
