@@ -75,92 +75,62 @@ document.addEventListener("DOMContentLoaded", function () {
                 </select>
             </div>
             <div class="col-md-4">
-                <input type="text" class="form-control ajax-search-input" placeholder="Search..." value="${selectedItemTitle}">
-                <input type="hidden" name="offer_items[][item_id]" value="${id}">
+                <select name="offer_items[][item_id]" class="form-select tom-select-ajax" data-type="${selectedType}">
+                    ${id ? `<option value="${id}" selected>${selectedItemTitle}</option>` : ""}
+                </select>
             </div>
             <div class="col-md-1"><button type="button" class="btn btn-danger remove-offer-item">x</button></div>
         `;
         return row;
     }
 
-    // Attach events to a row (search input, type select)
+    // Attach events to a row: initialize TomSelect and wire type change
     function attachRowEvents(row) {
-        const input = row.querySelector(".ajax-search-input");
-        const hidden = row.querySelector(
-            'input[type="hidden"][name$="[item_id]"]',
-        );
         const typeSelect = row.querySelector(".item-type-select");
+        const selectEl = row.querySelector(".tom-select-ajax");
 
-        let suggestionBox = null;
-        const debounce = (fn, delay) => {
-            let t;
-            return function () {
-                clearTimeout(t);
-                t = setTimeout(() => fn.apply(this, arguments), delay);
-            };
-        };
+        if (!selectEl) return;
 
-        function closeSuggestions() {
-            if (suggestionBox && suggestionBox.parentElement)
-                suggestionBox.remove();
-            suggestionBox = null;
-        }
-
-        function showSuggestions(items) {
-            closeSuggestions();
-            suggestionBox = document.createElement("div");
-            suggestionBox.className = "list-group position-relative";
-            suggestionBox.style.zIndex = 9999;
-            items.forEach((it) => {
-                const el = document.createElement("button");
-                el.type = "button";
-                el.className = "list-group-item list-group-item-action";
-                el.textContent = it.text || it.title || it.value;
-                el.dataset.id = it.id || it.value || it.id;
-                el.addEventListener("click", function () {
-                    hidden.value = this.dataset.id;
-                    display.value = this.textContent;
-                    input.value = this.textContent;
-                    closeSuggestions();
-                });
-                suggestionBox.appendChild(el);
+        if (window.TomSelect && !selectEl.tomselect) {
+            new TomSelect(selectEl, {
+                copyClassesToDropdown: false,
+                dropdownParent: "body",
+                controlInput: "<input>",
+                valueField: "value",
+                labelField: "text",
+                searchField: "text",
+                render: {
+                    option: function (data, escape) {
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                    item: function (data, escape) {
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                },
+                load: function (query, callback) {
+                    if (!query.length) return callback();
+                    const type =
+                        selectEl.getAttribute("data-type") ||
+                        (typeSelect ? typeSelect.value : "product");
+                    const url =
+                        type === "product"
+                            ? "/admin/products/search"
+                            : "/admin/categories/search";
+                    fetch(url + "?search=" + encodeURIComponent(query))
+                        .then((r) => r.json())
+                        .then((json) => callback(json))
+                        .catch(() => callback());
+                },
             });
-            input.parentNode.appendChild(suggestionBox);
+
+            typeSelect?.addEventListener("change", function () {
+                selectEl.setAttribute("data-type", this.value);
+                try {
+                    selectEl.tomselect.clearOptions();
+                    selectEl.tomselect.clear();
+                } catch (e) {}
+            });
         }
-
-        const doSearch = debounce(function () {
-            const q = input.value.trim();
-            hidden.value = "";
-            display.value = "";
-            if (!q) {
-                closeSuggestions();
-                return;
-            }
-            const type = typeSelect.value || "product";
-            const url =
-                type === "product"
-                    ? "/admin/products/search"
-                    : "/admin/categories/search";
-            fetch(url + "?search=" + encodeURIComponent(q))
-                .then((r) => r.json())
-                .then((data) => {
-                    if (Array.isArray(data) && data.length)
-                        showSuggestions(data);
-                    else closeSuggestions();
-                })
-                .catch(() => closeSuggestions());
-        }, 300);
-
-        input.addEventListener("input", doSearch);
-        input.addEventListener("blur", function () {
-            setTimeout(closeSuggestions, 200);
-        });
-
-        typeSelect.addEventListener("change", function () {
-            // clear selection when type changes
-            hidden.value = "";
-            input.value = "";
-        });
     }
 
     // initialize existing rows

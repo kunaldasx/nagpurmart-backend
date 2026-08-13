@@ -1,16 +1,20 @@
-const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-const panel = document.getElementById('panel') ? document.getElementById('panel').getAttribute('data-panel') : 'admin';
+const csrfToken = document
+    .querySelector('meta[name="csrf-token"]')
+    .getAttribute("content");
+const panel = document.getElementById("panel")
+    ? document.getElementById("panel").getAttribute("data-panel")
+    : "admin";
 
 const root = getComputedStyle(document.documentElement);
-const primaryColor = root.getPropertyValue('--tblr-primary').trim();
+const primaryColor = root.getPropertyValue("--tblr-primary").trim();
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('form.form-submit').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form.form-submit").forEach(function (form) {
+        form.addEventListener("submit", function (e) {
             e.preventDefault();
 
-            const action = form.getAttribute('action');
-            const method = (form.getAttribute('method') || 'GET').toUpperCase();
+            const action = form.getAttribute("action");
+            const method = (form.getAttribute("method") || "GET").toUpperCase();
             const formData = new FormData(form);
             const submitButton = form.querySelector('button[type="submit"]');
             submitButton.disabled = true;
@@ -19,21 +23,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Prepare headers
             const headers = {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
+                "X-Requested-With": "XMLHttpRequest",
+                Accept: "application/json",
             };
 
             // Prepare axios config
             const config = {
                 method: method,
                 url: action,
-                headers: headers
+                headers: headers,
             };
 
-            if (method === 'GET') {
+            if (method === "GET") {
                 // For GET, append form data as query params
                 const params = new URLSearchParams(formData).toString();
-                config.url = params ? `${action}${action.includes('?') ? '&' : '?'}${params}` : action;
+                config.url = params
+                    ? `${action}${action.includes("?") ? "&" : "?"}${params}`
+                    : action;
             } else {
                 config.data = formData;
             }
@@ -47,12 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.success === false) {
                         return Toast.fire({
                             icon: "error",
-                            title: data.message
+                            title: data.message,
                         });
                     }
                     try {
-                        $('.modal').modal('hide');
-                        $('.data-table').DataTable().ajax.reload(null, false);
+                        $(".modal").modal("hide");
+                        $(".data-table").DataTable().ajax.reload(null, false);
                     } catch (e) {
                         console.log(e);
                     }
@@ -60,16 +66,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.data && data.data.redirect_url) {
                         Toast.fire({
                             icon: "success",
-                            title: data.message
+                            title: data.message,
                         });
                         setTimeout(function () {
                             window.location.href = data.data.redirect_url;
-                        }, 2000)
+                        }, 2000);
                         return;
                     }
                     return Toast.fire({
                         icon: "success",
-                        title: data.message
+                        title: data.message,
                     });
                     // Handle success UI update here
                 })
@@ -79,47 +85,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (error.response && error.response.status === 422) {
                         // Handle validation errors
-                        const validationErrors = error.response.data.data || error.response.data.errors;
+                        const validationErrors =
+                            error.response.data.data ||
+                            error.response.data.errors;
                         if (validationErrors) {
                             displayValidationErrors(form, validationErrors);
 
                             // Show toast with first error or generic message
-                            const firstErrorMessage = error.response.data.message ||
+                            const firstErrorMessage =
+                                error.response.data.message ||
                                 Object.values(validationErrors).flat()[0] ||
                                 "Validation failed";
 
                             return Toast.fire({
                                 icon: "error",
-                                title: firstErrorMessage
+                                title: firstErrorMessage,
                             });
                         }
                     }
 
-                    if (error.response && error.response.data && error.response.data.message) {
+                    if (
+                        error.response &&
+                        error.response.data &&
+                        error.response.data.message
+                    ) {
                         return Toast.fire({
                             icon: "error",
-                            title: error.response.data.message
+                            title: error.response.data.message,
                         });
                     } else {
-                        console.error('Error:', error);
+                        console.error("Error:", error);
                         return Toast.fire({
                             icon: "error",
-                            title: "An error occurred while submitting the form."
+                            title: "An error occurred while submitting the form.",
                         });
                     }
-
                 });
         });
     });
-
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-    let loginForm = document.getElementById('login-form');
-    loginForm?.addEventListener('submit', function (e) {
+document.addEventListener("DOMContentLoaded", () => {
+    let loginForm = document.getElementById("login-form");
+    loginForm?.addEventListener("submit", function (e) {
         e.preventDefault();
 
-        const action = loginForm.getAttribute('action');
+        const action = loginForm.getAttribute("action");
         const formData = new FormData(loginForm);
         const submitButton = loginForm.querySelector('button[type="submit"]');
         submitButton.disabled = true;
@@ -127,18 +138,17 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(originalButtonContent);
         submitButton.innerHTML = `<div class="spinner-border text-white me-2" role="status"><span class="visually-hidden">Loading...</span></div> ${originalButtonContent}`;
 
-
         // Prepare headers
         const headers = {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
+            "X-Requested-With": "XMLHttpRequest",
+            Accept: "application/json",
         };
 
         // Prepare axios config
         const config = {
-            method: 'POST',
+            method: "POST",
             url: action,
-            headers: headers
+            headers: headers,
         };
         config.data = formData;
 
@@ -150,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success === false) {
                     return Toast.fire({
                         icon: "error",
-                        title: data.message
+                        title: data.message,
                     });
                 }
                 setTimeout(function () {
@@ -158,40 +168,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 1500);
                 return Toast.fire({
                     icon: "success",
-                    title: data.message
+                    title: data.message,
                 });
                 // Handle success UI update here
             })
             .catch(function (error) {
                 submitButton.disabled = false;
                 submitButton.innerHTML = originalButtonContent;
-                if (error.response && error.response.data && error.response.data.message) {
+                if (
+                    error.response &&
+                    error.response.data &&
+                    error.response.data.message
+                ) {
                     return Toast.fire({
                         icon: "error",
-                        title: error.response.data.message
+                        title: error.response.data.message,
                     });
                 } else {
-                    console.error('Error:', error);
+                    console.error("Error:", error);
                     return Toast.fire({
                         icon: "error",
-                        title: "An error occurred while submitting the form."
+                        title: "An error occurred while submitting the form.",
                     });
                 }
             });
     });
 });
 
-
-$(document).on('hidden.bs.modal', '.modal', function () {
-    const forms = this.querySelectorAll('form.form-submit');
+$(document).on("hidden.bs.modal", ".modal", function () {
+    const forms = this.querySelectorAll("form.form-submit");
     forms.forEach(function (form) {
         clearValidationErrors(form);
     });
 });
 
 // Clear validation errors when modal is shown (optional - for fresh start)
-$(document).on('shown.bs.modal', '.modal', function () {
-    const forms = this.querySelectorAll('form.form-submit');
+$(document).on("shown.bs.modal", ".modal", function () {
+    const forms = this.querySelectorAll("form.form-submit");
     forms.forEach(function (form) {
         clearValidationErrors(form);
     });
@@ -199,44 +212,53 @@ $(document).on('shown.bs.modal', '.modal', function () {
 
 // Function to handle FilePond validation errors
 function handleFilePondValidation(field, filepond, fieldErrors) {
-    const filepond_wrapper = field.closest('.filepond--wrapper') || field.parentNode.querySelector('.filepond--wrapper');
+    const filepond_wrapper =
+        field.closest(".filepond--wrapper") ||
+        field.parentNode.querySelector(".filepond--wrapper");
 
     if (filepond_wrapper) {
         // Add error class to FilePond wrapper
-        filepond_wrapper.classList.add('filepond-error');
+        filepond_wrapper.classList.add("filepond-error");
 
         // Create error message for FilePond
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'invalid-feedback d-block'; // d-block to make it visible
-        errorDiv.innerHTML = Array.isArray(fieldErrors) ? fieldErrors.join('<br>') : fieldErrors;
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "invalid-feedback d-block"; // d-block to make it visible
+        errorDiv.innerHTML = Array.isArray(fieldErrors)
+            ? fieldErrors.join("<br>")
+            : fieldErrors;
 
         // Insert error message after FilePond wrapper
         if (filepond_wrapper.nextSibling) {
-            filepond_wrapper.parentNode.insertBefore(errorDiv, filepond_wrapper.nextSibling);
+            filepond_wrapper.parentNode.insertBefore(
+                errorDiv,
+                filepond_wrapper.nextSibling,
+            );
         } else {
             filepond_wrapper.parentNode.appendChild(errorDiv);
         }
     }
 
     // Also add error styling to the original input (for consistency)
-    field.classList.add('is-invalid');
+    field.classList.add("is-invalid");
 }
 
 // Function to handle standard field validation
 function handleStandardFieldValidation(field, fieldErrors) {
     // Add is-invalid class
-    field.classList.add('is-invalid');
+    field.classList.add("is-invalid");
 
     // Check if error message already exists for this field
-    let existingError = field.parentNode.querySelector('.invalid-feedback');
+    let existingError = field.parentNode.querySelector(".invalid-feedback");
     if (existingError) {
         existingError.remove();
     }
 
     // Create error message element
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'invalid-feedback';
-    errorDiv.innerHTML = Array.isArray(fieldErrors) ? fieldErrors.join('<br>') : fieldErrors;
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "invalid-feedback";
+    errorDiv.innerHTML = Array.isArray(fieldErrors)
+        ? fieldErrors.join("<br>")
+        : fieldErrors;
 
     // Insert error message after the field
     if (field.nextSibling) {
@@ -251,26 +273,27 @@ function clearValidationErrors(form) {
     if (!form) return;
 
     // Remove is-invalid class from all form controls
-    form.querySelectorAll('.is-invalid').forEach(function (element) {
-        element.classList.remove('is-invalid');
+    form.querySelectorAll(".is-invalid").forEach(function (element) {
+        element.classList.remove("is-invalid");
     });
 
     // Remove FilePond error classes
-    form.querySelectorAll('.filepond-error').forEach(function (element) {
-        element.classList.remove('filepond-error');
+    form.querySelectorAll(".filepond-error").forEach(function (element) {
+        element.classList.remove("filepond-error");
     });
 
     // Remove any existing error messages
-    form.querySelectorAll('.invalid-feedback').forEach(function (element) {
+    form.querySelectorAll(".invalid-feedback").forEach(function (element) {
         element.remove();
     });
 
     // Also remove any error messages that might have different classes
-    form.querySelectorAll('.error-message, .field-error, .validation-error').forEach(function (element) {
+    form.querySelectorAll(
+        ".error-message, .field-error, .validation-error",
+    ).forEach(function (element) {
         element.remove();
     });
 }
-
 
 // Enhanced function to display validation errors
 function displayValidationErrors(form, errors) {
@@ -307,97 +330,146 @@ function displayValidationErrors(form, errors) {
     });
 }
 
-document.getElementById('view-category-offcanvas')?.addEventListener('show.bs.offcanvas', function (event) {
-    const triggerButton = event.relatedTarget;
-    const categoryId = triggerButton.getAttribute('data-id');
-    const url = `${base_url}/${panel}/categories/${categoryId}/edit`
+document
+    .getElementById("view-category-offcanvas")
+    ?.addEventListener("show.bs.offcanvas", function (event) {
+        const triggerButton = event.relatedTarget;
+        const categoryId = triggerButton.getAttribute("data-id");
+        const url = `${base_url}/${panel}/categories/${categoryId}/edit`;
 
-    axios.get(url)
-        .then(response => {
-            const data = response.data;
-            if (data.success) {
-                const category = data.data;
+        axios
+            .get(url)
+            .then((response) => {
+                const data = response.data;
+                if (data.success) {
+                    const category = data.data;
 
-                document.getElementById('banner-image').src = category.banner || ''; // Fallback image
-                document.getElementById('card-image').src = category.image || ''; // Fallback image
-                document.getElementById('icon-image').src = category.icon || ''; // Fallback image
-                document.getElementById('active-icon-image').src = category.active_icon || ''; // Fallback image
+                    document.getElementById("banner-image").src =
+                        category.banner || ""; // Fallback image
+                    document.getElementById("card-image").src =
+                        category.image || ""; // Fallback image
+                    document.getElementById("icon-image").src =
+                        category.icon || ""; // Fallback image
+                    document.getElementById("active-icon-image").src =
+                        category.active_icon || ""; // Fallback image
 
-                // Handle background display
-                const backgroundType = category.background_type || 'None';
-                document.getElementById('background-type').textContent = backgroundType;
+                    // Handle background display
+                    const backgroundType = category.background_type || "None";
+                    document.getElementById("background-type").textContent =
+                        backgroundType;
 
-                const backgroundColorDisplay = document.getElementById('background-color-display');
-                const backgroundImageDisplay = document.getElementById('background-image-display');
+                    const backgroundColorDisplay = document.getElementById(
+                        "background-color-display",
+                    );
+                    const backgroundImageDisplay = document.getElementById(
+                        "background-image-display",
+                    );
 
-                if (backgroundType === 'color' && category.background_color) {
-                    backgroundColorDisplay.style.display = 'block';
-                    backgroundImageDisplay.style.display = 'none';
-                    document.getElementById('background-color-value').textContent = category.background_color;
-                    document.getElementById('background-color-preview').style.backgroundColor = category.background_color;
-                } else if (backgroundType === 'image' && category.background_image) {
-                    backgroundColorDisplay.style.display = 'none';
-                    backgroundImageDisplay.style.display = 'block';
-                    document.getElementById('background-image-preview').src = category.background_image;
+                    if (
+                        backgroundType === "color" &&
+                        category.background_color
+                    ) {
+                        backgroundColorDisplay.style.display = "block";
+                        backgroundImageDisplay.style.display = "none";
+                        document.getElementById(
+                            "background-color-value",
+                        ).textContent = category.background_color;
+                        document.getElementById(
+                            "background-color-preview",
+                        ).style.backgroundColor = category.background_color;
+                    } else if (
+                        backgroundType === "image" &&
+                        category.background_image
+                    ) {
+                        backgroundColorDisplay.style.display = "none";
+                        backgroundImageDisplay.style.display = "block";
+                        document.getElementById(
+                            "background-image-preview",
+                        ).src = category.background_image;
+                    } else {
+                        backgroundColorDisplay.style.display = "none";
+                        backgroundImageDisplay.style.display = "none";
+                    }
+
+                    // Handle font color display
+                    if (category.font_color) {
+                        document.getElementById(
+                            "font-color-value",
+                        ).textContent = category.font_color;
+                        document.getElementById(
+                            "font-color-preview",
+                        ).style.backgroundColor = category.font_color;
+                    } else {
+                        document.getElementById(
+                            "font-color-value",
+                        ).textContent = "Not set";
+                        document.getElementById(
+                            "font-color-preview",
+                        ).style.backgroundColor = "#ffffff";
+                    }
+
+                    document.getElementById("category-name").textContent =
+                        category.title || "";
+                    document.getElementById(
+                        "category-description",
+                    ).textContent =
+                        category.description || "No description available";
+                    document.getElementById("category-status").textContent =
+                        category.status || "active";
+                    document.getElementById("category-status").className =
+                        `badge ${category.status === "active" ? "bg-green-lt" : "bg-red-lt"} text-uppercase fw-medium`;
+                    document.getElementById("parent-category").textContent =
+                        category.parent !== null
+                            ? category.parent.title
+                            : "None";
+                    document.getElementById("category-commission").textContent =
+                        category.commission || "0";
                 } else {
-                    backgroundColorDisplay.style.display = 'none';
-                    backgroundImageDisplay.style.display = 'none';
+                    throw new Error("Failed to fetch valid category data");
                 }
+            })
+            .catch((error) => {
+                console.error("Error fetching category data:", error);
+                document.getElementById("banner-image").src = "";
+                document.getElementById("card-image").src = "";
+                document.getElementById("icon-image").src = "";
+                document.getElementById("active-icon-image").src = "";
+                document.getElementById("background-type").textContent = "None";
+                document.getElementById(
+                    "background-color-display",
+                ).style.display = "none";
+                document.getElementById(
+                    "background-image-display",
+                ).style.display = "none";
+                document.getElementById("category-name").textContent = "";
+                document.getElementById("category-description").textContent =
+                    "Failed to load category data.";
+                document.getElementById("category-status").textContent = "";
+                document.getElementById("category-status").className =
+                    "badge bg-red-lt text-uppercase fw-medium";
+                document.getElementById("parent-category").textContent = "None";
+                document.getElementById("category-commission").textContent =
+                    "0";
+            });
+    });
 
-                // Handle font color display
-                if (category.font_color) {
-                    document.getElementById('font-color-value').textContent = category.font_color;
-                    document.getElementById('font-color-preview').style.backgroundColor = category.font_color;
-                } else {
-                    document.getElementById('font-color-value').textContent = 'Not set';
-                    document.getElementById('font-color-preview').style.backgroundColor = '#ffffff';
-                }
-
-                document.getElementById('category-name').textContent = category.title || '';
-                document.getElementById('category-description').textContent = category.description || 'No description available';
-                document.getElementById('category-status').textContent = category.status || 'active';
-                document.getElementById('category-status').className = `badge ${category.status === 'active' ? 'bg-green-lt' : 'bg-red-lt'} text-uppercase fw-medium`;
-                document.getElementById('parent-category').textContent = category.parent !== null ? category.parent.title : 'None';
-                document.getElementById('category-commission').textContent = category.commission || '0';
-            } else {
-                throw new Error('Failed to fetch valid category data');
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching category data:', error);
-            document.getElementById('banner-image').src = '';
-            document.getElementById('card-image').src = '';
-            document.getElementById('icon-image').src = '';
-            document.getElementById('active-icon-image').src = '';
-            document.getElementById('background-type').textContent = 'None';
-            document.getElementById('background-color-display').style.display = 'none';
-            document.getElementById('background-image-display').style.display = 'none';
-            document.getElementById('category-name').textContent = '';
-            document.getElementById('category-description').textContent = 'Failed to load category data.';
-            document.getElementById('category-status').textContent = '';
-            document.getElementById('category-status').className = 'badge bg-red-lt text-uppercase fw-medium';
-            document.getElementById('parent-category').textContent = 'None';
-            document.getElementById('category-commission').textContent = '0';
-        });
-});
-
-
-document.querySelectorAll('.select-all')?.forEach(selectAllCheckbox => {
-    selectAllCheckbox.addEventListener('change', function () {
-        const groupId = this.getAttribute('data-group-id');
-        const checkboxes = document.querySelectorAll(`.permission-checkbox[data-group-id="${groupId}"]`);
-        checkboxes.forEach(checkbox => {
+document.querySelectorAll(".select-all")?.forEach((selectAllCheckbox) => {
+    selectAllCheckbox.addEventListener("change", function () {
+        const groupId = this.getAttribute("data-group-id");
+        const checkboxes = document.querySelectorAll(
+            `.permission-checkbox[data-group-id="${groupId}"]`,
+        );
+        checkboxes.forEach((checkbox) => {
             checkbox.checked = selectAllCheckbox.checked;
         });
     });
 });
 
-
 function handleDelete(event, selector, urlPrefix, confirmationText) {
     const deleteBtn = event.target.closest(selector);
     if (!deleteBtn) return;
 
-    const id = deleteBtn.getAttribute('data-id');
+    const id = deleteBtn.getAttribute("data-id");
     Swal.fire({
         title: "Are you sure?",
         html: confirmationText,
@@ -405,57 +477,61 @@ function handleDelete(event, selector, urlPrefix, confirmationText) {
         showCancelButton: true,
         confirmButtonColor: primaryColor,
         cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, delete it!"
+        confirmButtonText: "Yes, delete it!",
     }).then((result) => {
         if (result.isConfirmed) {
             const url = `${base_url}${urlPrefix}${id}`;
             fetch(url, {
-                method: 'DELETE',
+                method: "DELETE",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                }
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": csrfToken,
+                },
             })
-                .then(response => {
+                .then((response) => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        throw new Error("Network response was not ok");
                     }
                     return response.json();
                 })
-                .then(data => {
+                .then((data) => {
                     if (data.success) {
-                        $('.data-table').DataTable().ajax.reload(null, false);
+                        $(".data-table").DataTable().ajax.reload(null, false);
                         if (data.data && data.data.redirect_url) {
                             setTimeout(function () {
                                 window.location.href = data.data.redirect_url;
-                            }, 2000)
+                            }, 2000);
                         }
                         return Swal.fire("Deleted!", data.message, "success");
                     } else {
                         return Swal.fire("Error!", data.message, "error");
                     }
                 })
-                .catch(error => {
-                    Swal.fire("Error!", "There was a problem deleting the item.", "error");
+                .catch((error) => {
+                    Swal.fire(
+                        "Error!",
+                        "There was a problem deleting the item.",
+                        "error",
+                    );
                 });
         }
     });
 }
 
-
 document.addEventListener("DOMContentLoaded", function () {
-
-    const button = document.querySelector('.password-button');
+    const button = document.querySelector(".password-button");
     const input = document.querySelector('.input-group input[name="password"]');
     if (!button || !input) return;
-    button.addEventListener('click', function () {
+    button.addEventListener("click", function () {
         const digits = "0123456789";
         const letters = "abcdefghijklmnopqrstuvwxyz";
         const specials = "!@#$%^&*()_+-=";
         const allChars = digits + letters + specials;
-        let password = '';
+        let password = "";
         for (let i = 0; i < 8; i++) {
-            password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+            password += allChars.charAt(
+                Math.floor(Math.random() * allChars.length),
+            );
         }
         input.value = password;
     });
@@ -466,8 +542,12 @@ document.addEventListener("DOMContentLoaded", function () {
 // password toggle
 let passwordInput = document.getElementById("password");
 let passwordToggle = document.getElementById("password-toggle");
-let passwordConfirmationInput = document.getElementById("password_confirmation");
-let passwordConfirmationToggle = document.getElementById("password-confirmation-toggle");
+let passwordConfirmationInput = document.getElementById(
+    "password_confirmation",
+);
+let passwordConfirmationToggle = document.getElementById(
+    "password-confirmation-toggle",
+);
 passwordToggle?.addEventListener("click", function () {
     if (passwordInput.type === "password") {
         passwordInput.type = "text";
@@ -476,7 +556,7 @@ passwordToggle?.addEventListener("click", function () {
         passwordInput.type = "password";
         passwordToggle.textContent = "Show";
     }
-})
+});
 passwordConfirmationToggle?.addEventListener("click", function () {
     if (passwordConfirmationInput.type === "password") {
         passwordConfirmationInput.type = "text";
@@ -485,112 +565,169 @@ passwordConfirmationToggle?.addEventListener("click", function () {
         passwordConfirmationInput.type = "password";
         passwordConfirmationToggle.textContent = "Show";
     }
-})
+});
 
-
-document.addEventListener('click', function (event) {
+document.addEventListener("click", function (event) {
     // soft Delete seller
-    handleDelete(event, '.delete-seller', `/${panel}/sellers/`, 'You are about to delete this Seller. It will be soft deleted.');
+    handleDelete(
+        event,
+        ".delete-seller",
+        `/${panel}/sellers/`,
+        "You are about to delete this Seller. It will be soft deleted.",
+    );
 
     // Delete tax rate
-    handleDelete(event, '.delete-tax-rate', `/${panel}/tax-rates/`, 'You are about to delete this Tax Rate.');
+    handleDelete(
+        event,
+        ".delete-tax-rate",
+        `/${panel}/tax-rates/`,
+        "You are about to delete this Tax Rate.",
+    );
 
     // Delete tax class
-    handleDelete(event, '.delete-tax-class', `/${panel}/tax-classes/`, 'You are about to permanently delete this Tax Group.');
+    handleDelete(
+        event,
+        ".delete-tax-class",
+        `/${panel}/tax-classes/`,
+        "You are about to permanently delete this Tax Group.",
+    );
 
     // Delete role
-    handleDelete(event, '.delete-role', `/${panel}/roles/`, 'You are about to delete this Role.');
+    handleDelete(
+        event,
+        ".delete-role",
+        `/${panel}/roles/`,
+        "You are about to delete this Role.",
+    );
 
     // Delete system user
-    handleDelete(event, '.delete-system-user', `/${panel}/system-users/`, 'You are about to delete this System User.');
+    handleDelete(
+        event,
+        ".delete-system-user",
+        `/${panel}/system-users/`,
+        "You are about to delete this System User.",
+    );
 
     // delete soft store
-    handleDelete(event, '.delete-store', `/${panel}/stores/`, 'You are about to delete this Store.');
+    handleDelete(
+        event,
+        ".delete-store",
+        `/${panel}/stores/`,
+        "You are about to delete this Store.",
+    );
 
-    handleDelete(event, '.delete-subscription-plan', `/${panel}/subscription-plans/`, 'You are about to delete this Plan.');
+    handleDelete(
+        event,
+        ".delete-subscription-plan",
+        `/${panel}/subscription-plans/`,
+        "You are about to delete this Plan.",
+    );
+    // Offer Banners
+    handleDelete(
+        event,
+        ".delete-offer-banner",
+        `/${panel}/offer-banners/`,
+        "You are about to delete this Offer Banner.",
+    );
 });
-document.addEventListener('show.bs.modal', function (event) {
-    if (event.target.id === 'tax-rate-modal') {
+document.addEventListener("show.bs.modal", function (event) {
+    if (event.target.id === "tax-rate-modal") {
         const triggerButton = event.relatedTarget;
-        const taxRateId = triggerButton.getAttribute('data-id');
+        const taxRateId = triggerButton.getAttribute("data-id");
         let url = `${base_url}/${panel}/tax-rates/${taxRateId}/edit`;
 
-        const form = document.querySelector('.form-submit');
-        const modalTitle = document.querySelector('#tax-rate-modal .modal-title');
-        const submitButton = document.querySelector('#tax-rate-modal button[type="submit"]');
+        const form = document.querySelector(".form-submit");
+        const modalTitle = document.querySelector(
+            "#tax-rate-modal .modal-title",
+        );
+        const submitButton = document.querySelector(
+            '#tax-rate-modal button[type="submit"]',
+        );
 
         if (taxRateId) {
-
-            fetch(url, {method: 'GET'})
-                .then(response => response.json())
-                .then(responseData => {
+            fetch(url, { method: "GET" })
+                .then((response) => response.json())
+                .then((responseData) => {
                     const data = responseData.data;
                     // Fill form fields
-                    form.querySelector('input[name="title"]').value = data.title || '';
-                    form.querySelector('input[name="rate"]').value = data.rate || '';
+                    form.querySelector('input[name="title"]').value =
+                        data.title || "";
+                    form.querySelector('input[name="rate"]').value =
+                        data.rate || "";
 
                     // Change form action to update route
-                    form.setAttribute('action', base_url + `/admin/tax-rates/${taxRateId}`);
+                    form.setAttribute(
+                        "action",
+                        base_url + `/admin/tax-rates/${taxRateId}`,
+                    );
 
                     // Update modal title and button
-                    modalTitle.textContent = 'Edit Tax Rate';
-                    submitButton.textContent = 'Update Tax Rate';
+                    modalTitle.textContent = "Edit Tax Rate";
+                    submitButton.textContent = "Update Tax Rate";
                 })
-                .catch(error => {
-                    console.error('AJAX Error:', error);
+                .catch((error) => {
+                    console.error("AJAX Error:", error);
                 });
         } else {
-
             if (form) form.reset();
             // Remove _method input if it exists
             const methodInput = form.querySelector('input[name="_method"]');
             if (methodInput) methodInput.parentNode.removeChild(methodInput);
 
             // Set action for create
-            form.setAttribute('action', `${base_url}/${panel}/tax-rates`);
-            modalTitle.textContent = 'Add Tax Rate';
-            submitButton.textContent = 'Add Tax Rate';
+            form.setAttribute("action", `${base_url}/${panel}/tax-rates`);
+            modalTitle.textContent = "Add Tax Rate";
+            submitButton.textContent = "Add Tax Rate";
         }
     }
-    if (event.target.id === 'tax-class-modal') {
+    if (event.target.id === "tax-class-modal") {
         const triggerButton = event.relatedTarget;
-        const taxClassId = triggerButton.getAttribute('data-id');
+        const taxClassId = triggerButton.getAttribute("data-id");
         let url = `${base_url}/${panel}/tax-classes/${taxClassId}/edit`;
 
-        const form = document.querySelector('.tax-class-form');
-        const modalTitle = document.querySelector('#tax-class-modal .modal-title');
-        const submitButton = document.querySelector('#tax-class-modal button[type="submit"]');
-        const selectElement = document.getElementById('select-tax-rate');
+        const form = document.querySelector(".tax-class-form");
+        const modalTitle = document.querySelector(
+            "#tax-class-modal .modal-title",
+        );
+        const submitButton = document.querySelector(
+            '#tax-class-modal button[type="submit"]',
+        );
+        const selectElement = document.getElementById("select-tax-rate");
         let tomSelect = selectElement.tomselect;
         if (taxClassId) {
-
-            fetch(url, {method: 'GET'})
-                .then(response => response.json())
-                .then(responseData => {
+            fetch(url, { method: "GET" })
+                .then((response) => response.json())
+                .then((responseData) => {
                     const data = responseData.data;
                     // Fill form fields
-                    document.getElementById('class-title').value = data.title || '';
+                    document.getElementById("class-title").value =
+                        data.title || "";
                     if (!tomSelect) {
                         tomSelect = new TomSelect(selectElement);
                     }
-                    data.tax_rates.forEach(item => {
-                        tomSelect.addOption({value: item.id, title: item.title});
+                    data.tax_rates.forEach((item) => {
+                        tomSelect.addOption({
+                            value: item.id,
+                            title: item.title,
+                        });
                     });
-// Optional: set value(s)
-                    const allIds = data.tax_rates.map(item => item.id);
+                    // Optional: set value(s)
+                    const allIds = data.tax_rates.map((item) => item.id);
                     tomSelect.setValue(allIds);
                     // Change form action to update route
-                    form.setAttribute('action', base_url + `/admin/tax-classes/${taxClassId}`);
+                    form.setAttribute(
+                        "action",
+                        base_url + `/admin/tax-classes/${taxClassId}`,
+                    );
 
                     // Update modal title and button
-                    modalTitle.textContent = 'Edit Tax Class';
-                    submitButton.textContent = 'Update Tax Class';
+                    modalTitle.textContent = "Edit Tax Class";
+                    submitButton.textContent = "Update Tax Class";
                 })
-                .catch(error => {
-                    console.error('AJAX Error:', error);
+                .catch((error) => {
+                    console.error("AJAX Error:", error);
                 });
         } else {
-
             if (form) form.reset();
             // Remove _method input if it exists
             const methodInput = form.querySelector('input[name="_method"]');
@@ -599,151 +736,177 @@ document.addEventListener('show.bs.modal', function (event) {
             tomSelect.clear();
 
             // Set action for create
-            form.setAttribute('action', `${base_url}/${panel}/tax-classes`);
-            modalTitle.textContent = 'Create Tax Class';
-            submitButton.textContent = 'Create Tax Class';
+            form.setAttribute("action", `${base_url}/${panel}/tax-classes`);
+            modalTitle.textContent = "Create Tax Class";
+            submitButton.textContent = "Create Tax Class";
         }
     }
-    if (event.target.id === 'role-modal') {
+    if (event.target.id === "role-modal") {
         const triggerButton = event.relatedTarget;
-        const roleId = triggerButton.getAttribute('data-id');
+        const roleId = triggerButton.getAttribute("data-id");
         let url = `${base_url}/${panel}/roles/${roleId}/edit`;
 
-        const form = document.querySelector('.form-submit');
-        const modalTitle = document.querySelector('#role-modal .modal-title');
-        const submitButton = document.querySelector('#role-modal button[type="submit"]');
+        const form = document.querySelector(".form-submit");
+        const modalTitle = document.querySelector("#role-modal .modal-title");
+        const submitButton = document.querySelector(
+            '#role-modal button[type="submit"]',
+        );
         if (roleId) {
-
-            fetch(url, {method: 'GET'})
-                .then(response => response.json())
-                .then(responseData => {
+            fetch(url, { method: "GET" })
+                .then((response) => response.json())
+                .then((responseData) => {
                     const data = responseData.data;
                     // Fill form fields
-                    form.querySelector('input[name="name"]').value = data.name || '';
-
+                    form.querySelector('input[name="name"]').value =
+                        data.name || "";
 
                     // Change form action to update route
-                    form.setAttribute('action', `${base_url}/${panel}/roles/${roleId}`);
+                    form.setAttribute(
+                        "action",
+                        `${base_url}/${panel}/roles/${roleId}`,
+                    );
 
                     // Update modal title and button
-                    modalTitle.textContent = 'Edit Role';
-                    submitButton.textContent = 'Update Role';
+                    modalTitle.textContent = "Edit Role";
+                    submitButton.textContent = "Update Role";
                 })
-                .catch(error => {
-                    console.error('AJAX Error:', error);
+                .catch((error) => {
+                    console.error("AJAX Error:", error);
                 });
         } else {
-
             if (form) form.reset();
-            form.setAttribute('action', `${base_url}/${panel}/roles`);
+            form.setAttribute("action", `${base_url}/${panel}/roles`);
             // Remove _method input if it exists
             const methodInput = form.querySelector('input[name="_method"]');
             if (methodInput) methodInput.parentNode.removeChild(methodInput);
 
             // Set action for create
-            modalTitle.textContent = 'Add New Role';
-            submitButton.textContent = 'Add new Role';
+            modalTitle.textContent = "Add New Role";
+            submitButton.textContent = "Add new Role";
         }
     }
-    if (event.target.id === 'system-user-modal') {
+    if (event.target.id === "system-user-modal") {
         const triggerButton = event.relatedTarget;
-        const userId = triggerButton.getAttribute('data-id');
+        const userId = triggerButton.getAttribute("data-id");
         let url = `${base_url}/${panel}/system-users/${userId}/edit`;
 
-        const form = document.querySelector('.form-submit');
-        const modalTitle = document.querySelector('#system-user-modal .modal-title');
-        const submitButton = document.querySelector('#system-user-modal button[type="submit"]');
-        const selectElement = document.getElementById('select-roles');
+        const form = document.querySelector(".form-submit");
+        const modalTitle = document.querySelector(
+            "#system-user-modal .modal-title",
+        );
+        const submitButton = document.querySelector(
+            '#system-user-modal button[type="submit"]',
+        );
+        const selectElement = document.getElementById("select-roles");
         let selectRoles = selectElement.tomselect;
 
         if (userId) {
-
-            fetch(url, {method: 'GET'})
-                .then(response => response.json())
-                .then(responseData => {
+            fetch(url, { method: "GET" })
+                .then((response) => response.json())
+                .then((responseData) => {
                     const data = responseData.data;
                     // Fill form fields
-                    form.querySelector('input[name="name"]').value = data.user.name || '';
-                    form.querySelector('input[name="email"]').value = data.user.email || '';
-                    form.querySelector('input[name="mobile"]').value = data.user.mobile || '';
+                    form.querySelector('input[name="name"]').value =
+                        data.user.name || "";
+                    form.querySelector('input[name="email"]').value =
+                        data.user.email || "";
+                    form.querySelector('input[name="mobile"]').value =
+                        data.user.mobile || "";
                     form.querySelector('input[name="email"]').disabled = true;
                     let roles = [];
-                    data.user.roles.forEach(item => {
+                    data.user.roles.forEach((item) => {
                         roles.push(item.name);
-                    })
+                    });
                     selectRoles.setValue(roles);
 
-
                     // Change form action to update route
-                    form.setAttribute('action', `${base_url}/${panel}/system-users/${userId}`);
+                    form.setAttribute(
+                        "action",
+                        `${base_url}/${panel}/system-users/${userId}`,
+                    );
 
                     // Update modal title and button
-                    modalTitle.textContent = 'Edit User';
-                    submitButton.textContent = 'Update User';
+                    modalTitle.textContent = "Edit User";
+                    submitButton.textContent = "Update User";
                 })
-                .catch(error => {
-                    console.error('AJAX Error:', error);
+                .catch((error) => {
+                    console.error("AJAX Error:", error);
                 });
         } else {
-
             if (form) form.reset();
-            form.querySelector('input[name="name"]').value = '';
-            form.querySelector('input[name="mobile"]').value = '';
-            form.querySelector('input[name="email"]').value = '';
+            form.querySelector('input[name="name"]').value = "";
+            form.querySelector('input[name="mobile"]').value = "";
+            form.querySelector('input[name="email"]').value = "";
             form.querySelector('input[name="email"]').disabled = false;
             // Remove _method input if it exists
             const methodInput = form.querySelector('input[name="_method"]');
             if (methodInput) methodInput.parentNode.removeChild(methodInput);
             selectRoles.clear();
             // Set action for create
-            form.setAttribute('action', `${base_url}/${panel}/system-users`);
-            modalTitle.textContent = 'Add New User';
-            submitButton.textContent = 'Add new User';
+            form.setAttribute("action", `${base_url}/${panel}/system-users`);
+            modalTitle.textContent = "Add New User";
+            submitButton.textContent = "Add new User";
         }
     }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
     let selectCountries = document.getElementById("select-countries");
-    let selectedCountry = document.getElementById('selected-country');
+    let selectedCountry = document.getElementById("selected-country");
 
     if (selectCountries) {
         var el;
         window.TomSelect &&
-        new TomSelect((el = document.getElementById("select-countries")), {
-            copyClassesToDropdown: false,
-            dropdownParent: "body",
-            controlInput: "<input>",
-            valueField: "value",
-            labelField: "text",
-            searchField: "text",
-            placeholder: "Search for a country",
-            render: {
-                item: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+            new TomSelect((el = document.getElementById("select-countries")), {
+                copyClassesToDropdown: false,
+                dropdownParent: "body",
+                controlInput: "<input>",
+                valueField: "value",
+                labelField: "text",
+                searchField: "text",
+                placeholder: "Search for a country",
+                render: {
+                    item: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                    option: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
                 },
-                option: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+                load: function (query, callback) {
+                    if (!query.length) return callback();
+                    let url =
+                        base_url +
+                        "/countries?search=" +
+                        encodeURIComponent(query);
+                    fetch(url)
+                        .then((response) => response.json())
+                        .then((json) => {
+                            callback(json);
+                        })
+                        .catch(() => {
+                            callback();
+                        });
                 },
-            },
-            load: function (query, callback) {
-                if (!query.length) return callback();
-                let url = base_url + "/countries?search=" + encodeURIComponent(query);
-                fetch(url)
-                    .then(response => response.json())
-                    .then(json => {
-                        callback(json);
-                    }).catch(() => {
-                    callback();
-                });
-            }
-        });
+            });
         if (selectedCountry && selectedCountry.value) {
             let parsed;
             try {
@@ -756,48 +919,68 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     let selectCurrency = document.getElementById("select-currency");
-    let selectedCurrency = document.getElementById('selected-currency');
+    let selectedCurrency = document.getElementById("selected-currency");
 
     if (selectCurrency) {
         var el;
         window.TomSelect &&
-        new TomSelect((el = document.getElementById("select-currency")), {
-            copyClassesToDropdown: false,
-            dropdownParent: "body",
-            controlInput: "<input>",
-            valueField: "value",
-            labelField: "text",
-            searchField: "text",
-            placeholder: "USD, EUR, INR, etc.",
-            render: {
-                item: function (data, escape) {
-                    document.getElementById('currency-symbol').value = data.currency_symbol;
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+            new TomSelect((el = document.getElementById("select-currency")), {
+                copyClassesToDropdown: false,
+                dropdownParent: "body",
+                controlInput: "<input>",
+                valueField: "value",
+                labelField: "text",
+                searchField: "text",
+                placeholder: "USD, EUR, INR, etc.",
+                render: {
+                    item: function (data, escape) {
+                        document.getElementById("currency-symbol").value =
+                            data.currency_symbol;
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                    option: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
                 },
-                option: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+                load: function (query, callback) {
+                    if (!query.length) return callback();
+                    let url =
+                        base_url +
+                        "/currency?search=" +
+                        encodeURIComponent(query);
+                    axios
+                        .get(url)
+                        .then((response) => {
+                            callback(response.data);
+                        })
+                        .catch(() => {
+                            callback();
+                        });
                 },
-            },
-            load: function (query, callback) {
-                if (!query.length) return callback();
-                let url = base_url + "/currency?search=" + encodeURIComponent(query);
-                axios.get(url)
-                    .then(response => {
-                        callback(response.data);
-                    })
-                    .catch(() => {
-                        callback();
-                    })
-            }
-        });
+            });
         if (selectedCurrency && selectedCurrency.value) {
-            loadCurrencyAndSetValue(selectCurrency.tomselect, selectedCurrency.value);
+            loadCurrencyAndSetValue(
+                selectCurrency.tomselect,
+                selectedCurrency.value,
+            );
         }
     }
 
@@ -805,46 +988,59 @@ document.addEventListener("DOMContentLoaded", function () {
     if (selectSeller) {
         var el;
         window.TomSelect &&
-        new TomSelect((el = document.getElementById('select-seller')), {
-            copyClassesToDropdown: false,
-            dropdownParent: "body",
-            controlInput: "<input>",
-            valueField: "value",
-            labelField: "text",
-            searchField: "text",
-            placeholder: "Search With Seller",
-            render: {
-                item: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+            new TomSelect((el = document.getElementById("select-seller")), {
+                copyClassesToDropdown: false,
+                dropdownParent: "body",
+                controlInput: "<input>",
+                valueField: "value",
+                labelField: "text",
+                searchField: "text",
+                placeholder: "Search With Seller",
+                render: {
+                    item: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                    option: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
                 },
-                option: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+                load: function (query, callback) {
+                    if (!query.length) return callback();
+                    let url = `${base_url}/${panel}/sellers/search?search=${encodeURIComponent(query)}`;
+                    fetch(url)
+                        .then((response) => response.json())
+                        .then((json) => {
+                            callback(json);
+                        })
+                        .catch(() => {
+                            callback();
+                        });
                 },
-            },
-            load: function (query, callback) {
-                if (!query.length) return callback();
-                let url = `${base_url}/${panel}/sellers/search?search=${encodeURIComponent(query)}`;
-                fetch(url)
-                    .then(response => response.json())
-                    .then(json => {
-                        callback(json);
-                    }).catch(() => {
-                    callback();
-                });
-            }
-        });
+            });
 
         // Add event listener for the filter button
-        const btnFilter = document.getElementById('btn-filter');
+        const btnFilter = document.getElementById("btn-filter");
         if (btnFilter) {
-            btnFilter.addEventListener('click', function () {
-                const storesTable = $('#stores-table').DataTable();
+            btnFilter.addEventListener("click", function () {
+                const storesTable = $("#stores-table").DataTable();
                 storesTable.settings()[0].ajax.data = function (d) {
                     const tomSelect = selectSeller.tomselect;
                     if (tomSelect) {
@@ -853,8 +1049,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             d.seller_id = selectedSellerIds;
                         }
                     }
-                    d.visibility_status = $('#visibility-status').val();
-                    d.verification_status = $('#verification-status').val();
+                    d.visibility_status = $("#visibility-status").val();
+                    d.verification_status = $("#verification-status").val();
                 };
                 storesTable.ajax.reload();
             });
@@ -886,7 +1082,9 @@ async function loadCountryAndSetValue(tomSelectInstance, country) {
             let parentOption = tomSelectInstance.options[item];
             if (!parentOption) {
                 try {
-                    const res = await fetch(`${base_url}/countries?find=${item}`);
+                    const res = await fetch(
+                        `${base_url}/countries?find=${item}`,
+                    );
                     const json = await res.json();
                     if (json && json.length) {
                         tomSelectInstance.addOption(json[0]);
@@ -902,7 +1100,9 @@ async function loadCountryAndSetValue(tomSelectInstance, country) {
         let parentOption = tomSelectInstance.options[country];
         if (!parentOption) {
             try {
-                const res = await fetch(`${base_url}/countries?find=${country}`);
+                const res = await fetch(
+                    `${base_url}/countries?find=${country}`,
+                );
                 const json = await res.json();
                 if (json && json.length) {
                     tomSelectInstance.addOption(json[0]);
@@ -956,95 +1156,124 @@ try {
     }
     hugeRTE.init(options);
 } catch (e) {
-    console.log(e)
+    console.log(e);
 }
-
 
 document.addEventListener("DOMContentLoaded", function () {
     let selectCategory = document.getElementById("select-category");
     if (selectCategory) {
         let el;
-        window.TomSelect && new TomSelect((el = document.getElementById('select-category')), {
-            copyClassesToDropdown: false,
-            dropdownParent: "body",
-            controlInput: "<input>",
-            valueField: "value",
-            labelField: "text",
-            searchField: "text",
-            placeholder: "Search Category",
-            render: {
-                item: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    try {
-                        const tree = $('#categories-tree').jstree(true);
-                        if (tree) {
-                            tree.deselect_all();
-                            tree.select_node(data.value);
+        window.TomSelect &&
+            new TomSelect((el = document.getElementById("select-category")), {
+                copyClassesToDropdown: false,
+                dropdownParent: "body",
+                controlInput: "<input>",
+                valueField: "value",
+                labelField: "text",
+                searchField: "text",
+                placeholder: "Search Category",
+                render: {
+                    item: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
                         }
-                    } catch (e) {
-                        console.log("Error selecting node in jstree:", e);
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
-                }, option: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+                        try {
+                            const tree = $("#categories-tree").jstree(true);
+                            if (tree) {
+                                tree.deselect_all();
+                                tree.select_node(data.value);
+                            }
+                        } catch (e) {
+                            console.log("Error selecting node in jstree:", e);
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                    option: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
                 },
-            },
-            load: function (query, callback) {
-                if (!query.length) return callback();
-                let url = `${base_url}/${panel}/categories/search?search=${encodeURIComponent(query)}`;
-                fetch(url)
-                    .then(response => response.json())
-                    .then(json => {
-                        callback(json);
-                    }).catch(() => {
-                    callback();
-                });
-            }
-        });
+                load: function (query, callback) {
+                    if (!query.length) return callback();
+                    let url = `${base_url}/${panel}/categories/search?search=${encodeURIComponent(query)}`;
+                    fetch(url)
+                        .then((response) => response.json())
+                        .then((json) => {
+                            callback(json);
+                        })
+                        .catch(() => {
+                            callback();
+                        });
+                },
+            });
     }
 
     let selectBrand = document.getElementById("select-brand");
-    let selectedBrand = document.getElementById('selected-brand');
+    let selectedBrand = document.getElementById("selected-brand");
     if (selectBrand) {
         let el;
-        window.TomSelect && new TomSelect((el = document.getElementById('select-brand')), {
-            copyClassesToDropdown: false,
-            dropdownParent: "body",
-            controlInput: "<input>",
-            valueField: "value",
-            labelField: "text",
-            searchField: "text",
-            placeholder: "Search Brand",
-            render: {
-                item: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
-                }, option: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+        window.TomSelect &&
+            new TomSelect((el = document.getElementById("select-brand")), {
+                copyClassesToDropdown: false,
+                dropdownParent: "body",
+                controlInput: "<input>",
+                valueField: "value",
+                labelField: "text",
+                searchField: "text",
+                placeholder: "Search Brand",
+                render: {
+                    item: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                    option: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
                 },
-            },
-            load: function (query, callback) {
-                if (!query.length) return callback();
-                let url = `${base_url}/${panel}/brands/search?search=${encodeURIComponent(query)}`;
-                fetch(url)
-                    .then(response => response.json())
-                    .then(json => {
-                        callback(json);
-                    }).catch(() => {
-                    callback();
-                });
-            }
-        });
+                load: function (query, callback) {
+                    if (!query.length) return callback();
+                    let url = `${base_url}/${panel}/brands/search?search=${encodeURIComponent(query)}`;
+                    fetch(url)
+                        .then((response) => response.json())
+                        .then((json) => {
+                            callback(json);
+                        })
+                        .catch(() => {
+                            callback();
+                        });
+                },
+            });
         if (selectedBrand && selectedBrand.value) {
             loadBrandAndSetValue(selectBrand.tomselect, selectedBrand.value);
         }
@@ -1052,85 +1281,116 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let selectTaxGoup = document.getElementById("select-tax-group");
 
-
     if (selectTaxGoup) {
         let el;
-        window.TomSelect && new TomSelect((el = document.getElementById('select-tax-group')), {
-            copyClassesToDropdown: false,
-            dropdownParent: "body",
-            controlInput: "<input>",
-            valueField: "value",
-            labelField: "text",
-            searchField: "text",
-            placeholder: "Search Tax Group",
-            render: {
-                item: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
-                }, option: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+        window.TomSelect &&
+            new TomSelect((el = document.getElementById("select-tax-group")), {
+                copyClassesToDropdown: false,
+                dropdownParent: "body",
+                controlInput: "<input>",
+                valueField: "value",
+                labelField: "text",
+                searchField: "text",
+                placeholder: "Search Tax Group",
+                render: {
+                    item: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                    option: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
                 },
-            },
-            load: function (query, callback) {
-                if (!query.length) return callback();
-                let url = `${base_url}/${panel}/tax-classes/search?search=${encodeURIComponent(query)}`;
-                fetch(url)
-                    .then(response => response.json())
-                    .then(json => {
-                        callback(json);
-                    }).catch(() => {
-                    callback();
-                });
-            }
-        });
+                load: function (query, callback) {
+                    if (!query.length) return callback();
+                    let url = `${base_url}/${panel}/tax-classes/search?search=${encodeURIComponent(query)}`;
+                    fetch(url)
+                        .then((response) => response.json())
+                        .then((json) => {
+                            callback(json);
+                        })
+                        .catch(() => {
+                            callback();
+                        });
+                },
+            });
     }
     let selectProduct = document.getElementById("select-product");
     if (selectProduct) {
         let el;
-        window.TomSelect && new TomSelect((el = document.getElementById('select-product')), {
-            copyClassesToDropdown: false,
-            dropdownParent: "body",
-            controlInput: "<input>",
-            valueField: "value",
-            labelField: "text",
-            searchField: "text",
-            placeholder: "Search Product",
-            render: {
-                item: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
-                }, option: function (data, escape) {
-                    if (data.customProperties) {
-                        return '<div><span class="dropdown-item-indicator">' + data.customProperties + "</span>" + escape(data.text) + "</div>";
-                    }
-                    return "<div>" + escape(data.text) + "</div>";
+        window.TomSelect &&
+            new TomSelect((el = document.getElementById("select-product")), {
+                copyClassesToDropdown: false,
+                dropdownParent: "body",
+                controlInput: "<input>",
+                valueField: "value",
+                labelField: "text",
+                searchField: "text",
+                placeholder: "Search Product",
+                render: {
+                    item: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
+                    option: function (data, escape) {
+                        if (data.customProperties) {
+                            return (
+                                '<div><span class="dropdown-item-indicator">' +
+                                data.customProperties +
+                                "</span>" +
+                                escape(data.text) +
+                                "</div>"
+                            );
+                        }
+                        return "<div>" + escape(data.text) + "</div>";
+                    },
                 },
-            },
-            load: function (query, callback) {
-                if (!query.length) return callback();
-                let url = `${base_url}/${panel}/products/search?search=${encodeURIComponent(query)}`;
-                fetch(url)
-                    .then(response => response.json())
-                    .then(json => {
-                        callback(json);
-                    }).catch(() => {
-                    callback();
-                });
-            }
-        });
+                load: function (query, callback) {
+                    if (!query.length) return callback();
+                    let url = `${base_url}/${panel}/products/search?search=${encodeURIComponent(query)}`;
+                    fetch(url)
+                        .then((response) => response.json())
+                        .then((json) => {
+                            callback(json);
+                        })
+                        .catch(() => {
+                            callback();
+                        });
+                },
+            });
     }
 });
 
 async function loadBrandAndSetValue(tomSelectInstance, brand) {
     try {
-        const res = await fetch(`${base_url}/${panel}/brands/search?find=${brand}`);
+        const res = await fetch(
+            `${base_url}/${panel}/brands/search?find=${brand}`,
+        );
         const json = await res.json();
         if (json && json.length) {
             tomSelectInstance.addOption(json[0]);
@@ -1156,12 +1416,14 @@ document.addEventListener("DOMContentLoaded", function () {
             load: function (query, callback) {
                 if (!query.length) return callback();
 
-                let categoryInput = document.querySelector('#category-id');
-                let exceptId = categoryInput ? categoryInput.value : '';
+                let categoryInput = document.querySelector("#category-id");
+                let exceptId = categoryInput ? categoryInput.value : "";
 
-                fetch(`${base_url}/admin/categories/search?q=${encodeURIComponent(query)}&exceptId=${encodeURIComponent(exceptId)}`)
-                    .then(response => response.json())
-                    .then(json => {
+                fetch(
+                    `${base_url}/admin/categories/search?q=${encodeURIComponent(query)}&exceptId=${encodeURIComponent(exceptId)}`,
+                )
+                    .then((response) => response.json())
+                    .then((json) => {
                         callback(json);
                     })
                     .catch(() => {
@@ -1178,7 +1440,9 @@ document.addEventListener("DOMContentLoaded", function () {
             },
         });
     } else {
-        console.warn("TomSelect init skipped: #select-parent-category not found");
+        console.warn(
+            "TomSelect init skipped: #select-parent-category not found",
+        );
     }
 });
 
@@ -1195,9 +1459,11 @@ document.addEventListener("DOMContentLoaded", function () {
             placeholder: "Search Category",
             load: function (query, callback) {
                 if (!query.length) return callback();
-                fetch(`${base_url}/admin/categories/search?q=${encodeURIComponent(query)}&type=root`)
-                    .then(response => response.json())
-                    .then(json => {
+                fetch(
+                    `${base_url}/admin/categories/search?q=${encodeURIComponent(query)}&type=root`,
+                )
+                    .then((response) => response.json())
+                    .then((json) => {
                         callback(json);
                     })
                     .catch(() => {
@@ -1219,75 +1485,98 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function toggleScopeFields() {
-    const bannerScopeEl = document.getElementById('scopeType');
-    if (!bannerScopeEl)
-        return;
+    const bannerScopeEl = document.getElementById("scopeType");
+    if (!bannerScopeEl) return;
     const type = bannerScopeEl.value;
-    document.getElementById('scopeCategoryField').style.display = 'none';
-    if (type === 'category') {
-        document.getElementById('scopeCategoryField').style.display = '';
+    document.getElementById("scopeCategoryField").style.display = "none";
+    if (type === "category") {
+        document.getElementById("scopeCategoryField").style.display = "";
     }
 }
 
 toggleScopeFields();
-document.getElementById('scopeType')?.addEventListener('change', toggleScopeFields);
+document
+    .getElementById("scopeType")
+    ?.addEventListener("change", toggleScopeFields);
 
 $(document).ready(function () {
+    const faqTable = $("#faqs-table").DataTable();
 
-    const faqTable = $('#faqs-table').DataTable();
-
-// Reload table when filters change
-    $('#statusFilter').on('change', function () {
+    // Reload table when filters change
+    $("#statusFilter").on("change", function () {
         faqTable.ajax.reload(null, false);
     });
 
-// Add filter params to AJAX request
-    $('#faqs-table').on('preXhr.dt', function (e, settings, data) {
-        data.status = $('#statusFilter').val();
+    // Add filter params to AJAX request
+    $("#faqs-table").on("preXhr.dt", function (e, settings, data) {
+        data.status = $("#statusFilter").val();
     });
 });
 
 // Seller store status toggle handler
-(document.addEventListener || function (e, t) {
-    return window.addEventListener(e, t)
-})("DOMContentLoaded", function () {
+(
+    document.addEventListener ||
+    function (e, t) {
+        return window.addEventListener(e, t);
+    }
+)("DOMContentLoaded", function () {
     try {
-        const toggle = document.getElementById('seller-store-status-switch');
+        const toggle = document.getElementById("seller-store-status-switch");
         if (toggle) {
-            toggle.addEventListener('change', async function () {
+            toggle.addEventListener("change", async function () {
                 const storeId = this.dataset.storeId;
-                const status = this.checked ? 'online' : 'offline';
-                const url = `${typeof base_url !== 'undefined' ? base_url : ''}/seller/stores/${storeId}/update-status`;
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const status = this.checked ? "online" : "offline";
+                const url = `${typeof base_url !== "undefined" ? base_url : ""}/seller/stores/${storeId}/update-status`;
+                const csrf =
+                    document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content") || "";
                 try {
                     const res = await fetch(url, {
-                        method: 'POST',
+                        method: "POST",
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrf,
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
+                            "X-CSRF-TOKEN": csrf,
                         },
-                        body: JSON.stringify({status})
+                        body: JSON.stringify({ status }),
                     });
                     const json = await res.json();
                     if (json && json.success) {
-                        const label = document.getElementById('seller-store-status-label');
+                        const label = document.getElementById(
+                            "seller-store-status-label",
+                        );
                         if (label) {
-                            label.textContent = status === 'online' ? (this.dataset.onlineLabel || 'Online') : (this.dataset.offlineLabel || 'Offline');
+                            label.textContent =
+                                status === "online"
+                                    ? this.dataset.onlineLabel || "Online"
+                                    : this.dataset.offlineLabel || "Offline";
                         }
                     } else {
-                        alert((json && json.message) ? json.message : (typeof window.i18n_store_status_update_failed !== 'undefined' ? window.i18n_store_status_update_failed : 'Failed to update store status.'));
+                        alert(
+                            json && json.message
+                                ? json.message
+                                : typeof window.i18n_store_status_update_failed !==
+                                    "undefined"
+                                  ? window.i18n_store_status_update_failed
+                                  : "Failed to update store status.",
+                        );
                         this.checked = !this.checked;
                     }
                 } catch (e) {
                     console.error(e);
-                    alert(typeof window.i18n_store_status_update_failed !== 'undefined' ? window.i18n_store_status_update_failed : 'Failed to update store status.');
+                    alert(
+                        typeof window.i18n_store_status_update_failed !==
+                            "undefined"
+                            ? window.i18n_store_status_update_failed
+                            : "Failed to update store status.",
+                    );
                     this.checked = !this.checked;
                 }
             });
         }
     } catch (e) {
-        console.error('Error binding seller store status toggle:', e);
+        console.error("Error binding seller store status toggle:", e);
     }
 });
 
@@ -1295,13 +1584,16 @@ $(document).ready(function () {
  * Initialize the daily purchase history chart
  */
 function initializeDailyPurchaseChart(purchaseData) {
-    if (!window.ApexCharts || !document.getElementById("chart-development-activity")) {
+    if (
+        !window.ApexCharts ||
+        !document.getElementById("chart-development-activity")
+    ) {
         return;
     }
 
     // Prepare data for the chart
-    const dates = purchaseData.daily.map(item => item.date);
-    const orderCounts = purchaseData.daily.map(item => item.order_count);
+    const dates = purchaseData.daily.map((item) => item.date);
+    const orderCounts = purchaseData.daily.map((item) => item.order_count);
 
     new ApexCharts(document.getElementById("chart-development-activity"), {
         chart: {
@@ -1319,7 +1611,10 @@ function initializeDailyPurchaseChart(purchaseData) {
             enabled: false,
         },
         fill: {
-            colors: ["color-mix(in srgb, transparent, var(--tblr-primary) 16%)", "color-mix(in srgb, transparent, var(--tblr-primary) 16%)"],
+            colors: [
+                "color-mix(in srgb, transparent, var(--tblr-primary) 16%)",
+                "color-mix(in srgb, transparent, var(--tblr-primary) 16%)",
+            ],
             type: "solid",
         },
         stroke: {
@@ -1336,13 +1631,13 @@ function initializeDailyPurchaseChart(purchaseData) {
         tooltip: {
             theme: "dark",
             x: {
-                format: 'yyyy-MM-dd'
+                format: "yyyy-MM-dd",
             },
             y: {
                 formatter: function (value) {
                     return value + " Items";
-                }
-            }
+                },
+            },
         },
         grid: {
             strokeDashArray: 4,
@@ -1379,18 +1674,17 @@ function initializeDailyPurchaseChart(purchaseData) {
  * Initialize the revenue chart (replaces traffic summary)
  */
 function initializeRevenueChart(revenueData) {
-
     if (!window.ApexCharts || !document.getElementById("chart-revenue")) {
         return;
     }
 
     // ✅ Parse and clean
-    const dates = revenueData.daily.map(item => {
+    const dates = revenueData.daily.map((item) => {
         // Ensure valid ISO or timestamp format
         return new Date(item.date).toISOString();
     });
 
-    const revenues = revenueData.daily.map(item => {
+    const revenues = revenueData.daily.map((item) => {
         // Remove ₹, commas, spaces, etc., and convert to number
         const num = parseFloat(String(item.revenue).replace(/[^\d.-]/g, ""));
         return isNaN(num) ? 0 : num;
@@ -1400,12 +1694,12 @@ function initializeRevenueChart(revenueData) {
         chart: {
             type: "area",
             height: 240,
-            toolbar: {show: false},
-            animations: {enabled: false},
+            toolbar: { show: false },
+            animations: { enabled: false },
         },
-        dataLabels: {enabled: false},
-        fill: {opacity: 0.16, type: "solid"},
-        stroke: {width: 2, curve: "smooth"},
+        dataLabels: { enabled: false },
+        fill: { opacity: 0.16, type: "solid" },
+        stroke: { width: 2, curve: "smooth" },
         series: [
             {
                 name: "Daily Revenue",
@@ -1415,24 +1709,25 @@ function initializeRevenueChart(revenueData) {
         xaxis: {
             type: "datetime",
             categories: dates,
-            labels: {padding: 0},
+            labels: { padding: 0 },
         },
         yaxis: {
             labels: {
-                formatter: (value) => currencySymbol + value.toLocaleString("en-IN"),
+                formatter: (value) =>
+                    currencySymbol + value.toLocaleString("en-IN"),
             },
         },
         tooltip: {
-            x: {format: "dd MMM yyyy"},
+            x: { format: "dd MMM yyyy" },
             y: {
-                formatter: (value) => currencySymbol + value.toLocaleString("en-IN"),
+                formatter: (value) =>
+                    currencySymbol + value.toLocaleString("en-IN"),
             },
         },
         colors: ["color-mix(in srgb, transparent, var(--tblr-primary) 100%)"],
-        legend: {show: false},
+        legend: { show: false },
     }).render();
 }
-
 
 /**
  * Initialize the store orders chart (replaces campaigns chart)
@@ -1442,15 +1737,13 @@ function initializeStoreOrdersChart(storeData) {
         return;
     }
     try {
-
         // Prepare data for the chart
-        const storeNames = storeData.stores.map(store => store.name);
-        const percentages = storeData.stores.map(store => store.percentage);
-
+        const storeNames = storeData.stores.map((store) => store.name);
+        const percentages = storeData.stores.map((store) => store.percentage);
 
         new ApexCharts(document.getElementById("chart-campaigns"), {
             chart: {
-                type: 'radialBar',
+                type: "radialBar",
                 height: 350,
             },
             plotOptions: {
@@ -1459,9 +1752,8 @@ function initializeStoreOrdersChart(storeData) {
                     inverseOrder: true,
                     hollow: {
                         margin: 5,
-                        size: '48%',
-                        background: 'transparent',
-
+                        size: "48%",
+                        background: "transparent",
                     },
                     track: {
                         show: false,
@@ -1477,7 +1769,6 @@ function initializeStoreOrdersChart(storeData) {
                             },
                         },
                     },
-
                 },
             },
             series: percentages,
@@ -1485,23 +1776,26 @@ function initializeStoreOrdersChart(storeData) {
             tooltip: {
                 theme: "dark",
                 y: {
-                    formatter: function (value, {seriesIndex}) {
-                        if (storeData.stores.length > 0 && seriesIndex < storeData.stores.length) {
+                    formatter: function (value, { seriesIndex }) {
+                        if (
+                            storeData.stores.length > 0 &&
+                            seriesIndex < storeData.stores.length
+                        ) {
                             return `${storeData.stores[seriesIndex].order_count} orders (${value}%)`;
                         }
                         return `${value}%`;
-                    }
-                }
+                    },
+                },
             },
             stroke: {
-                lineCap: 'round'
+                lineCap: "round",
             },
             legend: {
                 show: true,
                 floating: true,
-                position: 'right',
+                position: "right",
                 offsetX: 70,
-                offsetY: 230
+                offsetY: 230,
             },
         }).render();
     } catch (error) {
@@ -1517,7 +1811,7 @@ function initializeRevenueBackgroundChart(revenueData) {
         return;
     }
 
-    const revenues = revenueData.daily.map(item => item.revenue);
+    const revenues = revenueData.daily.map((item) => item.revenue);
 
     new ApexCharts(document.getElementById("chart-revenue-bg"), {
         chart: {
@@ -1535,7 +1829,10 @@ function initializeRevenueBackgroundChart(revenueData) {
             enabled: false,
         },
         fill: {
-            colors: ["color-mix(in srgb, transparent, var(--tblr-primary) 16%)", "color-mix(in srgb, transparent, var(--tblr-primary) 16%)"],
+            colors: [
+                "color-mix(in srgb, transparent, var(--tblr-primary) 16%)",
+                "color-mix(in srgb, transparent, var(--tblr-primary) 16%)",
+            ],
             opacity: 0.16,
             type: "solid",
         },
@@ -1646,11 +1943,11 @@ function initializeWalletChart() {
  * Initialize star ratings for feedback
  */
 function initializeStarRatings() {
-    if (typeof StarRating === 'undefined') {
+    if (typeof StarRating === "undefined") {
         return;
     }
 
-    document.querySelectorAll('.rating-stars').forEach(function (element) {
+    document.querySelectorAll(".rating-stars").forEach(function (element) {
         const rating = new StarRating(element, {
             tooltip: false,
             clearable: false,
@@ -1669,47 +1966,53 @@ function initializeStarRatings() {
  */
 function updateSalesData(data) {
     // Update conversion rate
-    const rateElement = document.querySelector('.card:nth-child(1) .h1.mb-3');
+    const rateElement = document.querySelector(".card:nth-child(1) .h1.mb-3");
     if (rateElement) {
         rateElement.textContent = `${data.rate}%`;
     }
 
     // Update trend percentage
-    const trendElement = document.querySelector('.card:nth-child(1) .d-flex.mb-2 .ms-auto span');
+    const trendElement = document.querySelector(
+        ".card:nth-child(1) .d-flex.mb-2 .ms-auto span",
+    );
     if (trendElement) {
         trendElement.textContent = `${Math.abs(data.percentage_change)}%`;
-        trendElement.className = `text-${data.is_increase ? 'green' : 'red'} d-inline-flex align-items-center lh-1`;
+        trendElement.className = `text-${data.is_increase ? "green" : "red"} d-inline-flex align-items-center lh-1`;
 
         // Update trend icon
-        const trendIcon = trendElement.querySelector('svg');
+        const trendIcon = trendElement.querySelector("svg");
         if (trendIcon) {
-            const paths = trendIcon.querySelectorAll('path');
+            const paths = trendIcon.querySelectorAll("path");
             if (paths.length >= 2) {
                 if (data.is_increase) {
-                    paths[0].setAttribute('d', 'M3 17l6 -6l4 4l8 -8');
-                    paths[1].setAttribute('d', 'M14 7l7 0l0 7');
+                    paths[0].setAttribute("d", "M3 17l6 -6l4 4l8 -8");
+                    paths[1].setAttribute("d", "M14 7l7 0l0 7");
                 } else {
-                    paths[0].setAttribute('d', 'M3 7l6 6l4 -4l8 8');
-                    paths[1].setAttribute('d', 'M21 7l0 7l-7 0');
+                    paths[0].setAttribute("d", "M3 7l6 6l4 -4l8 8");
+                    paths[1].setAttribute("d", "M21 7l0 7l-7 0");
                 }
             }
         }
     }
 
     // Update delivered orders text
-    const detailsElement = document.querySelector('.card:nth-child(1) .text-secondary.mb-2');
+    const detailsElement = document.querySelector(
+        ".card:nth-child(1) .text-secondary.mb-2",
+    );
     if (detailsElement) {
         detailsElement.textContent = `${data.delivered_orders} Delivered out of total orders ${data.total_orders}`;
     }
 
     // Update progress bar
-    const progressBar = document.querySelector('.card:nth-child(1) .progress-bar');
+    const progressBar = document.querySelector(
+        ".card:nth-child(1) .progress-bar",
+    );
     if (progressBar) {
         progressBar.style.width = `${data.rate}%`;
-        progressBar.setAttribute('aria-valuenow', data.rate);
-        progressBar.setAttribute('aria-label', `${data.rate}% Complete`);
+        progressBar.setAttribute("aria-valuenow", data.rate);
+        progressBar.setAttribute("aria-label", `${data.rate}% Complete`);
 
-        const progressBarText = progressBar.querySelector('span');
+        const progressBarText = progressBar.querySelector("span");
         if (progressBarText) {
             progressBarText.textContent = `${data.rate}% Complete`;
         }
@@ -1721,21 +2024,21 @@ function updateSalesData(data) {
  */
 function updateRevenueData(data) {
     // Update total revenue
-    const revenueTotalElement = document.getElementById('revenue-total');
+    const revenueTotalElement = document.getElementById("revenue-total");
     if (revenueTotalElement) {
         revenueTotalElement.textContent = data.formatted_total;
     }
 
     // Update days
-    const revenueDaysElement = document.getElementById('revenue-days');
+    const revenueDaysElement = document.getElementById("revenue-days");
     if (revenueDaysElement) {
         revenueDaysElement.innerHTML = `${data.daily.length} Days <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon ms-1 icon-2"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M11 15h1"/><path d="M12 15v3"/></svg>`;
     }
 
     // Update revenue background chart if needed
-    if (typeof initializeRevenueBackgroundChart === 'function') {
+    if (typeof initializeRevenueBackgroundChart === "function") {
         // Clear existing chart
-        const chartElement = document.getElementById('chart-revenue-bg');
+        const chartElement = document.getElementById("chart-revenue-bg");
         if (chartElement) {
             while (chartElement.firstChild) {
                 chartElement.removeChild(chartElement.firstChild);
@@ -1752,28 +2055,32 @@ function updateRevenueData(data) {
  */
 function updateActiveUsersData(data) {
     // Update active users count
-    const countElement = document.querySelector('.card:nth-child(4) .h1.mb-3.me-2');
+    const countElement = document.querySelector(
+        ".card:nth-child(4) .h1.mb-3.me-2",
+    );
     if (countElement) {
         countElement.textContent = data.count;
     }
 
     // Update trend percentage
-    const trendElement = document.querySelector('.card:nth-child(4) .d-flex.align-items-baseline .ms-auto span');
+    const trendElement = document.querySelector(
+        ".card:nth-child(4) .d-flex.align-items-baseline .ms-auto span",
+    );
     if (trendElement) {
         trendElement.textContent = `${Math.abs(data.percentage_change)}%`;
-        trendElement.className = `text-${data.is_increase ? 'green' : 'red'} d-inline-flex align-items-center lh-1`;
+        trendElement.className = `text-${data.is_increase ? "green" : "red"} d-inline-flex align-items-center lh-1`;
 
         // Update trend icon
-        const trendIcon = trendElement.querySelector('svg');
+        const trendIcon = trendElement.querySelector("svg");
         if (trendIcon) {
-            const paths = trendIcon.querySelectorAll('path');
+            const paths = trendIcon.querySelectorAll("path");
             if (paths.length >= 2) {
                 if (data.is_increase) {
-                    paths[0].setAttribute('d', 'M3 17l6 -6l4 4l8 -8');
-                    paths[1].setAttribute('d', 'M14 7l7 0l0 7');
+                    paths[0].setAttribute("d", "M3 17l6 -6l4 4l8 -8");
+                    paths[1].setAttribute("d", "M14 7l7 0l0 7");
                 } else {
-                    paths[0].setAttribute('d', 'M3 7l6 6l4 -4l8 8');
-                    paths[1].setAttribute('d', 'M21 7l0 7l-7 0');
+                    paths[0].setAttribute("d", "M3 7l6 6l4 -4l8 8");
+                    paths[1].setAttribute("d", "M21 7l0 7l-7 0");
                 }
             }
         }
@@ -1785,25 +2092,26 @@ function updateActiveUsersData(data) {
 
 $(document).ready(function () {
     try {
-        const catEl = document.getElementById('deliveryBoySearch');
+        const catEl = document.getElementById("deliveryBoySearch");
         if (catEl) {
-            window.TomSelect && new TomSelect(catEl, {
-                copyClassesToDropdown: false,
-                dropdownParent: 'body',
-                controlInput: '<input>',
-                valueField: 'value',
-                labelField: 'text',
-                searchField: 'text',
-                placeholder: 'Delivery Boy',
-                load: function (query, callback) {
-                    if (!query.length) return callback();
-                    const url = `${base_url}/${panel}/delivery-boys/search?search=${encodeURIComponent(query)}`;
-                    fetch(url)
-                        .then(response => response.json())
-                        .then(json => callback(json))
-                        .catch(() => callback());
-                }
-            });
+            window.TomSelect &&
+                new TomSelect(catEl, {
+                    copyClassesToDropdown: false,
+                    dropdownParent: "body",
+                    controlInput: "<input>",
+                    valueField: "value",
+                    labelField: "text",
+                    searchField: "text",
+                    placeholder: "Delivery Boy",
+                    load: function (query, callback) {
+                        if (!query.length) return callback();
+                        const url = `${base_url}/${panel}/delivery-boys/search?search=${encodeURIComponent(query)}`;
+                        fetch(url)
+                            .then((response) => response.json())
+                            .then((json) => callback(json))
+                            .catch(() => callback());
+                    },
+                });
         }
     } catch (e) {
         console.error(e);

@@ -75,10 +75,13 @@ class OfferBannerController extends Controller
             // Items
             if (!empty($validated['offer_items']) && is_array($validated['offer_items'])) {
                 foreach ($validated['offer_items'] as $item) {
+                    $title = trim($item['title'] ?? '');
+                    $itemId = $item['item_id'] ?? null;
+                    if (empty($title) && empty($itemId)) continue; // skip empty rows
                     $banner->items()->create([
-                        'title' => $item['title'] ?? null,
+                        'title' => $title ?: null,
                         'item_type' => $item['type'] ?? null,
-                        'item_id' => $item['item_id'] ?? null,
+                        'item_id' => $itemId ?: null,
                     ]);
                 }
             }
@@ -126,10 +129,13 @@ class OfferBannerController extends Controller
             $banner->items()->delete();
             if (!empty($validated['offer_items']) && is_array($validated['offer_items'])) {
                 foreach ($validated['offer_items'] as $item) {
+                    $title = trim($item['title'] ?? '');
+                    $itemId = $item['item_id'] ?? null;
+                    if (empty($title) && empty($itemId)) continue; // skip empty rows
                     $banner->items()->create([
-                        'title' => $item['title'] ?? null,
+                        'title' => $title ?: null,
                         'item_type' => $item['type'] ?? null,
-                        'item_id' => $item['item_id'] ?? null,
+                        'item_id' => $itemId ?: null,
                     ]);
                 }
             }

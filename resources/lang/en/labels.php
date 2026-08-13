@@ -815,6 +815,7 @@ return [
     'banner_saved_successfully' => 'Banner saved successfully',
     'failed_to_delete_banner' => 'Failed to delete banner',
     'banner_retrieved_successfully' => 'Banner retrieved successfully',
+    'banner_images' => 'Banner Images',
 
     // Banner form fields
     'enter_banner_title' => 'Enter banner title',

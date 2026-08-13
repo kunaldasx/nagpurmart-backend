@@ -70,8 +70,11 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
-                                                <input type="text" class="form-control ajax-search-input" placeholder="{{ __('labels.search') }}" value="{{ $item->product->title ?? $item->category->title ?? '' }}">
-                                                <input type="hidden" name="offer_items[][item_id]" value="{{ $item->item_id }}">
+                                                <select name="offer_items[][item_id]" class="form-select tom-select-ajax" data-type="{{ $item->item_type }}">
+                                                    @if($item->item_id)
+                                                        <option value="{{ $item->item_id }}" selected>{{ $item->product->title ?? $item->category->title ?? '' }}</option>
+                                                    @endif
+                                                </select>
                                             </div>
                                             <div class="col-md-1"><button type="button" class="btn btn-danger remove-offer-item">x</button></div>
                                         </div>
