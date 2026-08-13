@@ -181,6 +181,9 @@ Route::prefix('seller-feedback')->group(function () {
 // get banners
 Route::get('banners', [BannerApiController::class, 'index']);
 
+// get offer banners (for flutter app)
+Route::get('offer-banners', [\App\Http\Controllers\Api\OfferBannerApiController::class, 'index']);
+
 // get categories
 Route::get('categories', [CategoryApiController::class, 'index']);
 Route::get('categories/sub-categories', [CategoryApiController::class, 'subCategories']);

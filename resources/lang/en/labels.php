@@ -837,6 +837,21 @@ return [
     'all_types' => 'All Types',
     'all_positions' => 'All Positions',
     'all_status' => 'All Status',
+    // Offer Banner labels
+    'offer_banners' => 'Offer Banners',
+    'create_offer_banner' => 'Create Offer Banner',
+    'edit_offer_banner' => 'Edit Offer Banner',
+    'update_offer_banner' => 'Update Offer Banner',
+    'offer_banner_information' => 'Offer Banner Information',
+    'offer_banners_list' => 'Offer Banners List',
+    'offer_banner_created_successfully' => 'Offer Banner created successfully',
+    'offer_banner_updated_successfully' => 'Offer Banner updated successfully',
+    'offer_banner_deleted_successfully' => 'Offer Banner deleted successfully',
+    'enter_banner_title' => 'Enter banner title',
+    'failed_to_create_offer_banner' => 'Failed to create Offer Banner',
+    'failed_to_update_offer_banner' => 'Failed to update Offer Banner',
+    'offer_banner_not_found' => 'Offer Banner not found',
+    'add_offer_item' => 'Add Offer Item',
 
     // Status labels
     'published' => 'Published',

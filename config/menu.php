@@ -225,6 +225,13 @@ return [
             'active' => 'banners',
             'permission' => 'banner.view',
         ],
+        'offer_banners' => [
+            'icon' => 'ti-photo',
+            'route' => 'admin.offer-banners.index',
+            'title' => 'labels.offer_banners',
+            'active' => 'offer_banners',
+            'permission' => 'offer_banner.view',
+        ],
         'featured_section' => [
             'icon' => 'ti-star',
             'title' => 'labels.featured_section',

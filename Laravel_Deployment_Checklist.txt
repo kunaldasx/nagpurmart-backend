@@ -42,3 +42,28 @@ sudo systemctl reload nginx
 **Check Service Status**
 sudo systemctl status php8.3-fpm --no-pager
 sudo systemctl status nginx --no-pager
+
+
+
+Can you help me build a new feature, "Offer Banner", it should have the following features.
+
+Create/edit banner form should have the following fields:
+a. Title: text
+b. Position (Top/Carousel)
+c. Scope Type: (Global/category)
+d. If scope type is category, then add a field to search and select a category (category scope).
+e. offer items: title, type(product/category), select and search (product/category)
+f. Visibility status (Published/draft)
+g. display order: number
+h. Banner images (allow multi image upload)
+
+A Offer banner list page, to show all existing banners with filters (with edit and delete button for each banner).
+
+Also create an api to get offer banners filtered by type(category/global), and scope category. SO that it can be used by the flutter app.
+
+For the layout and fields, take reference from the 2 shared images.
+For the multiple image upload field, take reference from the create/edit product form's additional images feature, that has a working model of the multi image upload feature.
+
+Go through the project thoroughly, understand the architecture, and then help me build the offer banner feature efficiently and cleanly, and create both the admin panel ui and the required apis, make sure everything is correct and error free
+
+Important: Keep the new offer banner completely separate from the existing banner

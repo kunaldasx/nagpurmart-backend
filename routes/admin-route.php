@@ -254,6 +254,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/datatable', [BannerController::class, 'getBanners'])->name('datatable');
         });
 
+        // offer banners (separate from existing banners)
+        Route::prefix('offer-banners')->name('offer-banners.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\OfferBannerController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\OfferBannerController::class, 'store'])->name('store');
+            Route::get('/create', [\App\Http\Controllers\OfferBannerController::class, 'create'])->name('create');
+            Route::get('/{id}/edit', [\App\Http\Controllers\OfferBannerController::class, 'edit'])->name('edit');
+            Route::post('/{id}', [\App\Http\Controllers\OfferBannerController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\App\Http\Controllers\OfferBannerController::class, 'destroy'])->name('delete');
+            Route::get('/datatable', [\App\Http\Controllers\OfferBannerController::class, 'getOfferBanners'])->name('datatable');
+        });
+
         // wallet transactions and deposits
         Route::prefix('wallet')->name('wallet.')->group(function () {
             // All transactions
