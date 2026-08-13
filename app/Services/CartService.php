@@ -852,31 +852,10 @@ class CartService
      */
     private function calculateEstimatedDeliveryTime(Cart $cart, array $zone, float $deliveryDistanceKm, bool $isRushDelivery = false): int
     {
-        if ($deliveryDistanceKm <= 0) {
-            return 0;
-        }
-
-        // Find maximum base preparation time from all products
-        $maxBasePrepTime = 0;
-        foreach ($cart->items as $item) {
-            $product = $item->product;
-            if ($product && $product->base_prep_time > $maxBasePrepTime) {
-                $maxBasePrepTime = $product->base_prep_time;
-            }
-        }
-
-        // Determine which delivery time per km to use based on rush delivery flag
-        $deliveryTimePerKm = $isRushDelivery && isset($zone['rush_delivery_time_per_km'])
-            ? $zone['rush_delivery_time_per_km']
-            : ($zone['delivery_time_per_km'] ?? 0);
-
-        $bufferTime = $zone['buffer_time'] ?? 0;
-
-        // Calculate estimated time using the formula
-        $estimatedTime = $maxBasePrepTime + ($deliveryDistanceKm * $deliveryTimePerKm) + $bufferTime;
-
-        // Round to the nearest minute
-        return ceil($estimatedTime);
+        // Use the project-wide fixed ETA formula: 5 minutes prep + 3 minutes per km bucket.
+        // This method still accepts the cart/zone args to remain compatible with the flow,
+        // but the calculation is now based on total route distance and the required business rule.
+        return DeliveryZoneService::calculateExpectedDeliveryMinutes($deliveryDistanceKm);
     }
 
     /**

@@ -208,6 +208,23 @@ class DeliveryZoneService
     }
 
     /**
+     * Calculate expected delivery minutes using the fixed prep and distance formula.
+     *
+     * Formula: 5 minutes fixed preparation + 3 minutes per km rounded up to the next km bucket
+     * (0-1km => 3 mins, 1.1-2km => 6 mins, etc.).
+     */
+    public static function calculateExpectedDeliveryMinutes(float $distanceKm): int
+    {
+        if ($distanceKm <= 0) {
+            return 5;
+        }
+
+        $distanceBucketMinutes = (int) ceil($distanceKm) * 3;
+
+        return 5 + $distanceBucketMinutes;
+    }
+
+    /**
      * Calculate estimated delivery time for a product
      *
      * Formula: Estimated Time = Base Preparation Time + (Distance × delivery_time_per_km) + Buffer Time

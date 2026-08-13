@@ -284,12 +284,8 @@ class DeliveryZoneApiController extends Controller
         // Calculate distance in km between store and user
         $distance = DeliveryZoneService::calculateDistance((float)$selectedStore->latitude, (float)$selectedStore->longitude, $latitude, $longitude);
 
-        // Use mapping: 0-1km -> 3 mins, 1.1-2km -> 6 mins, etc. (3 mins per rounded-up km)
-        $distanceKmRounded = max(1, (int)ceil($distance));
-        $distanceMinutes = $distanceKmRounded * 3;
-
-        $fixedPrep = 5; // fixed preparation time in minutes
-        $estimatedTotalMinutes = $fixedPrep + $distanceMinutes;
+        $distanceMinutes = $distance > 0 ? ((int) ceil($distance) * 3) : 0;
+        $estimatedTotalMinutes = DeliveryZoneService::calculateExpectedDeliveryMinutes($distance);
 
         $response['distance_km'] = round($distance, 2);
         $response['distance_minutes'] = $distanceMinutes;
