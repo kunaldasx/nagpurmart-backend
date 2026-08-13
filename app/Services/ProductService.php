@@ -564,6 +564,7 @@ class ProductService
             'short_description' => $validated['short_description'],
             'description' => $validated['description'],
             'indicator' => $validated['indicator'] ?? null,
+            'label' => self::normalizeLabel($validated['label'] ?? null),
             'image_fit' => $validated['image_fit'] ?? 'cover',
             'minimum_order_quantity' => $validated['minimum_order_quantity'] ?? 1,
             'quantity_step_size' => $validated['quantity_step_size'] ?? 1,
@@ -818,6 +819,7 @@ class ProductService
             'short_description' => $validated['short_description'],
             'description' => $validated['description'],
             'indicator' => $validated['indicator'] ?? null,
+            'label' => self::normalizeLabel($validated['label'] ?? null),
             'image_fit' => $validated['image_fit'] ?? $product->image_fit,
             'hsn_code' => $validated['hsn_code'] ?? null,
             'minimum_order_quantity' => $validated['minimum_order_quantity'] ?? 1,
@@ -866,6 +868,17 @@ class ProductService
         ProductVariantAttribute::whereIn('product_variant_id', $variantIds)->forceDelete();
         // Now delete the variants themselves (force delete to clean media as well)
         ProductVariant::whereIn('id', $variantIds)->forceDelete();
+    }
+
+    private static function normalizeLabel(mixed $value): ?string
+    {
+        if (is_null($value)) {
+            return null;
+        }
+
+        $normalized = trim((string) $value);
+
+        return $normalized === '' ? null : $normalized;
     }
 
     private function handleVariantMediaUploads($variant, $payload_image): void

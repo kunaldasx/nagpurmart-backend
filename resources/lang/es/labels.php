@@ -716,6 +716,7 @@ return [
     'select_brand' => 'Seleccionar Marca',
     'indicator' => 'Indicador',
     'select_indicator' => 'Seleccionar Indicador',
+    'select_label' => 'Seleccionar etiqueta',
     'featured_product' => 'Producto Destacado',
     'product_type' => 'Tipo de Producto',
     'main_image' => 'Imagen Principal',

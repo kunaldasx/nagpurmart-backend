@@ -48,6 +48,7 @@ class Product extends Model implements HasMedia
         'short_description',
         'description',
         'indicator',
+        'label',
         'download_allowed',
         'download_link',
         'minimum_order_quantity',

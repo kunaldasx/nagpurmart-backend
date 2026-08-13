@@ -33,6 +33,7 @@ class ProductListResource extends JsonResource
             'brand_name' => $this->brand?->title,
             'seller' => $this->seller?->user->name ?? "N/A",
             'indicator' => $this->indicator,
+            'label' => $this->label,
             'favorite' => $this->favorite,
             'estimated_delivery_time' => $this->estimated_delivery_time,
             'base_prep_time' => $this->base_prep_time ?? 0,

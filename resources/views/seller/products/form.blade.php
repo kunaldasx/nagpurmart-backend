@@ -186,6 +186,15 @@
                             </select>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">{{ __('labels.label') }}</label>
+                            <select class="form-select" name="label">
+                                <option value="">{{ __('labels.select_label') }}</option>
+                                @foreach(\App\Enums\Product\ProductLabelEnum::values() as $label)
+                                    <option value="{{ $label }}" {{ !empty($product->label) && $product->label == $label ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label required">{{ __('labels.base_prep_time') }}</label>
                             <div class="input-group mb-2">
                                 <input type="number" min="0" class="form-control" name="base_prep_time"

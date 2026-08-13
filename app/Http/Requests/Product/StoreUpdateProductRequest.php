@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Product;
 
 use App\Enums\Order\OrderItemStatusEnum;
+use App\Enums\Product\ProductLabelEnum;
 use App\Enums\Product\ProductTypeEnum;
 use App\Enums\Product\ProductImageFitEnum;
 use App\Models\Store;
@@ -30,6 +31,7 @@ class StoreUpdateProductRequest extends FormRequest
             'short_description' => 'required|string|max:255',
             'description' => 'required|string',
             'indicator' => 'nullable|string',
+            'label' => ['nullable', 'string', new Enum(ProductLabelEnum::class)],
             'image_fit' => ['required', new Enum(ProductImageFitEnum::class)],
             'minimum_order_quantity' => 'required|integer|min:1',
             'quantity_step_size' => 'required|integer|min:1',

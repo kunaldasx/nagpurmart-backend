@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Seller;
 
 use App\Enums\Product\ProductFilterEnum;
+use App\Enums\Product\ProductLabelEnum;
 use App\Enums\Product\ProductStatusEnum;
 use App\Enums\Product\ProductTypeEnum;
 use App\Enums\Product\ProductVarificationStatusEnum;
@@ -287,7 +288,8 @@ class SellerProductApiController extends Controller
                 'type' => ProductTypeEnum::values(),
                 'status' => ProductStatusEnum::values(),
                 'verification_status' => ProductVarificationStatusEnum::values(),
-                'product_filter' => ProductFilterEnum::values()
+                'product_filter' => ProductFilterEnum::values(),
+                'label' => ProductLabelEnum::values(),
             ]
         );
     }

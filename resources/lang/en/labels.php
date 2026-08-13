@@ -757,6 +757,7 @@ return [
     'select_brand' => 'Select Brand',
     'indicator' => 'Indicator',
     'select_indicator' => 'Select Indicator',
+    'select_label' => 'Select Label',
     'featured_product' => 'Featured Product',
     'product_type' => 'Product Type',
     'main_image' => 'Main Image',
