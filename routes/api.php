@@ -216,6 +216,7 @@ Route::prefix('stores')->name('stores.')->group(function () {
 Route::prefix('delivery-zone')->name('delivery_zone.')->group(function () {
     Route::get('/', [DeliveryZoneApiController::class, 'index']);
     Route::get('/check', [DeliveryZoneApiController::class, 'checkDelivery']);
+    Route::get('/estimate', [DeliveryZoneApiController::class, 'estimateDeliveryTime']);
     Route::get('/stores', [StoreApiController::class, 'getStoresByLocation']);
     Route::get('/products', [ProductApiController::class, 'index']);
     Route::get('/{id}', [DeliveryZoneApiController::class, 'show']);

@@ -6,6 +6,10 @@ use App\Enums\ActiveInactiveStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DeliveryZoneResource;
 use App\Models\DeliveryZone;
+use App\Models\Store;
+use App\Models\Address;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Services\DeliveryZoneService;
 use App\Types\Api\ApiResponseType;
 use Dedoc\Scramble\Attributes\Group;
@@ -172,5 +176,125 @@ class DeliveryZoneApiController extends Controller
             message: $stores['message'],
             data: $stores['data']
         );
+    }
+
+    /**
+     * Estimate delivery time for a given store and user coordinates.
+     *
+     * Formula used: 5 minutes fixed preparation + 3 minutes per km (rounded up by km).
+     * Returns time only if the store can deliver to the provided coordinates.
+     */
+    #[QueryParameter('latitude', description: 'Latitude coordinate of the customer.', type: 'float', example: 23.11684540)]
+    #[QueryParameter('longitude', description: 'Longitude coordinate of the customer.', type: 'float', example: 70.02805670)]
+    #[QueryParameter('store_id', description: 'Optional store id. If omitted, nearest available store will be picked.', type: 'int', example: 1)]
+    public function estimateDeliveryTime(Request $request): JsonResponse
+    {
+        $request->validate([
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'address_id' => 'nullable|integer|exists:addresses,id',
+            'store_id' => 'nullable|integer|exists:stores,id',
+        ], [
+            'latitude.numeric' => __('messages.latitude_numeric'),
+            'longitude.numeric' => __('messages.longitude_numeric'),
+            'store_id.required' => __('messages.store_required'),
+            'store_id.exists' => __('messages.store_not_found'),
+            'address_id.exists' => __('labels.address_not_found'),
+        ]);
+
+        $storeId = $request->input('store_id');
+
+        $latitude = $request->input('latitude');
+        $longitude = $request->input('longitude');
+        $addressId = $request->input('address_id');
+
+        // If address_id provided, get coordinates from address (ensures it's the user's address)
+        if (empty($latitude) || empty($longitude)) {
+            if (!empty($addressId) && Auth::check()) {
+                $address = Address::where(['user_id' => Auth::id(), 'id' => $addressId])->first();
+                if ($address) {
+                    $latitude = $address->latitude;
+                    $longitude = $address->longitude;
+                }
+            }
+        }
+
+        if (empty($latitude) || empty($longitude)) {
+            return ApiResponseType::sendJsonResponse(success: false, message: __('messages.missing_coordinates'), data: []);
+        }
+
+        $latitude = (float)$latitude;
+        $longitude = (float)$longitude;
+
+        if (!DeliveryZoneService::validateCoordinates($latitude, $longitude)) {
+            return ApiResponseType::sendJsonResponse(success: false, message: __('messages.invalid_coordinates'), data: []);
+        }
+
+        $selectedStore = null;
+
+        // If store_id provided, use it
+        if (!empty($storeId)) {
+            $selectedStore = Store::find((int)$storeId);
+        } else {
+            // Find nearest stores (limit 10) and pick the first that can deliver
+            $raw = "(6371 * acos( cos(radians($latitude)) * cos(radians(latitude)) * cos(radians(longitude) - radians($longitude)) + sin(radians($latitude)) * sin(radians(latitude)) )) AS distance_from_customer";
+            $candidates = Store::select(['id','latitude','longitude','name', DB::raw($raw)])
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->orderBy('distance_from_customer','asc')
+                ->limit(10)
+                ->get();
+
+            foreach ($candidates as $candidate) {
+                if (empty($candidate->latitude) || empty($candidate->longitude)) {
+                    continue;
+                }
+                try {
+                    if (DeliveryZoneService::canStoreDeliverToLocation($candidate, $latitude, $longitude)) {
+                        $selectedStore = $candidate;
+                        break;
+                    }
+                } catch (\Throwable $e) {
+                    // ignore and continue
+                }
+            }
+        }
+
+        if (!$selectedStore || !$selectedStore->latitude || !$selectedStore->longitude) {
+            return ApiResponseType::sendJsonResponse(success: true, message: __('labels.delivery_not_available'), data: ['is_deliverable' => false, 'coordinates' => ['latitude' => $latitude, 'longitude' => $longitude]]);
+        }
+
+        // Check delivery availability (defensive)
+        $canDeliver = DeliveryZoneService::canStoreDeliverToLocation($selectedStore, $latitude, $longitude);
+
+        $response = [
+            'is_deliverable' => $canDeliver,
+            'store_id' => $selectedStore->id,
+            'store_name' => $selectedStore->name ?? null,
+            'coordinates' => [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ],
+        ];
+
+        if (!$canDeliver) {
+            return ApiResponseType::sendJsonResponse(success: true, message: __('labels.delivery_not_available'), data: $response);
+        }
+
+        // Calculate distance in km between store and user
+        $distance = DeliveryZoneService::calculateDistance((float)$selectedStore->latitude, (float)$selectedStore->longitude, $latitude, $longitude);
+
+        // Use mapping: 0-1km -> 3 mins, 1.1-2km -> 6 mins, etc. (3 mins per rounded-up km)
+        $distanceKmRounded = max(1, (int)ceil($distance));
+        $distanceMinutes = $distanceKmRounded * 3;
+
+        $fixedPrep = 5; // fixed preparation time in minutes
+        $estimatedTotalMinutes = $fixedPrep + $distanceMinutes;
+
+        $response['distance_km'] = round($distance, 2);
+        $response['distance_minutes'] = $distanceMinutes;
+        $response['estimated_time_minutes'] = (int)$estimatedTotalMinutes;
+
+        return ApiResponseType::sendJsonResponse(success: true, message: __('labels.estimated_delivery_time'), data: $response);
     }
 }
