@@ -36,6 +36,7 @@ class OrderResource extends JsonResource
         $displayFinalTotal = (float) $this->final_total + $cancelledRejectedAmount;
         return [
             'id' => $this->id,
+            'order_number' => $this->order_number,
             'uuid' => $this->uuid,
             'slug' => $this->slug,
             'user_id' => $this->user_id,

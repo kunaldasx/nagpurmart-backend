@@ -60,7 +60,7 @@
                                 <div class="datagrid">
                                     <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.order_number') }}</div>
-                                        <div class="datagrid-content">{{ $order['uuid'] }}</div>
+                                        <div class="datagrid-content">{{ $order['order_number'] ?? $order['uuid'] }}</div>
                                     </div>
                                     <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.order_date') }}</div>

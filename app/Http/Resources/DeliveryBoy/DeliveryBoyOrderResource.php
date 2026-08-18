@@ -18,6 +18,7 @@ class DeliveryBoyOrderResource extends JsonResource
         $phoneCode = Country::select('phonecode')->where('name', $this->shipping_country)->get()->first();
         return [
             'id' => $this->id,
+            'order_number' => $this->order_number,
             'uuid' => $this->uuid,
             'slug' => $this->slug,
             'status' => $this->status,

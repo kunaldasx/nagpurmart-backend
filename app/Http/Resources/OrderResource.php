@@ -23,6 +23,8 @@ class OrderResource extends JsonResource
         if ($isSellerOrder) {
             return [
                 'id' => $this->id,
+                'order_id' => $this->order->id,
+                'order_number' => $this->order->order_number,
                 'uuid' => $this->order->uuid,
                 'email' => $this->order->email,
                 'status' => $this->order->status,
@@ -97,6 +99,7 @@ class OrderResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'order_number' => $this->order_number,
             'uuid' => $this->uuid,
             'email' => $this->email,
             'status' => $this->status,

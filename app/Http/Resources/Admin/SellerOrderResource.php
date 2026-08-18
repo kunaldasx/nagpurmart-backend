@@ -26,6 +26,7 @@ class SellerOrderResource extends JsonResource
             'order' => $this->whenLoaded('order', function() {
                 return [
                     'id' => $this->order->id,
+                    'order_number' => $this->order->order_number,
                     'uuid' => $this->order->uuid,
                     'email' => $this->order->email,
                     'payment_method' => $this->order->payment_method,

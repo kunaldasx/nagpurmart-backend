@@ -19,6 +19,7 @@ class Order extends Model
 {
     protected $fillable = [
         'uuid',
+        'order_number',
         'user_id',
         'slug',
         'email',
