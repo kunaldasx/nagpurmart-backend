@@ -471,9 +471,13 @@ class OrderService
             throw new Exception(__('labels.minimum_cart_amount_not_met', ['amount' => $data['minimumCartAmount']]));
         }
 
+        // Generate unique order number for customer-facing usage
+        $orderNumber = $this->generateUniqueOrderNumber();
+
         // Create order
         $order = Order::create([
             'uuid' => Str::uuid()->toString(),
+            'order_number' => $orderNumber,
             'user_id' => $user->id,
             'slug' => Str::slug('order-' . time() . '-' . $user->id),
             'email' => $this->resolveOrderEmail($user),
@@ -2313,5 +2317,37 @@ class OrderService
                 'data' => []
             ];
         }
+    }
+
+    /**
+     * Generate a unique customer-facing order number
+     * Format: NM-YYYYMMDD-XXXXXXXX
+     * NM = NagpurMart prefix
+     * YYYYMMDD = current date
+     * XXXXXXXX = 8-character secure random string (alphanumeric)
+     *
+     * @param int $maxRetries Maximum number of retries to generate a unique number
+     * @return string The generated order number
+     * @throws Exception If unable to generate unique number after max retries
+     */
+    private function generateUniqueOrderNumber(int $maxRetries = 5): string
+    {
+        for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
+            // Generate order number with format: NM-YYYYMMDD-XXXXXXXX
+            $datePrefix = now()->format('Ymd');
+            // Generate 8 random alphanumeric characters securely
+            $randomSuffix = strtoupper(Str::random(8));
+            $orderNumber = "NM-{$datePrefix}-{$randomSuffix}";
+
+            // Check if this order number already exists
+            $exists = Order::where('order_number', $orderNumber)->exists();
+
+            if (!$exists) {
+                return $orderNumber;
+            }
+        }
+
+        // If we couldn't generate a unique number after retries, throw exception
+        throw new Exception('Unable to generate unique order number after ' . $maxRetries . ' attempts. Please try again.');
     }
 }

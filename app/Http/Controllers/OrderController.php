@@ -146,8 +146,21 @@ class OrderController extends Controller
                     ->orWhereHas('sellerOrder', function ($orderQuery) use ($searchValue) {
                         $orderQuery->where('total_price', 'like', "%$searchValue%")
                             ->orWhereHas('order', function ($orderQuery) use ($searchValue) {
-                                $orderQuery->where('shipping_name', 'like', "%$searchValue%");
+                                $orderQuery->where('shipping_name', 'like', "%$searchValue%")
+                                    ->orWhere('order_number', 'like', "%$searchValue%");
                             });
+                    })
+                    ->orWhereHas('orderItem', function ($orderItemQuery) use ($searchValue) {
+                        $orderItemQuery->where('status', 'like', "%$searchValue%");
+                    })
+                    ->orWhereHas('product', function ($productQuery) use ($searchValue) {
+                        $productQuery->where('title', 'like', "%$searchValue%");
+                    })
+                    ->orWhereHas('variant', function ($variantQuery) use ($searchValue) {
+                        $variantQuery->where('title', 'like', "%$searchValue%");
+                    });
+            });
+        }
                     })
                     ->orWhereHas('orderItem', function ($orderItemQuery) use ($searchValue) {
                         $orderItemQuery->where('status', 'like', "%$searchValue%");
@@ -195,7 +208,8 @@ class OrderController extends Controller
                     'image' => !empty($sellerOrderItem->variant->image) ? $sellerOrderItem->variant->image : $sellerOrderItem->product->main_image,
                 ])->render() .
                 "</div><div>
-                        <p class='m-0 fw-medium text-primary'>" . __('labels.order_id') . ": {$sellerOrderItem->sellerOrder->order_id}</p>
+                        <p class='m-0 fw-medium text-primary'>" . __('labels.order_number') . ": " . ($sellerOrderItem->sellerOrder->order->order_number ?? $sellerOrderItem->sellerOrder->order_id) . "</p>
+                        <p class='m-0 fw-medium text-secondary'>" . __('labels.order_id') . ": {$sellerOrderItem->sellerOrder->order_id}</p>
                         <p class='m-0'>" . __('labels.buyer_name') . ": " . e($sellerOrderItem->sellerOrder->order->shipping_name) . "</p>
                         <p class='m-0'>" . __('labels.payment_method') . ": " . e($sellerOrderItem->sellerOrder->order->payment_method) . "</p>
                         <p class='m-0'>" . __('labels.is_rush_order') . ": " . ($sellerOrderItem->sellerOrder->order->is_rush_order ? 'Yes' : 'No') . "</p>
