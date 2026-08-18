@@ -161,18 +161,6 @@ class OrderController extends Controller
                     });
             });
         }
-                    })
-                    ->orWhereHas('orderItem', function ($orderItemQuery) use ($searchValue) {
-                        $orderItemQuery->where('status', 'like', "%$searchValue%");
-                    })
-                    ->orWhereHas('product', function ($productQuery) use ($searchValue) {
-                        $productQuery->where('title', 'like', "%$searchValue%");
-                    })
-                    ->orWhereHas('variant', function ($variantQuery) use ($searchValue) {
-                        $variantQuery->where('title', 'like', "%$searchValue%");
-                    });
-            });
-        }
         $filteredRecords = $query->count();
 
         $data = $query
