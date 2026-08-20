@@ -10,7 +10,7 @@ class OfferBannerItem extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['offer_banner_id', 'title', 'item_type', 'item_id', 'metadata'];
+    protected $fillable = ['offer_banner_id', 'title', 'subtitle', 'item_type', 'item_id', 'metadata'];
 
     protected $casts = [
         'metadata' => 'array',

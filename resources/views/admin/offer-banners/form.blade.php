@@ -60,8 +60,11 @@
                                 @if(isset($banner) && $banner->items)
                                     @foreach($banner->items as $item)
                                         <div class="row offer-item-row mb-2">
-                                            <div class="col-md-4">
+                                            <div class="col-md-3">
                                                 <input type="text" name="offer_items[][title]" class="form-control" value="{{ $item->title }}" placeholder="Offer Title">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <input type="text" name="offer_items[][subtitle]" class="form-control offer-item-subtitle" value="{{ $item->subtitle }}" placeholder="Offer Subtitle">
                                             </div>
                                             <div class="col-md-3">
                                                 <select name="offer_items[][item_type]" class="form-select item-type-select">

@@ -64,12 +64,18 @@ document.addEventListener("DOMContentLoaded", function () {
             .querySelectorAll(".offer-item-row")
             .forEach(function (row) {
                 const title = row.querySelector('input[name^="offer_items"]');
+                const subtitle = row.querySelector(".offer-item-subtitle");
                 const type = row.querySelector(".item-type-select");
                 const itemSelect = row.querySelector(".tom-select-ajax");
                 if (title)
                     title.setAttribute(
                         "name",
                         `offer_items[${offerItemRowIndex}][title]`,
+                    );
+                if (subtitle)
+                    subtitle.setAttribute(
+                        "name",
+                        `offer_items[${offerItemRowIndex}][subtitle]`,
                     );
                 if (type)
                     type.setAttribute(
@@ -89,14 +95,18 @@ document.addEventListener("DOMContentLoaded", function () {
         index,
         selectedType = "product",
         offerTitle = "",
+        offerSubtitle = "",
         selectedItemTitle = "",
         id = "",
     ) {
         const row = document.createElement("div");
         row.className = "row offer-item-row mb-2";
         row.innerHTML = `
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <input type="text" name="offer_items[${index}][title]" class="form-control" placeholder="Offer Title" value="${offerTitle}">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="offer_items[${index}][subtitle]" class="form-control offer-item-subtitle" placeholder="Offer Subtitle" value="${offerSubtitle}">
             </div>
             <div class="col-md-3">
                 <select name="offer_items[${index}][item_type]" class="form-select item-type-select">

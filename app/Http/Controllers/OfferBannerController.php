@@ -80,6 +80,7 @@ class OfferBannerController extends Controller
                     if (empty($title) && empty($itemId)) continue; // skip empty rows
                     $banner->items()->create([
                         'title' => $title ?: null,
+                        'subtitle' => trim($item['subtitle'] ?? '') ?: null,
                         'item_type' => $item['item_type'] ?? null,
                         'item_id' => $itemId ?: null,
                     ]);
@@ -134,6 +135,7 @@ class OfferBannerController extends Controller
                     if (empty($title) && empty($itemId)) continue; // skip empty rows
                     $banner->items()->create([
                         'title' => $title ?: null,
+                        'subtitle' => trim($item['subtitle'] ?? '') ?: null,
                         'item_type' => $item['item_type'] ?? null,
                         'item_id' => $itemId ?: null,
                     ]);

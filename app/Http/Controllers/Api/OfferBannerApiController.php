@@ -30,6 +30,7 @@ class OfferBannerApiController extends Controller
                 'items' => $b->items->map(fn($i) => [
                     'id' => $i->id,
                     'title' => $i->title,
+                    'subtitle' => $i->subtitle,
                     'type' => $i->item_type,
                     'item_id' => $i->item_id,
                 ]),
