@@ -15,10 +15,6 @@
             >
                 @csrf
 
-                @if(isset($banner))
-                    @method('PUT')
-                @endif
-
                 <div class="card">
                     <div class="card-header">
                         <div>
