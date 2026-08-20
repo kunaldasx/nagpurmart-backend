@@ -394,7 +394,7 @@ class NotificationService
                     metadata: $metadata
                 ));
             }
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             $broadcast->update(['status' => 'failed']);
             throw $exception;
         }
