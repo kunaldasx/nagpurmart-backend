@@ -1,6 +1,7 @@
 $(document).ready(function () {
     // Initialize variables
     let currentNotificationId = null;
+    let currentBroadcastId = null;
     const csrfToken = $('meta[name="csrf-token"]').attr("content");
 
     const loadBroadcasts = function () {
@@ -365,9 +366,10 @@ $(document).ready(function () {
             document.getElementById("broadcast-form"),
         );
         const broadcastId = formData.get("broadcast_id");
-        if (broadcastId) {
-            formData.set("is_active", formData.has("is_active") ? "1" : "0");
-        }
+        const activeCheckbox = document.querySelector(
+            '#broadcast-form [name="is_active"][type="checkbox"]',
+        );
+        formData.set("is_active", activeCheckbox?.checked ? "1" : "0");
 
         axios
             .post(
@@ -407,12 +409,18 @@ $(document).ready(function () {
     });
 
     $(document).on("click", ".delete-broadcast-btn", function () {
-        const broadcastId = $(this).data("id");
-        if (!window.confirm("Delete this notification campaign?")) return;
+        currentBroadcastId = $(this).data("id");
+        showModal("#deleteBroadcastModal");
+    });
 
+    $("#confirmDeleteBroadcast").on("click", function () {
+        if (!currentBroadcastId) return;
+
+        const button = $(this);
+        button.prop("disabled", true).text("Deleting...");
         axios
             .delete(
-                `${base_url}/${panel}/notifications/customer-broadcasts/${broadcastId}`,
+                `${base_url}/${panel}/notifications/customer-broadcasts/${currentBroadcastId}`,
                 {
                     headers: { "X-CSRF-TOKEN": csrfToken },
                 },
@@ -422,7 +430,10 @@ $(document).ready(function () {
                     icon: response.data.success ? "success" : "error",
                     title: response.data.message,
                 });
-                if (response.data.success) loadBroadcasts();
+                if (response.data.success) {
+                    loadBroadcasts();
+                    hideModal("#deleteBroadcastModal");
+                }
             })
             .catch(function (error) {
                 Toast.fire({
@@ -431,6 +442,10 @@ $(document).ready(function () {
                         error.response?.data?.message ||
                         "Unable to delete campaign",
                 });
+            })
+            .finally(function () {
+                button.prop("disabled", false).text("Delete campaign");
+                currentBroadcastId = null;
             });
     });
 

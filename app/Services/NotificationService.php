@@ -12,6 +12,7 @@ use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class NotificationService
@@ -381,8 +382,9 @@ class NotificationService
             'is_active' => $broadcast->is_active,
         ]);
 
-        try {
-            foreach ($customerUsers as $customer) {
+        $deliveredCount = 0;
+        foreach ($customerUsers as $customer) {
+            try {
                 NotificationFacade::sendNow($customer, new CustomerBroadcastNotificationNotification(
                     title: $broadcast->title,
                     description: $broadcast->description,
@@ -393,17 +395,21 @@ class NotificationService
                     isActive: $broadcast->is_active,
                     metadata: $metadata
                 ));
+                $deliveredCount++;
+            } catch (\Throwable $exception) {
+                Log::error('Customer broadcast delivery failed', [
+                    'broadcast_id' => $broadcast->id,
+                    'customer_id' => $customer->id,
+                    'error' => $exception->getMessage(),
+                ]);
             }
-        } catch (\Throwable $exception) {
-            $broadcast->update(['status' => 'failed']);
-            throw $exception;
         }
 
         $broadcast->update([
             'status' => 'sent',
             'sent_at' => now(),
             'recipient_count' => $customerUsers->count(),
-            'sent_count' => $customerUsers->count(),
+            'sent_count' => $deliveredCount,
         ]);
 
         return $broadcast;
