@@ -328,6 +328,7 @@ class NotificationController extends Controller
                 'is_active' => 'nullable|boolean',
                 'metadata' => 'nullable|array',
             ]);
+            $validated['is_active'] = $request->boolean('is_active');
 
             $broadcast = $this->notificationService->createCustomerBroadcastNotification(array_merge($validated, [
                 'created_by' => auth()->id(),
@@ -380,6 +381,61 @@ class NotificationController extends Controller
                 message: __('labels.permission_denied'),
                 data: []
             );
+        }
+    }
+
+    public function updateCustomerBroadcast(Request $request, string $id): JsonResponse
+    {
+        try {
+            if (! $this->editPermission) {
+                throw new AuthorizationException;
+            }
+
+            $broadcast = CustomerBroadcastNotification::findOrFail($id);
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'required|string',
+                'image_url' => 'nullable|url',
+                'image_file' => 'nullable|image|max:2048',
+                'action_url' => 'nullable|url',
+                'deep_link' => 'nullable|string|max:255',
+                'target_categories' => 'nullable|string',
+                'expires_at' => 'nullable|date',
+                'priority' => 'nullable|integer|min:0|max:5',
+                'is_active' => 'nullable|boolean',
+                'metadata' => 'nullable|array',
+            ]);
+            $validated['is_active'] = $request->boolean('is_active');
+
+            return ApiResponseType::sendJsonResponse(
+                success: true,
+                message: __('labels.notification_updated_successfully'),
+                data: $this->notificationService->updateCustomerBroadcastNotification($broadcast, $validated)
+            );
+        } catch (ValidationException $e) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.validation_failed'), $e->errors());
+        } catch (ModelNotFoundException) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.notification_not_found'), []);
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.permission_denied'), []);
+        }
+    }
+
+    public function deleteCustomerBroadcast(string $id): JsonResponse
+    {
+        try {
+            if (! $this->deletePermission) {
+                throw new AuthorizationException;
+            }
+
+            $broadcast = CustomerBroadcastNotification::findOrFail($id);
+            $this->notificationService->deleteCustomerBroadcastNotification($broadcast);
+
+            return ApiResponseType::sendJsonResponse(true, __('labels.notification_deleted_successfully'), []);
+        } catch (ModelNotFoundException) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.notification_not_found'), []);
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.permission_denied'), []);
         }
     }
 

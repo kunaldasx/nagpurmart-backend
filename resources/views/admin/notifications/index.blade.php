@@ -187,11 +187,12 @@
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Create customer notification</h5>
+                    <h5 class="modal-title" id="broadcast-modal-title">Create customer notification</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="broadcast-form" enctype="multipart/form-data">
+                        <input type="hidden" name="broadcast_id" value="">
                         <div class="mb-3">
                             <label class="form-label">Campaign title</label>
                             <input type="text" class="form-control" name="title" required>
@@ -239,6 +240,7 @@
                             </div>
                         </div>
                         <div class="form-check mt-3">
+                            <input type="hidden" name="is_active" value="0">
                             <input class="form-check-input" type="checkbox" name="is_active" value="1" checked>
                             <label class="form-check-label">Active immediately</label>
                         </div>

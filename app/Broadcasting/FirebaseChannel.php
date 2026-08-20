@@ -33,20 +33,32 @@ class FirebaseChannel
 
         // Supports both single and multiple tokens
         if (is_array($tokens)) {
-            return $this->firebase->sendBulkNotification(
+            $result = $this->firebase->sendBulkNotification(
                 tokens: $tokens,
                 title: $message['title'],
                 body: $message['body'],
                 image: $message['image'],
                 data: $message['data'] ?? []
             );
+
+            if (($result['success'] ?? 0) === 0) {
+                throw new \RuntimeException($result['error'] ?? 'Firebase notification delivery failed.');
+            }
+
+            return $result;
         } else {
-            return $this->firebase->sendNotification(
+            $result = $this->firebase->sendNotification(
                 token: $tokens,
                 title: $message['title'],
                 body: $message['body'],
                 data:$message['data'] ?? []
             );
+
+            if (! ($result['success'] ?? false)) {
+                throw new \RuntimeException($result['error'] ?? 'Firebase notification delivery failed.');
+            }
+
+            return $result;
         }
     }
 }

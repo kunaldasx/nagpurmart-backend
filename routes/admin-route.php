@@ -311,7 +311,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/datatable', [NotificationController::class, 'getNotifications'])->name('datatable');
             Route::get('/customer-broadcasts', [NotificationController::class, 'customerBroadcasts'])->name('customer-broadcasts');
             Route::post('/customer-broadcasts', [NotificationController::class, 'createCustomerBroadcast'])->name('customer-broadcasts.store');
+            Route::post('/customer-broadcasts/{id}', [NotificationController::class, 'updateCustomerBroadcast'])->name('customer-broadcasts.update');
             Route::post('/customer-broadcasts/{id}/resend', [NotificationController::class, 'resendCustomerBroadcast'])->name('customer-broadcasts.resend');
+            Route::delete('/customer-broadcasts/{id}', [NotificationController::class, 'deleteCustomerBroadcast'])->name('customer-broadcasts.delete');
             Route::get('/{id}', [NotificationController::class, 'show'])->name('show');
             Route::post('/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('mark-read');
             Route::post('/{id}/mark-unread', [NotificationController::class, 'markAsUnread'])->name('mark-unread');

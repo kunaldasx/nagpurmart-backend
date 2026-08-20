@@ -285,8 +285,50 @@ class NotificationService
         ]);
     }
 
+    public function updateCustomerBroadcastNotification(CustomerBroadcastNotification $broadcast, array $data): CustomerBroadcastNotification
+    {
+        $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : ($broadcast->metadata ?? []);
+        $targetCategories = $this->normalizeTargetCategories($data['target_categories'] ?? $broadcast->target_categories);
+        $imageUrl = $broadcast->image_url;
+
+        if (! empty($data['image_file']) && $data['image_file'] instanceof UploadedFile) {
+            $path = Storage::disk('public')->putFile('customer-broadcasts', $data['image_file']);
+            $imageUrl = Storage::disk('public')->url($path);
+        } elseif (array_key_exists('image_url', $data)) {
+            $imageUrl = $data['image_url'];
+        }
+
+        $attributes = [
+            'title' => $data['title'] ?? $broadcast->title,
+            'description' => $data['description'] ?? $broadcast->description,
+            'image_url' => $imageUrl,
+            'action_url' => $data['action_url'] ?? $broadcast->action_url,
+            'deep_link' => $data['deep_link'] ?? $broadcast->deep_link,
+            'target_categories' => $targetCategories,
+            'expires_at' => $data['expires_at'] ?? $broadcast->expires_at,
+            'priority' => (int) ($data['priority'] ?? $broadcast->priority),
+            'is_active' => filter_var($data['is_active'] ?? $broadcast->is_active, FILTER_VALIDATE_BOOLEAN),
+            'metadata' => array_merge($metadata, ['target_categories' => $targetCategories]),
+            'status' => 'draft',
+            'sent_at' => null,
+            'sent_count' => 0,
+            'recipient_count' => 0,
+        ];
+
+        $broadcast->update($attributes);
+
+        return $broadcast->fresh();
+    }
+
+    public function deleteCustomerBroadcastNotification(CustomerBroadcastNotification $broadcast): bool
+    {
+        return (bool) $broadcast->delete();
+    }
+
     public function sendCustomerBroadcastNotification(CustomerBroadcastNotification $broadcast): CustomerBroadcastNotification
     {
+        $broadcast->update(['status' => 'sending']);
+
         if (! $broadcast->is_active) {
             $broadcast->update([
                 'status' => 'inactive',
@@ -339,17 +381,22 @@ class NotificationService
             'is_active' => $broadcast->is_active,
         ]);
 
-        foreach ($customerUsers as $customer) {
-            NotificationFacade::send($customer, new CustomerBroadcastNotificationNotification(
-                title: $broadcast->title,
-                description: $broadcast->description,
-                imageUrl: $broadcast->image_url,
-                actionUrl: $broadcast->action_url,
-                deepLink: $broadcast->deep_link,
-                priority: $broadcast->priority,
-                isActive: $broadcast->is_active,
-                metadata: $metadata
-            ));
+        try {
+            foreach ($customerUsers as $customer) {
+                NotificationFacade::sendNow($customer, new CustomerBroadcastNotificationNotification(
+                    title: $broadcast->title,
+                    description: $broadcast->description,
+                    imageUrl: $broadcast->image_url,
+                    actionUrl: $broadcast->action_url,
+                    deepLink: $broadcast->deep_link,
+                    priority: $broadcast->priority,
+                    isActive: $broadcast->is_active,
+                    metadata: $metadata
+                ));
+            }
+        } catch (\\Throwable $exception) {
+            $broadcast->update(['status' => 'failed']);
+            throw $exception;
         }
 
         $broadcast->update([

@@ -22,7 +22,11 @@ $(document).ready(function () {
                         const statusBadge =
                             item.status === "sent"
                                 ? '<span class="badge bg-success">Sent</span>'
-                                : '<span class="badge bg-warning text-dark">Draft</span>';
+                                : item.status === "sending"
+                                  ? '<span class="badge bg-info">Sending</span>'
+                                  : item.status === "failed"
+                                    ? '<span class="badge bg-danger">Failed</span>'
+                                    : '<span class="badge bg-warning text-dark">Draft</span>';
                         return `
                     <tr>
                         <td>
@@ -33,7 +37,11 @@ $(document).ready(function () {
                         <td>${item.recipient_count ?? 0}</td>
                         <td>${item.sent_at ? new Date(item.sent_at).toLocaleString() : "Not sent yet"}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary resend-broadcast-btn" data-id="${item.id}">Resend</button>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-secondary edit-broadcast-btn" data-id="${item.id}">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger delete-broadcast-btn" data-id="${item.id}">Delete</button>
+                                <button class="btn btn-sm btn-outline-primary resend-broadcast-btn" data-id="${item.id}">Resend</button>
+                            </div>
                         </td>
                     </tr>`;
                     })
@@ -42,6 +50,9 @@ $(document).ready(function () {
                     rows ||
                         '<tr><td colspan="5" class="text-center text-muted">No campaigns yet.</td></tr>',
                 );
+                $("#broadcasts-table tbody tr").each(function (index) {
+                    $(this).data("broadcast", items[index]);
+                });
             })
             .catch(function (error) {
                 console.error("Error:", error);
@@ -298,6 +309,47 @@ $(document).ready(function () {
 
     $("#create-broadcast-btn").on("click", function () {
         $("#broadcast-form")[0].reset();
+        $("#broadcast-form [name=broadcast_id]").val("");
+        $("#broadcast-modal-title").text("Create customer notification");
+        $("#save-broadcast-btn").text("Send to customers");
+        showModal("#broadcastModal");
+    });
+
+    $(document).on("click", ".edit-broadcast-btn", function () {
+        const broadcastId = $(this).data("id");
+        const item = $(this).closest("tr").data("broadcast");
+        if (!item) return;
+
+        const form = $("#broadcast-form")[0];
+        form.reset();
+        $(form).find("[name=broadcast_id]").val(broadcastId);
+        $(form)
+            .find("[name=title]")
+            .val(item.title || "");
+        $(form)
+            .find("[name=description]")
+            .val(item.description || "");
+        $(form)
+            .find("[name=image_url]")
+            .val(item.image_url || "");
+        $(form)
+            .find("[name=action_url]")
+            .val(item.action_url || "");
+        $(form)
+            .find("[name=deep_link]")
+            .val(item.deep_link || "");
+        $(form)
+            .find("[name=target_categories]")
+            .val((item.target_categories || []).join(","));
+        $(form)
+            .find("[name=expires_at]")
+            .val(item.expires_at ? item.expires_at.substring(0, 10) : "");
+        $(form)
+            .find("[name=priority]")
+            .val(item.priority || 0);
+        $(form).find("[name=is_active]").prop("checked", !!item.is_active);
+        $("#broadcast-modal-title").text("Edit customer notification");
+        $("#save-broadcast-btn").text("Save changes");
         showModal("#broadcastModal");
     });
 
@@ -312,10 +364,14 @@ $(document).ready(function () {
         const formData = new FormData(
             document.getElementById("broadcast-form"),
         );
+        const broadcastId = formData.get("broadcast_id");
+        if (broadcastId) {
+            formData.set("is_active", formData.has("is_active") ? "1" : "0");
+        }
 
         axios
             .post(
-                `${base_url}/${panel}/notifications/customer-broadcasts`,
+                `${base_url}/${panel}/notifications/customer-broadcasts${broadcastId ? `/${broadcastId}` : ""}`,
                 formData,
                 {
                     headers: {
@@ -344,7 +400,37 @@ $(document).ready(function () {
                 });
             })
             .finally(function () {
-                button.prop("disabled", false).html("Send to customers");
+                button
+                    .prop("disabled", false)
+                    .html(broadcastId ? "Save changes" : "Send to customers");
+            });
+    });
+
+    $(document).on("click", ".delete-broadcast-btn", function () {
+        const broadcastId = $(this).data("id");
+        if (!window.confirm("Delete this notification campaign?")) return;
+
+        axios
+            .delete(
+                `${base_url}/${panel}/notifications/customer-broadcasts/${broadcastId}`,
+                {
+                    headers: { "X-CSRF-TOKEN": csrfToken },
+                },
+            )
+            .then(function (response) {
+                Toast.fire({
+                    icon: response.data.success ? "success" : "error",
+                    title: response.data.message,
+                });
+                if (response.data.success) loadBroadcasts();
+            })
+            .catch(function (error) {
+                Toast.fire({
+                    icon: "error",
+                    title:
+                        error.response?.data?.message ||
+                        "Unable to delete campaign",
+                });
             });
     });
 
