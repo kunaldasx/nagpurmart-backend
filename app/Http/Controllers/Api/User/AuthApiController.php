@@ -86,6 +86,24 @@ class AuthApiController extends Controller
         }
     }
 
+    public function registerFcmToken(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'fcm_token' => 'required|string',
+            'device_type' => 'required|string|in:android,ios,web',
+        ]);
+
+        $this->storeFcmToken($request, $request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'FCM token registered successfully.',
+            'data' => [
+                'device_type' => $validated['device_type'],
+            ],
+        ]);
+    }
+
     private function getFirebaseAuth(): array
     {
         try {

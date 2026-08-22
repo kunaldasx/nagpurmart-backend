@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\OtpService;
 use App\Services\WalletService;
 use App\Services\SettingService;
+use App\Traits\AuthTrait;
 use App\Enums\SettingTypeEnum;
 use App\Types\Api\ApiResponseType;
 use App\Http\Resources\User\UserResource;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\Validator;
 
 class OtpApiController extends Controller
 {
+    use AuthTrait;
+
     protected OtpService $otpService;
     protected SettingService $settingService;
 
@@ -110,6 +113,8 @@ class OtpApiController extends Controller
             'country' => 'nullable|string|max:255',
             'iso_2' => 'nullable|string|max:2',
             'verify_only' => 'nullable|boolean',
+            'fcm_token' => 'nullable|string',
+            'device_type' => 'nullable|string|in:android,ios,web',
         ]);
 
         if ($validator->fails()) {
@@ -168,6 +173,7 @@ class OtpApiController extends Controller
                     $user->restore();
                 }
                 // Existing user - log them in
+                $this->storeFcmToken($request, $user);
                 $token = $user->createToken($sanitizedMobile)->plainTextToken;
                 event(new UserLoggedIn($user));
 
@@ -215,6 +221,8 @@ class OtpApiController extends Controller
             }
 
             event(new UserRegistered($user));
+
+            $this->storeFcmToken($request, $user);
 
             $token = $user->createToken($sanitizedMobile)->plainTextToken;
 

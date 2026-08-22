@@ -65,6 +65,7 @@ Route::prefix('subscription')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     //logout
     Route::post('logout', [AuthApiController::class, 'logout']);
+    Route::post('user/fcm-token', [AuthApiController::class, 'registerFcmToken']);
 
     // users routes
     Route::prefix('user')->name('user.')->group(function () {
