@@ -43,7 +43,7 @@ class CustomerBroadcastNotification extends Notification implements ShouldQueue
                 'is_active' => $this->isActive,
                 'template' => 'customer_broadcast',
             ], $this->metadata),
-            'type' => NotificationTypeEnum::SYSTEM()->value,
+            'type' => NotificationTypeEnum::SYSTEM(),
         ];
     }
 
@@ -54,14 +54,15 @@ class CustomerBroadcastNotification extends Notification implements ShouldQueue
             'body' => $this->description,
             'image' => $this->imageUrl ?? '',
             'data' => [
-                'type' => NotificationTypeEnum::SYSTEM()->value,
+                'type' => NotificationTypeEnum::SYSTEM(),
                 'title' => $this->title,
                 'body' => $this->description,
                 'image_url' => $this->imageUrl ?? '',
                 'action_url' => $this->actionUrl ?? '',
                 'deep_link' => $this->deepLink ?? '',
-                'priority' => $this->priority,
-                'is_active' => $this->isActive,
+                // FCM data payload values must be strings.
+                'priority' => (string) $this->priority,
+                'is_active' => $this->isActive ? 'true' : 'false',
                 'template' => 'customer_broadcast',
             ],
         ];
