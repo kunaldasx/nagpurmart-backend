@@ -42,7 +42,8 @@ class FirebaseChannel
             );
 
             if (($result['success'] ?? 0) === 0) {
-                throw new \RuntimeException($result['error'] ?? 'Firebase notification delivery failed.');
+                $error = $result['error'] ?? ($result['errors'][0] ?? 'Firebase notification delivery failed.');
+                throw new \RuntimeException($error);
             }
 
             return $result;

@@ -118,6 +118,7 @@ class FirebaseService
             'success' => 0,
             'failure' => 0,
             'removed_tokens' => [],
+            'errors' => [],
         ];
 
         $notification = Notification::create(
@@ -141,6 +142,10 @@ class FirebaseService
                 $results['success'] += $multicastResult->successes()->count();
                 $results['failure'] += $multicastResult->failures()->count();
 
+                foreach ($multicastResult->failures()->getItems() as $failure) {
+                    $results['errors'][] = $failure->error()->getMessage();
+                }
+
                 $invalidTokens = $multicastResult->invalidTokens();
 
                 if (!empty($invalidTokens)) {
@@ -154,11 +159,15 @@ class FirebaseService
             } catch (\Throwable $e) {
                 Log::error('Firebase bulk send chunk failed', [
                     'error' => $e->getMessage(),
+                    'token_count' => $chunk->count(),
                 ]);
 
                 $results['failure'] += $chunk->count();
+                $results['errors'][] = $e->getMessage();
             }
         });
+
+        $results['errors'] = array_values(array_unique($results['errors']));
 
         return $results;
     }
