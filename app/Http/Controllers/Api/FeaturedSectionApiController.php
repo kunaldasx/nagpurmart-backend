@@ -29,7 +29,7 @@ class FeaturedSectionApiController extends Controller
      */
     #[QueryParameter('per_page', description: 'Number of items per page.', type: 'int', default: 15, example: 15)]
     #[QueryParameter('page', description: 'Page number for pagination.', type: 'int', default: 1, example: 1)]
-    #[QueryParameter('section_type', description: 'Filter by section type (newly_added, top_rated, trending, best_seller, featured, on_sale, recommended).', type: 'string', example: 'featured')]
+    #[QueryParameter('section_type', description: 'Filter by section type (newly_added, top_rated, best_seller, featured, best_price, lowest_price).', type: 'string', example: 'featured')]
     #[QueryParameter('products_limit', description: 'Limit number of products per section.', type: 'int', default: 10, example: 20)]
     #[QueryParameter('scope_category_slug', description: 'if you pass slug then featured sections will be filtered by category', type: 'string', example: 'apple, amul')]
     #[QueryParameter('latitude', description: 'User latitude for location-based filtering.', type: 'float', example: '37.7749')]
@@ -40,7 +40,7 @@ class FeaturedSectionApiController extends Controller
             $request->validate([
                 'per_page' => 'sometimes|integer|min:1|max:100',
                 'page' => 'sometimes|integer|min:1',
-                'section_type' => 'sometimes|string|in:newly_added,top_rated,trending,best_seller,featured,on_sale,recommended',
+                'section_type' => 'sometimes|string|in:newly_added,top_rated,best_seller,featured,best_price,lowest_price',
                 'products_limit' => 'sometimes|integer|min:1|max:50',
                 'scope_category_slug' => 'sometimes|string',
                 'latitude' => 'sometimes|required_with:longitude|numeric|between:-90,90',

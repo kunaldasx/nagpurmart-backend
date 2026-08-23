@@ -11,6 +11,8 @@ use ArchTech\Enums\Values;
  * @method static TOP_RATED()
  * @method static FEATURED()
  * @method static BEST_SELLER()
+ * @method static BEST_PRICE()
+ * @method static LOWEST_PRICE()
  */
 enum FeaturedSectionTypeEnum: string
 {
@@ -20,4 +22,6 @@ enum FeaturedSectionTypeEnum: string
     case TOP_RATED = 'top_rated';
     case BEST_SELLER = 'best_seller';
     case FEATURED = 'featured';
+    case BEST_PRICE = 'best_price';
+    case LOWEST_PRICE = 'lowest_price';
 }

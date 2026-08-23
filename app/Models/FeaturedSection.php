@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -147,6 +148,38 @@ class FeaturedSection extends Model implements HasMedia
             case FeaturedSectionTypeEnum::BEST_SELLER():
                 $query->withCount('orderItems')
                     ->orderBy('order_items_count', 'desc');
+                break;
+            case FeaturedSectionTypeEnum::LOWEST_PRICE():
+                $priceSub = DB::table('product_variants')
+                    ->join('store_product_variants', 'product_variants.id', '=', 'store_product_variants.product_variant_id')
+                    ->where('product_variants.is_default', 1)
+                    ->select('product_variants.product_id', DB::raw(
+                        'MIN(CASE WHEN store_product_variants.special_price > 0 '
+                        . 'AND store_product_variants.special_price < store_product_variants.price '
+                        . 'THEN store_product_variants.special_price ELSE store_product_variants.price END) as section_price'
+                    ))
+                    ->groupBy('product_variants.product_id');
+
+                $query->joinSub($priceSub, 'section_prices', function ($join) {
+                    $join->on('section_prices.product_id', '=', 'products.id');
+                })->orderBy('section_prices.section_price', 'asc');
+                break;
+            case FeaturedSectionTypeEnum::BEST_PRICE():
+                $discountSub = DB::table('product_variants')
+                    ->join('store_product_variants', 'product_variants.id', '=', 'store_product_variants.product_variant_id')
+                    ->where('product_variants.is_default', 1)
+                    ->select('product_variants.product_id', DB::raw(
+                        'MAX(CASE WHEN store_product_variants.price > 0 '
+                        . 'AND store_product_variants.special_price > 0 '
+                        . 'AND store_product_variants.special_price < store_product_variants.price '
+                        . 'THEN ((store_product_variants.price - store_product_variants.special_price) '
+                        . '/ store_product_variants.price) ELSE 0 END) as section_discount'
+                    ))
+                    ->groupBy('product_variants.product_id');
+
+                $query->joinSub($discountSub, 'section_discounts', function ($join) {
+                    $join->on('section_discounts.product_id', '=', 'products.id');
+                })->orderBy('section_discounts.section_discount', 'desc');
                 break;
         }
 
