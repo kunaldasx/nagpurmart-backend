@@ -66,6 +66,7 @@ class Product extends Model implements HasMedia
         'verification_status',
         'rejection_reason',
         'featured',
+        'price_drop',
         'requires_otp',
         'video_type',
         'video_link',
@@ -85,6 +86,7 @@ class Product extends Model implements HasMedia
         'metadata' => 'array',
         'custom_fields' => 'array',
         'base_prep_time' => 'integer',
+        'price_drop' => 'boolean',
     ];
 
     /**
@@ -610,6 +612,9 @@ class Product extends Model implements HasMedia
         if (!empty($filter['brands'])) {
             $brandIds = Brand::whereIn('slug', $filter['brands'])->pluck('id')->toArray();
             $query->whereIn('brand_id', $brandIds);
+        }
+        if (array_key_exists('price_drop', $filter)) {
+            $query->where('price_drop', (bool) $filter['price_drop']);
         }
         // Filter by global attribute value IDs if provided
         if (!empty($filter['attribute_values'])) {

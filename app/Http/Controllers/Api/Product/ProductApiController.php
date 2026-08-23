@@ -35,6 +35,7 @@ class ProductApiController extends Controller
     #[QueryParameter('search', description: 'Search term to filter products by name, description, category name, or tags', type: 'string', example: 'smartphone')]
     #[QueryParameter('include_child_categories', description: 'Include products from child categories when filtering by categories', type: 'boolean', default: false, example: true)]
     #[QueryParameter('attribute_values', description: 'Comma-separated list of global attribute value IDs to filter products', type: 'string', example: '12,34,56')]
+    #[QueryParameter('price_drop', description: 'Filter products marked as price drop', type: 'boolean', example: true)]
     public function index(GetProductsByLocationRequest $request): JsonResponse
     {
         try {
@@ -112,6 +113,7 @@ class ProductApiController extends Controller
         $filter['search']     = $validated['search'] ?? null;
         $filter['store']      = $validated['store'] ?? null;
         $filter['include_child_categories'] = $validated['include_child_categories'] ?? null;
+        $filter['price_drop'] = $validated['price_drop'] ?? null;
         // Attribute value filter (expects CSV of IDs). Convert to int array if provided
         if (!empty($validated['attribute_values'])) {
             $filter['attribute_values'] = $this->explodeCsvToInts($validated['attribute_values']);

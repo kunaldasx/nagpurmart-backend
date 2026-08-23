@@ -33,7 +33,8 @@ class GetProductsByLocationRequest extends FormRequest
             'store' => 'string|nullable',
             'exclude_product' => 'string|nullable',
             'search' => 'string|nullable|min:2|max:255',
-            'include_child_categories' => 'nullable|boolean'
+            'include_child_categories' => 'nullable|boolean',
+            'price_drop' => 'nullable|boolean',
         ];
     }
 }

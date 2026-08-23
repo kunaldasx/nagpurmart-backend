@@ -330,6 +330,15 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="mb-3">
+                                    <label class="form-label">Price Drop</label>
+                                    <select class="form-select" name="price_drop">
+                                        <option value="0" {{ empty($product->price_drop) ? 'selected' : '' }}>No</option>
+                                        <option value="1" {{ !empty($product->price_drop) ? 'selected' : '' }}>Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
                                     <label class="form-label">{{ __('labels.requires_otp') }}
                                         <span data-bs-toggle="tooltip" data-bs-placement="right"
                                               title="{{__('messages.require_otp_before_delivery')}}"><svg

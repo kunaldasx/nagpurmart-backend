@@ -59,6 +59,7 @@ class ProductListResource extends JsonResource
             'video_link' => $this->video_link,
             'status' => $this->status,
             'featured' => $this->featured,
+            'price_drop' => (bool) $this->price_drop,
             'metadata' => $this->metadata,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

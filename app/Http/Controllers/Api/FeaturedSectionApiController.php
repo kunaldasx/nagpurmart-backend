@@ -245,6 +245,7 @@ class FeaturedSectionApiController extends Controller
     #[QueryParameter('categories', description: 'Comma-separated list of category slugs to filter products', type: 'string', example: 'apple,samsung')]
     #[QueryParameter('brands', description: 'Comma-separated list of brand slugs to filter products', type: 'string', example: 'mobile,electronics')]
     #[QueryParameter('attribute_values', description: 'Comma-separated list of global attribute value IDs to filter products', type: 'string', example: '12,34,56')]
+    #[QueryParameter('price_drop', description: 'Filter products marked as price drop', type: 'boolean', example: true)]
     public function products(Request $request, string $slug): JsonResponse
     {
         try {
@@ -257,12 +258,14 @@ class FeaturedSectionApiController extends Controller
                 'categories' => 'sometimes|string|nullable',
                 'brands' => 'sometimes|string|nullable',
                 'attribute_values' => 'sometimes|string|nullable',
+                'price_drop' => 'sometimes|boolean',
             ]);
 
             $perPage = $request->input('per_page', 15);
             $latitude = $request->input('latitude');
             $longitude = $request->input('longitude');
             $sort = $request->input('sort');
+            $priceDrop = $request->input('price_drop');
             $categories = (!empty($request->input('categories')) && is_string($request->input('categories'))) ? explode(',', $request->input('categories')) : null;
             $brands = (!empty($request->input('brands')) && is_string($request->input('brands'))) ? explode(',', $request->input('brands')) : null;
             // Parse attribute value IDs CSV into integer array
@@ -341,6 +344,10 @@ class FeaturedSectionApiController extends Controller
                     });
                 }
 
+                if ($request->has('price_drop')) {
+                    $productsQuery->where('price_drop', $priceDrop);
+                }
+
                 // Collect unique category and brand IDs BEFORE applying category/brand slug filters
                 $categoryIds = (clone $productsQuery)->distinct()->pluck('category_id')->filter()->unique()->map(fn($id) => (int) $id)->values()->toArray();
 
@@ -380,6 +387,10 @@ class FeaturedSectionApiController extends Controller
                     $productsQuery->whereHas('variantAttributes', function ($q) use ($attributeValues) {
                         $q->whereIn('global_attribute_value_id', $attributeValues);
                     });
+                }
+
+                if ($request->has('price_drop')) {
+                    $productsQuery->where('price_drop', $priceDrop);
                 }
 
                 // Collect unique category and brand IDs BEFORE applying category/brand slug filters

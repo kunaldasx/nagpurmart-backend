@@ -80,6 +80,14 @@
                                         <div class="datagrid-content text-capitalize">{{ $product->type }}</div>
                                     </div>
                                     <div class="datagrid-item">
+                                        <div class="datagrid-title">Price Drop</div>
+                                        <div class="datagrid-content">
+                                            <span class="badge {{ $product->price_drop ? 'bg-green-lt' : 'bg-red-lt' }}">
+                                                {{ $product->price_drop ? __('labels.yes') : __('labels.no') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.status') }}</div>
                                         <div class="datagrid-content text-capitalize">
                                             <span
