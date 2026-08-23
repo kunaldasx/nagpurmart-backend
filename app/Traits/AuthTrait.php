@@ -35,8 +35,17 @@ trait AuthTrait
             $fcmToken = $request->input('fcm_token');
             $deviceType = $request->input('device_type');
 
-            if (!empty($fcmToken) && !empty($deviceType)) {
-                UserFcmToken::updateOrCreate(
+            if (empty($fcmToken) || empty($deviceType)) {
+                Log::warning('FCM token not provided during authentication', [
+                    'user_id' => $user->id,
+                    'fcm_token_present' => !empty($fcmToken),
+                    'device_type' => $deviceType,
+                ]);
+
+                return;
+            }
+
+            UserFcmToken::updateOrCreate(
                     [
                         'fcm_token' => $fcmToken,
                     ],
@@ -44,10 +53,18 @@ trait AuthTrait
                         'user_id' => $user->id,
                         'device_type' => $deviceType,
                     ]
-                );
-            }
+            );
+
+            Log::info('FCM token stored during authentication', [
+                'user_id' => $user->id,
+                'device_type' => $deviceType,
+                'token_length' => strlen($fcmToken),
+            ]);
         } catch (\Throwable $e) {
-            Log::error('Error updating or creating FCM token: ' . $e->getMessage());
+            Log::error('Error updating or creating FCM token', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
