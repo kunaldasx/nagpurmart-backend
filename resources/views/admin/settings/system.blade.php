@@ -136,10 +136,10 @@
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Gemini API key</label>
-                                            <input type="password" class="form-control" name="geminiApiKey"
-                                                  value="" autocomplete="new-password"
+                                              <input type="text" class="form-control" name="geminiApiKey"
+                                                  value="{{ $geminiApiKey ?? '' }}" autocomplete="off"
                                                    placeholder="Enter Gemini API key"/>
-                                              <small class="form-hint">Used for grocery-list image extraction. {{ ($geminiApiKeyConfigured ?? false) ? 'A key is currently configured. ' : '' }}Leave blank to keep the current key.</small>
+                                                <small class="form-hint">Used for grocery-list image extraction. Leave blank to keep the current key.</small>
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Gemini model</label>

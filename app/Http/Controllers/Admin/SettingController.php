@@ -313,11 +313,11 @@ class SettingController extends Controller
             $setting = Setting::find('authentication');
             $googleApiKey = $setting->value['googleApiKey'] ?? null;
             $systemSetting = Setting::find('system');
-            $geminiApiKeyConfigured = filled($systemSetting?->value['geminiApiKey'] ?? null);
+            $geminiApiKey = $systemSetting?->value['geminiApiKey'] ?? '';
             return view('admin.settings.' . $variable, [
                 'settings' => $settings,
                 'googleApiKey' => $googleApiKey,
-                'geminiApiKeyConfigured' => $geminiApiKeyConfigured,
+                'geminiApiKey' => $geminiApiKey,
             ]);
         } catch (AuthorizationException $e) {
             abort(403, __('labels.unauthorized_access'));
