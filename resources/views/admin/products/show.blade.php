@@ -484,8 +484,12 @@
                                                             <th>{{ __('labels.sku') }}</th>
                                                             <th>{{ __('labels.price') }}</th>
                                                             <th>{{ __('labels.special_price') }}</th>
+                                                            <th>Special price ends</th>
                                                             <th>{{ __('labels.cost') }}</th>
                                                             <th>{{ __('labels.stock') }}</th>
+                                                            @if($specialPricePermission)
+                                                                <th>Action</th>
+                                                            @endif
                                                         </tr>
                                                         </thead>
                                                         <tbody>
@@ -494,9 +498,27 @@
                                                                 <td>{{ $storePricing['store_name'] }}</td>
                                                                 <td>{{ $storePricing['sku'] }}</td>
                                                                 <td>{{ $systemSettings['currencySymbol'] . number_format($storePricing['price'], 2) }}</td>
-                                                                <td>{{ $storePricing['special_price'] ? $systemSettings['currencySymbol'] . number_format($storePricing['special_price'], 2) : 'N/A' }}</td>
+                                                                <td>{{ $storePricing['is_special_price_active'] ? $systemSettings['currencySymbol'] . number_format($storePricing['special_price'], 2) : 'N/A' }}</td>
+                                                                <td>{{ $storePricing['is_special_price_active'] && $storePricing['special_price_ends_at'] ? $storePricing['special_price_ends_at']->format('Y-m-d H:i') : 'N/A' }}</td>
                                                                 <td>{{ $storePricing['cost'] ? $systemSettings['currencySymbol'] . number_format($storePricing['cost'], 2) : 'N/A' }}</td>
                                                                 <td>{{ $storePricing['stock'] }}</td>
+                                                                @if($specialPricePermission)
+                                                                    <td>
+                                                                        <form method="POST" action="{{ route('admin.products.special-price', $product->id) }}" class="d-flex gap-2 align-items-end">
+                                                                            @csrf
+                                                                            <input type="hidden" name="store_product_variant_id" value="{{ $storePricing['id'] }}">
+                                                                            <div>
+                                                                                <label class="form-label small mb-1">Discounted price</label>
+                                                                                <input type="number" name="special_price" class="form-control form-control-sm" min="0" step="0.01" value="{{ $storePricing['is_special_price_active'] ? $storePricing['special_price_raw'] : '' }}">
+                                                                            </div>
+                                                                            <div>
+                                                                                <label class="form-label small mb-1">Until</label>
+                                                                                <input type="datetime-local" name="special_price_ends_at" class="form-control form-control-sm" value="{{ $storePricing['special_price_ends_at']?->format('Y-m-d\\TH:i') }}">
+                                                                            </div>
+                                                                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                                                        </form>
+                                                                    </td>
+                                                                @endif
                                                             </tr>
                                                         @endforeach
                                                         </tbody>
@@ -558,4 +580,25 @@
 
 @push('scripts')
     <script src="{{ asset('assets/js/product.js') }}"></script>
+    <script>
+        document.querySelectorAll('form[action*="/special-price"]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'Accept': 'application/json' }
+                }).then(function (response) {
+                    return response.json().then(function (data) {
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Unable to update special price.');
+                        }
+                        window.location.reload();
+                    });
+                }).catch(function (error) {
+                    window.alert(error.message);
+                });
+            });
+        });
+    </script>
 @endpush

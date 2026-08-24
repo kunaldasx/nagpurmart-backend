@@ -201,10 +201,14 @@ class ProductController extends Controller
                 ->get()
                 ->map(function ($item) {
                     return [
+                        'id' => $item->id,
                         'store_id' => $item->store_id,
                         'store_name' => $item->store->name ?? '',
                         'price' => $item->price_exclude_tax,
                         'special_price' => $item->special_price_exclude_tax,
+                        'special_price_raw' => $item->special_price_raw,
+                        'special_price_ends_at' => $item->special_price_ends_at,
+                        'is_special_price_active' => $item->is_special_price_active,
                         'cost' => $item->cost,
                         'stock' => $item->stock,
                         'sku' => $item->sku
@@ -224,8 +228,9 @@ class ProductController extends Controller
             ];
         }
         $updateStatusPermission = $this->updateStatusPermission;
+        $specialPricePermission = $this->hasPermission(AdminPermissionEnum::PRODUCT_PRICE_UPDATE());
 
-        return view($this->panelView('products.show'), compact('product', 'storeVariantPricing', 'updateStatusPermission'));
+        return view($this->panelView('products.show'), compact('product', 'storeVariantPricing', 'updateStatusPermission', 'specialPricePermission'));
     }
 
     /**
@@ -312,10 +317,14 @@ class ProductController extends Controller
                     ->get()
                     ->map(function ($item) {
                         return [
+                            'id' => $item->id,
                             'store_id' => $item->store_id,
                             'store_name' => $item->store->name ?? '',
                             'price' => $item->price_exclude_tax,
                             'special_price' => $item->special_price_exclude_tax,
+                            'special_price_raw' => $item->special_price_raw,
+                            'special_price_ends_at' => $item->special_price_ends_at,
+                            'is_special_price_active' => $item->is_special_price_active,
                             'cost' => $item->cost,
                             'stock' => $item->stock,
                             'sku' => $item->sku
@@ -336,6 +345,65 @@ class ProductController extends Controller
             return ApiResponseType::sendJsonResponse(success: false, message: 'labels.permission_denied', data: []);
         } catch (\Exception $e) {
             return ApiResponseType::sendJsonResponse(success: false, message: 'labels.failed_to_fetch_product_pricing: ' . $e->getMessage(), data: []);
+        }
+    }
+
+    /**
+     * Update a store-specific timed special price from the admin panel.
+     */
+    public function updateSpecialPrice(Request $request, string $id): JsonResponse
+    {
+        try {
+            if (!$this->hasPermission(AdminPermissionEnum::PRODUCT_PRICE_UPDATE())) {
+                return ApiResponseType::sendJsonResponse(success: false, message: 'labels.permission_denied', data: [], status: 403);
+            }
+
+            $product = Product::findOrFail($id);
+            $this->authorize('view', $product);
+
+            $validated = $request->validate([
+                'store_product_variant_id' => 'required|integer|exists:store_product_variants,id',
+                'special_price' => 'nullable|numeric|min:0',
+                'special_price_ends_at' => 'nullable|date|after:now',
+            ]);
+
+            $storeVariant = StoreProductVariant::whereKey($validated['store_product_variant_id'])
+                ->whereHas('productVariant', fn ($query) => $query->where('product_id', $product->id))
+                ->firstOrFail();
+            $specialPrice = $validated['special_price'] ?? null;
+            $specialPriceEndsAt = $validated['special_price_ends_at'] ?? null;
+
+            if ($specialPrice !== null && (float)$specialPrice >= (float)$storeVariant->price_exclude_tax) {
+                return ApiResponseType::sendJsonResponse(success: false, message: 'Special price must be lower than the original price.', data: [], status: 422);
+            }
+
+            if ($specialPrice !== null && empty($specialPriceEndsAt)) {
+                return ApiResponseType::sendJsonResponse(success: false, message: 'Special price expiry is required.', data: [], status: 422);
+            }
+
+            $storeVariant->update([
+                'special_price' => $specialPrice ?? $storeVariant->price,
+                'special_price_ends_at' => $specialPrice !== null
+                    ? $specialPriceEndsAt
+                    : null,
+            ]);
+
+            return ApiResponseType::sendJsonResponse(success: true, message: 'Special price updated successfully.', data: [
+                'product_id' => $product->id,
+                'store_product_variant_id' => $storeVariant->id,
+                'special_price' => $storeVariant->special_price_exclude_tax,
+                'special_price_ends_at' => $storeVariant->special_price_ends_at?->toISOString(),
+                'is_special_price_active' => $storeVariant->is_special_price_active,
+            ]);
+        } catch (AuthorizationException $e) {
+            return ApiResponseType::sendJsonResponse(success: false, message: 'labels.permission_denied', data: [], status: 403);
+        } catch (ModelNotFoundException $e) {
+            return ApiResponseType::sendJsonResponse(success: false, message: 'Product pricing not found.', data: [], status: 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return ApiResponseType::sendJsonResponse(success: false, message: 'Validation failed.', data: $e->errors(), status: 422);
+        } catch (\Exception $e) {
+            Log::error('Error while updating special price: ' . $e->getMessage());
+            return ApiResponseType::sendJsonResponse(success: false, message: 'labels.something_went_wrong', data: [], status: 500);
         }
     }
 

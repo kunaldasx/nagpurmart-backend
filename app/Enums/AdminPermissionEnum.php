@@ -68,6 +68,7 @@ use ArchTech\Enums\Values;
  * @method static ORDER_VIEW()
  * @method static RETURN_VIEW()
  * @method static PRODUCT_VIEW()
+ * @method static PRODUCT_PRICE_UPDATE()
  * @method static PRODUCT_STATUS_UPDATE()
  * @method static PRODUCT_FAQS_VIEW()
  * @method static PROMO_CREATE()
@@ -201,6 +202,7 @@ enum AdminPermissionEnum: string
     case ORDER_VIEW = 'orders.view';
     case RETURN_VIEW = 'return.view';
     case PRODUCT_VIEW = 'product.view';
+    case PRODUCT_PRICE_UPDATE = 'product.price.update';
     case PRODUCT_STATUS_UPDATE = 'product.status_update';
     case PRODUCT_FAQS_VIEW = 'product_faqs.view';
     case PROMO_CREATE = 'promo.create';
@@ -300,6 +302,7 @@ enum AdminPermissionEnum: string
                 'name' => 'Products',
                 'permissions' => [
                     self::PRODUCT_VIEW(),
+                    self::PRODUCT_PRICE_UPDATE(),
                     self::PRODUCT_STATUS_UPDATE(),
                 ],
             ],

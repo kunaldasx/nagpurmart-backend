@@ -17,8 +17,12 @@ class StoreProductVariant extends Model
         'sku',
         'price',
         'special_price',
+        'special_price_ends_at',
         'cost',
         'stock'
+    ];
+    protected $casts = [
+        'special_price_ends_at' => 'datetime',
     ];
     protected $appends = ['price_exclude_tax','special_price_exclude_tax'];
 
@@ -64,7 +68,17 @@ class StoreProductVariant extends Model
 
     public function getSpecialPriceAttribute($value): ?int
     {
-        return $this->getTaxAdjustedPrice($value);
+        $price = $this->is_special_price_active ? $value : ($this->attributes['price'] ?? null);
+        return $this->getTaxAdjustedPrice($price);
+    }
+
+    public function getIsSpecialPriceActiveAttribute(): bool
+    {
+        $specialPrice = (float)($this->attributes['special_price'] ?? 0);
+        return $specialPrice > 0
+            && $specialPrice < (float)($this->attributes['price'] ?? 0)
+            && (!isset($this->attributes['special_price_ends_at'])
+                || now()->lt($this->special_price_ends_at));
     }
 
     public function getPriceExcludeTaxAttribute(): int
@@ -73,7 +87,16 @@ class StoreProductVariant extends Model
     }
     public function getSpecialPriceExcludeTaxAttribute(): int
     {
-        return $this->attributes['special_price'];
+        return $this->is_special_price_active
+            ? $this->attributes['special_price']
+            : $this->attributes['price'];
+    }
+
+    public function getSpecialPriceRawAttribute(): ?float
+    {
+        return isset($this->attributes['special_price'])
+            ? (float)$this->attributes['special_price']
+            : null;
     }
 
     public static function scopeTaxPercentage($basePrice, $priceWithTax): int

@@ -34,6 +34,7 @@ class ProductVariantResource extends JsonResource
         }
 
         $cartItem = $this->isInUserCart();
+        $storePricing = $this->storeProductVariants->first();
 
         return [
             'id' => $this->id,
@@ -48,13 +49,16 @@ class ProductVariantResource extends JsonResource
             'cart_item' => $cartItem,
             'barcode' => $this->barcode,
             'is_default' => $this->is_default,
-            'price' => $this->storeProductVariants->first()->price ?? null,
-            'special_price' => $this->storeProductVariants->first()->special_price ?? null,
-            'store_id' => $this->storeProductVariants->first()->store_id ?? null,
-            'store_slug' => $this->storeProductVariants->first()->store->slug ?? null,
-            'store_name' => $this->storeProductVariants->first()->store->name ?? null,
-            'stock' => $this->storeProductVariants->first()->stock ?? null,
-            'sku' => $this->storeProductVariants->first()->sku ?? null,
+            'price' => $storePricing?->price,
+            'special_price' => $storePricing?->special_price,
+            'original_price' => $storePricing?->price,
+            'special_price_ends_at' => $storePricing?->special_price_ends_at?->toISOString(),
+            'is_special_price_active' => $storePricing?->is_special_price_active ?? false,
+            'store_id' => $storePricing?->store_id,
+            'store_slug' => $storePricing?->store?->slug,
+            'store_name' => $storePricing?->store?->name,
+            'stock' => $storePricing?->stock,
+            'sku' => $storePricing?->sku,
             'attributes' => $attributes,
         ];
     }
