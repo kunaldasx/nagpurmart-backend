@@ -12,7 +12,8 @@ class GeminiGroceryListService
 {
     public function extract(UploadedFile $image): array
     {
-        $apiKey = Setting::find('system')?->value['geminiApiKey'] ?? config('services.gemini.api_key');
+        $configuredApiKey = Setting::find('system')?->value['geminiApiKey'] ?? null;
+        $apiKey = filled($configuredApiKey) ? $configuredApiKey : config('services.gemini.api_key');
         if (!$apiKey) {
             throw new RuntimeException('GEMINI_API_KEY is not configured.');
         }
