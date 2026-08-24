@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\User\UserApiController;
 use App\Http\Controllers\Api\User\UserNotificationApiController;
 use App\Http\Controllers\Api\User\WalletApiController;
 use App\Http\Controllers\Api\User\WishlistApiController;
+use App\Http\Controllers\Api\User\GroceryListApiController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\Payments\FlutterwaveController;
@@ -69,6 +70,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // users routes
     Route::prefix('user')->name('user.')->group(function () {
+        // Grocery list image extraction and history
+        Route::prefix('grocery-lists')->name('grocery-lists.')->group(function () {
+            Route::post('/', [GroceryListApiController::class, 'store'])->name('store');
+            Route::get('/', [GroceryListApiController::class, 'index'])->name('index');
+            Route::get('/{id}', [GroceryListApiController::class, 'show'])->name('show');
+        });
+
         // delete user account
         Route::delete('/delete-account', [UserApiController::class, 'deleteAccount'])->name('delete-account');
         // change password

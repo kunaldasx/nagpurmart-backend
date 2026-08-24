@@ -88,6 +88,14 @@ class SettingController extends Controller
                 );
             }
 
+            // Preserve secrets when the admin leaves the password field blank.
+            if ($type === 'system' && blank($request->input('geminiApiKey'))) {
+                $currentSystem = Setting::where('variable', 'system')->first();
+                if (!empty($currentSystem?->value['geminiApiKey'])) {
+                    $request->merge(['geminiApiKey' => $currentSystem->value['geminiApiKey']]);
+                }
+            }
+
             // Initialize settings object from request data
             $settings = $method::fromArray($request->all());
 
@@ -301,9 +309,12 @@ class SettingController extends Controller
 
             $setting = Setting::find('authentication');
             $googleApiKey = $setting->value['googleApiKey'] ?? null;
+            $systemSetting = Setting::find('system');
+            $geminiApiKeyConfigured = filled($systemSetting?->value['geminiApiKey'] ?? null);
             return view('admin.settings.' . $variable, [
                 'settings' => $settings,
-                'googleApiKey' => $googleApiKey
+                'googleApiKey' => $googleApiKey,
+                'geminiApiKeyConfigured' => $geminiApiKeyConfigured,
             ]);
         } catch (AuthorizationException $e) {
             abort(403, __('labels.unauthorized_access'));

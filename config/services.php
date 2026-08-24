@@ -44,5 +44,11 @@ return [
     'default_otp_mobile' => env('DEFAULT_OTP_MOBILE', '+911000000000'),
     'default_otp_code' => env('DEFAULT_OTP_CODE', '123456'),
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash-lite'),
+        'timeout' => (int) env('GEMINI_TIMEOUT', 30),
+    ],
+
 ];
 

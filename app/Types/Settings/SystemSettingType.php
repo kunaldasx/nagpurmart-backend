@@ -54,6 +54,7 @@ class SystemSettingType implements SettingInterface
     public string $referEarnNumberOfTimesBonus = "";
     public string $currency = "USD";
     public string $currencySymbol = "$";
+    public string $geminiApiKey = "";
 
     /**
      * Get Laravel validation rules for the properties
@@ -102,6 +103,7 @@ class SystemSettingType implements SettingInterface
             'referEarnNumberOfTimesBonus' => ['required_if:referEarnStatus,on', 'nullable', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'max:3', 'exists:countries,currency'],
             'currencySymbol' => ['required', 'string', 'max:3', 'exists:countries,currency_symbol'],
+            'geminiApiKey' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

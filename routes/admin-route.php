@@ -142,6 +142,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('customers')->name('customers.')->group(function () {
             Route::get('/', [CustomerController::class, 'index'])->name('index');
             Route::get('/datatable', [CustomerController::class, 'datatable'])->name('datatable');
+            Route::get('/{id}/grocery-lists', [CustomerController::class, 'groceryLists'])->name('grocery-lists');
             Route::get('/export', [CustomerController::class, 'export'])->name('export');
         });
 

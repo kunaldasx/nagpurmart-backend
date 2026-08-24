@@ -134,6 +134,13 @@
                                             <small class="form-hint">Upload a signature image to display on
                                                 invoices.</small>
                                         </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Gemini API key</label>
+                                            <input type="password" class="form-control" name="geminiApiKey"
+                                                  value="" autocomplete="new-password"
+                                                   placeholder="Enter Gemini API key"/>
+                                              <small class="form-hint">Used for grocery-list image extraction. {{ ($geminiApiKeyConfigured ?? false) ? 'A key is currently configured. ' : '' }}Leave blank to keep the current key.</small>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="card mb-4" id="pills-support">

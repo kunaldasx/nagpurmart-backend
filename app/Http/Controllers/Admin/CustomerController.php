@@ -6,6 +6,7 @@ use App\Enums\AdminPermissionEnum;
 use App\Enums\DefaultSystemRolesEnum;
 use App\Enums\SettingTypeEnum;
 use App\Http\Controllers\Controller;
+use App\Models\GroceryList;
 use App\Models\User;
 use App\Services\CurrencyService;
 use App\Services\SettingService;
@@ -53,6 +54,7 @@ class CustomerController extends Controller
             ['data' => 'name', 'name' => 'name', 'title' => __('labels.name')],
             ['data' => 'details', 'name' => 'details', 'title' => __('labels.details')],
             ['data' => 'wallet_balance', 'name' => 'wallet_balance', 'title' => __('labels.wallet_balance')],
+            ['data' => 'grocery_lists', 'name' => 'grocery_lists', 'title' => 'Grocery lists'],
             ['data' => 'created_at', 'name' => 'created_at', 'title' => __('labels.created_at')],
         ];
 
@@ -77,7 +79,7 @@ class CustomerController extends Controller
         $orderColumn = $columns[$orderColumnIndex] ?? 'id';
 
         // Customers: users that have role 'customer' and do not have admin/seller access panel
-        $query = User::query()->with('wallet')
+        $query = User::query()->with('wallet')->withCount('groceryLists')
             ->where(function ($q) {
                 $q->whereNull('access_panel')
                     ->orWhere('access_panel', 'web');
@@ -110,6 +112,7 @@ class CustomerController extends Controller
                         ? Str::mask($email, '****', 3, 4) . ' / ' . Str::mask($mobile, '****', 3, 4)
                         : $email . ' / ' . $mobile,
                     'wallet_balance' => $this->currencyService->format($user?->wallet->balance ?? 0),
+                    'grocery_lists' => '<a href="' . route('admin.customers.grocery-lists', $user->id) . '">' . $user->grocery_lists_count . '</a>',
                     'created_at' => $user->created_at?->format('Y-m-d'),
                 ];
             })
@@ -121,6 +124,21 @@ class CustomerController extends Controller
             'recordsFiltered' => $filteredRecords,
             'data' => $data,
         ]);
+    }
+
+    public function groceryLists(int $id): View
+    {
+        if (!$this->hasPermission(AdminPermissionEnum::CUSTOMER_VIEW())) {
+            abort(403, trans('labels.permission_denied'));
+        }
+
+        $customer = User::findOrFail($id);
+        $lists = GroceryList::with(['items.product'])
+            ->where('user_id', $customer->id)
+            ->latest()
+            ->get();
+
+        return view('admin.customers.grocery_lists', compact('customer', 'lists'));
     }
 
     /**

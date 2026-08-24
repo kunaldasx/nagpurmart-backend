@@ -142,6 +142,11 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(Cart::class, 'user_id', 'id');
     }
 
+    public function groceryLists(): HasMany
+    {
+        return $this->hasMany(GroceryList::class, 'user_id', 'id');
+    }
+
     public function getProfileImageAttribute(): ?string
     {
         return $this->getFirstMediaUrl(SpatieMediaCollectionName::PROFILE_IMAGE());
