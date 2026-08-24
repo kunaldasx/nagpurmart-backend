@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('grocery_lists', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('image_path')->nullable();
             $table->string('status')->default('completed');
             $table->string('language')->nullable();

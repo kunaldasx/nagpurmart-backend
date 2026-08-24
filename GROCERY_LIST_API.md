@@ -2,7 +2,7 @@
 
 Base URL: `/api`
 
-All endpoints require the customer’s Sanctum bearer token:
+History endpoints require the customer’s Sanctum bearer token:
 `Authorization: Bearer <token>`
 
 ## Extract a list
@@ -15,7 +15,7 @@ Send `multipart/form-data` with one field:
 | ------- | ---- | -------- | -------------------------------------- |
 | `image` | file | Yes      | JPG, JPEG, PNG, or WEBP; maximum 10 MB |
 
-The endpoint validates the file, sends it once to Gemini 2.5 Flash-Lite for classification and extraction, matches each extracted item against active approved products, saves the list for the authenticated user, and returns full product details for matched items.
+The endpoint is temporarily public while frontend authentication is being integrated. If a bearer token is supplied, the list is linked to that user; without one, the extraction is stored as an anonymous record. It validates the file, sends it once to Gemini 2.5 Flash-Lite for classification and extraction, matches each extracted item against active approved products, and returns full product details for matched items.
 
 Successful response data includes `id`, `status`, `language`, `extracted_text`, `image_url`, `created_at`, and `items`. Each item includes `name`, `quantity`, `unit`, `confidence`, and `product` (a full product resource or `null` when no match exists).
 

@@ -63,6 +63,11 @@ Route::prefix('subscription')->group(function () {
     Route::get('/plans', [SubscriptionPlanApiController::class, 'index']);
 });
 
+// Temporary public grocery-list extraction endpoint. Re-enable auth when frontend auth is ready.
+Route::post('user/grocery-lists', [GroceryListApiController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('user.grocery-lists.store');
+
 Route::middleware('auth:sanctum')->group(function () {
     //logout
     Route::post('logout', [AuthApiController::class, 'logout']);
@@ -72,7 +77,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('user')->name('user.')->group(function () {
         // Grocery list image extraction and history
         Route::prefix('grocery-lists')->name('grocery-lists.')->group(function () {
-            Route::post('/', [GroceryListApiController::class, 'store'])->name('store');
             Route::get('/', [GroceryListApiController::class, 'index'])->name('index');
             Route::get('/{id}', [GroceryListApiController::class, 'show'])->name('show');
         });
