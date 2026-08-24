@@ -52,6 +52,7 @@ class ProductVariantResource extends JsonResource
             'price' => $storePricing?->price,
             'special_price' => $storePricing?->special_price,
             'original_price' => $storePricing?->price,
+            'original_special_price' => $storePricing?->original_special_price_exclude_tax,
             'special_price_ends_at' => $storePricing?->special_price_ends_at?->toISOString(),
             'is_special_price_active' => $storePricing?->is_special_price_active ?? false,
             'store_id' => $storePricing?->store_id,

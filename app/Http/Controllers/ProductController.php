@@ -206,6 +206,7 @@ class ProductController extends Controller
                         'store_name' => $item->store->name ?? '',
                         'price' => $item->price_exclude_tax,
                         'special_price' => $item->special_price_exclude_tax,
+                        'original_special_price' => $item->original_special_price_exclude_tax,
                         'special_price_raw' => $item->special_price_raw,
                         'special_price_ends_at' => $item->special_price_ends_at,
                         'is_special_price_active' => $item->is_special_price_active,
@@ -322,6 +323,7 @@ class ProductController extends Controller
                             'store_name' => $item->store->name ?? '',
                             'price' => $item->price_exclude_tax,
                             'special_price' => $item->special_price_exclude_tax,
+                            'original_special_price' => $item->original_special_price_exclude_tax,
                             'special_price_raw' => $item->special_price_raw,
                             'special_price_ends_at' => $item->special_price_ends_at,
                             'is_special_price_active' => $item->is_special_price_active,
@@ -382,7 +384,7 @@ class ProductController extends Controller
             }
 
             $storeVariant->update([
-                'special_price' => $specialPrice ?? $storeVariant->price,
+                'special_price' => $specialPrice ?? $storeVariant->original_special_price,
                 'special_price_ends_at' => $specialPrice !== null
                     ? $specialPriceEndsAt
                     : null,

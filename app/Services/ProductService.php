@@ -802,6 +802,7 @@ class ProductService
                 'price' => $pricing['price'] ?? null,
                 'sku' => $pricing['sku'],
                 'special_price' => !empty($pricing['special_price']) ? $pricing['special_price'] : $pricing['price'],
+                'original_special_price' => !empty($pricing['special_price']) ? $pricing['special_price'] : $pricing['price'],
                 'cost' => $pricing['cost'] ?? null,
                 'stock' => $pricing['stock'] ?? 0,
             ]);

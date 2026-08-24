@@ -17,11 +17,13 @@ class StoreProductVariant extends Model
         'sku',
         'price',
         'special_price',
+        'original_special_price',
         'special_price_ends_at',
         'cost',
         'stock'
     ];
     protected $casts = [
+        'original_special_price' => 'decimal:2',
         'special_price_ends_at' => 'datetime',
     ];
     protected $appends = ['price_exclude_tax','special_price_exclude_tax'];
@@ -68,7 +70,9 @@ class StoreProductVariant extends Model
 
     public function getSpecialPriceAttribute($value): ?int
     {
-        $price = $this->is_special_price_active ? $value : ($this->attributes['price'] ?? null);
+        $price = $this->is_special_price_active
+            ? $value
+            : ($this->attributes['original_special_price'] ?? $this->attributes['price'] ?? null);
         return $this->getTaxAdjustedPrice($price);
     }
 
@@ -89,7 +93,14 @@ class StoreProductVariant extends Model
     {
         return $this->is_special_price_active
             ? $this->attributes['special_price']
-            : $this->attributes['price'];
+            : ($this->attributes['original_special_price'] ?? $this->attributes['price']);
+    }
+
+    public function getOriginalSpecialPriceExcludeTaxAttribute(): ?float
+    {
+        return isset($this->attributes['original_special_price'])
+            ? (float)$this->attributes['original_special_price']
+            : null;
     }
 
     public function getSpecialPriceRawAttribute(): ?float
