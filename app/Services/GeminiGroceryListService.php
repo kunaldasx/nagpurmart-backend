@@ -43,15 +43,16 @@ PROMPT;
                 ],
         ];
 
-        $model = config('services.gemini.model', 'gemini-3.5-flash-lite');
+        $configuredModel = Setting::find('system')?->value['geminiModel'] ?? null;
+        $model = filled($configuredModel) ? $configuredModel : config('services.gemini.model', 'gemini-2.5-flash');
         $response = $this->client($apiKey)->post($this->endpoint($model), $payload);
 
         // Recover from an old or retired model name left in the server environment.
-        if ($response->status() === 404 && $model !== 'gemini-3.5-flash-lite') {
-            Log::warning('Configured Gemini model is unavailable; retrying with gemini-3.5-flash-lite.', [
+        if ($response->status() === 404 && $model !== 'gemini-2.5-flash') {
+            Log::warning('Configured Gemini model is unavailable; retrying with gemini-2.5-flash.', [
                 'model' => $model,
             ]);
-            $response = $this->client($apiKey)->post($this->endpoint('gemini-3.5-flash-lite'), $payload);
+            $response = $this->client($apiKey)->post($this->endpoint('gemini-2.5-flash'), $payload);
         }
 
         $response->throw();

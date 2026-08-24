@@ -141,6 +141,19 @@
                                                    placeholder="Enter Gemini API key"/>
                                               <small class="form-hint">Used for grocery-list image extraction. {{ ($geminiApiKeyConfigured ?? false) ? 'A key is currently configured. ' : '' }}Leave blank to keep the current key.</small>
                                         </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Gemini model</label>
+                                            <select class="form-select" name="geminiModel">
+                                                @foreach([
+                                                    'gemini-2.5-flash' => 'Gemini 2.5 Flash (recommended)',
+                                                    'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite (lower cost, if enabled for your API project)',
+                                                    'gemini-2.0-flash' => 'Gemini 2.0 Flash (legacy)',
+                                                ] as $model => $label)
+                                                    <option value="{{ $model }}" {{ ($settings['geminiModel'] ?? 'gemini-2.5-flash') === $model ? 'selected' : '' }}>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                            <small class="form-hint">The selected model must be enabled for your Gemini API project. Do not use gemini-3.5-flash-lite; it is not a valid model.</small>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="card mb-4" id="pills-support">

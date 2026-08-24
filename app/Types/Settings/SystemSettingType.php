@@ -55,6 +55,7 @@ class SystemSettingType implements SettingInterface
     public string $currency = "USD";
     public string $currencySymbol = "$";
     public string $geminiApiKey = "";
+    public string $geminiModel = "gemini-2.5-flash";
 
     /**
      * Get Laravel validation rules for the properties
@@ -104,6 +105,7 @@ class SystemSettingType implements SettingInterface
             'currency' => ['required', 'string', 'max:3', 'exists:countries,currency'],
             'currencySymbol' => ['required', 'string', 'max:3', 'exists:countries,currency_symbol'],
             'geminiApiKey' => ['nullable', 'string', 'max:255'],
+            'geminiModel' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9._-]+$/'],
         ];
     }
 }

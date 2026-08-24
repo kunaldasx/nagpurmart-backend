@@ -89,10 +89,13 @@ class SettingController extends Controller
             }
 
             // Preserve secrets when the admin leaves the password field blank.
-            if ($type === 'system' && blank($request->input('geminiApiKey'))) {
+            if ($type === 'system' && (blank($request->input('geminiApiKey')) || blank($request->input('geminiModel')))) {
                 $currentSystem = Setting::where('variable', 'system')->first();
                 if (!empty($currentSystem?->value['geminiApiKey'])) {
                     $request->merge(['geminiApiKey' => $currentSystem->value['geminiApiKey']]);
+                }
+                if (blank($request->input('geminiModel')) && !empty($currentSystem?->value['geminiModel'])) {
+                    $request->merge(['geminiModel' => $currentSystem->value['geminiModel']]);
                 }
             }
 

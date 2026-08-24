@@ -35,4 +35,4 @@ Returns one list owned by the authenticated user, or `404` when it does not exis
 
 ## Configuration
 
-Configure the key in Admin Panel > Settings > System > Gemini API key. The service uses that value first; when it is blank, it falls back to `GEMINI_API_KEY` from the server `.env`. Optional environment settings are `GEMINI_MODEL` (defaults to `gemini-3.5-flash-lite`) and `GEMINI_TIMEOUT` (defaults to 30 seconds). If an older configured model returns 404, the service retries once with `gemini-3.5-flash-lite`. The prompt uses JSON mode, temperature 0, and a 900-token output cap; classification and extraction happen in the same request to avoid a second AI call.
+Configure the key and model in Admin Panel > Settings > System. The admin model setting takes precedence; when it is blank, the service uses `GEMINI_MODEL` from the server `.env`, defaulting to `gemini-2.5-flash`. If a configured model returns 404, the service retries once with `gemini-2.5-flash`. The prompt uses JSON mode, temperature 0, and a 900-token output cap; classification and extraction happen in the same request to avoid a second AI call.
