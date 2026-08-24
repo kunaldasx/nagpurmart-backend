@@ -11,6 +11,9 @@ composer install --no-dev --optimize-autoloader
 **Run database migrations**:
 php artisan migrate --force
 
+**Set Gemini model if needed**:
+GEMINI_MODEL=gemini-3.5-flash-lite
+
 **Clear and rebuild Laravel caches:**
 php artisan config:clear
 php artisan route:clear

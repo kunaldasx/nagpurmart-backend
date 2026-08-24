@@ -6,6 +6,7 @@ use App\Models\Setting;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class GeminiGroceryListService
@@ -25,9 +26,7 @@ If the image is not primarily a handwritten or printed grocery list, return is_g
 Read English, Hindi, Marathi, and mixtures. Preserve the original item meaning in raw_text, but use a concise canonical name in items.name. Ignore prices, checkmarks, headings, phone numbers, and non-product text. Do not invent missing quantities. Maximum 30 items. Confidence must be between 0 and 1.
 PROMPT;
 
-        $response = $this->client($apiKey)->post(
-            'https://generativelanguage.googleapis.com/v1beta/models/' . config('services.gemini.model') . ':generateContent',
-            [
+        $payload = [
                 'contents' => [[
                     'parts' => [
                         ['text' => $prompt],
@@ -42,8 +41,20 @@ PROMPT;
                     'maxOutputTokens' => 900,
                     'responseMimeType' => 'application/json',
                 ],
-            ]
-        )->throw();
+        ];
+
+        $model = config('services.gemini.model', 'gemini-3.5-flash-lite');
+        $response = $this->client($apiKey)->post($this->endpoint($model), $payload);
+
+        // Recover from an old or retired model name left in the server environment.
+        if ($response->status() === 404 && $model !== 'gemini-3.5-flash-lite') {
+            Log::warning('Configured Gemini model is unavailable; retrying with gemini-3.5-flash-lite.', [
+                'model' => $model,
+            ]);
+            $response = $this->client($apiKey)->post($this->endpoint('gemini-3.5-flash-lite'), $payload);
+        }
+
+        $response->throw();
 
         $text = $response->json('candidates.0.content.parts.0.text');
         $data = json_decode(trim((string) $text), true);
@@ -63,5 +74,10 @@ PROMPT;
         return Http::acceptJson()
             ->withOptions(['query' => ['key' => $apiKey]])
             ->timeout((int) config('services.gemini.timeout', 30));
+    }
+
+    private function endpoint(string $model): string
+    {
+        return 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
     }
 }
