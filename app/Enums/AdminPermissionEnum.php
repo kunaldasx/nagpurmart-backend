@@ -86,6 +86,10 @@ use ArchTech\Enums\Values;
  * @method static SUBSCRIPTION_SUBSCRIBER_VIEW()
  * @method static STORE_VIEW()
  * @method static STORE_VERIFY()
+ * @method static POPULAR_SEARCH_VIEW()
+ * @method static POPULAR_SEARCH_CREATE()
+ * @method static POPULAR_SEARCH_EDIT()
+ * @method static POPULAR_SEARCH_DELETE()
  *
  * Module-wise setting permissions
  * @method static SETTING_SYSTEM_VIEW()
@@ -222,6 +226,10 @@ enum AdminPermissionEnum: string
     case STORE_VERIFY = 'store.verify';
     // Customers (web panel users)
     case CUSTOMER_VIEW = 'customer.view';
+    case POPULAR_SEARCH_VIEW = 'popular_search.view';
+    case POPULAR_SEARCH_CREATE = 'popular_search.create';
+    case POPULAR_SEARCH_EDIT = 'popular_search.edit';
+    case POPULAR_SEARCH_DELETE = 'popular_search.delete';
 
     public static function groupedPermissions(): array
     {
@@ -373,6 +381,13 @@ enum AdminPermissionEnum: string
                 'permissions' => [
                     self::FEATURED_SECTION_SORTING_VIEW(),
                     self::FEATURED_SECTION_SORTING_MODIFY(),
+                ],
+            ],
+            'popular_search' => [
+                'name' => 'Popular Searches',
+                'permissions' => [
+                    self::POPULAR_SEARCH_VIEW(), self::POPULAR_SEARCH_CREATE(),
+                    self::POPULAR_SEARCH_EDIT(), self::POPULAR_SEARCH_DELETE(),
                 ],
             ],
             'promo' => [

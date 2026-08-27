@@ -31,6 +31,7 @@ use App\Models\TaxClass;
 use App\Models\TaxRate;
 use App\Models\User;
 use App\Models\Notification;
+use App\Models\PopularSearch;
 use App\Policies\BannerPolicy;
 use App\Policies\BrandPolicy;
 use App\Policies\NotificationPolicy;
@@ -58,6 +59,7 @@ use App\Policies\StorePolicy;
 use App\Policies\SystemUserPolicy;
 use App\Policies\TaxClassPolicy;
 use App\Policies\OrderReturnPolicy;
+use App\Policies\PopularSearchPolicy;
 use App\Models\Wallet;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -98,6 +100,7 @@ class AuthServiceProvider extends ServiceProvider
         Notification::class => NotificationPolicy::class,
         Wallet::class => WalletPolicy::class,
         SellerStatement::class => SellerStatementPolicy::class,
+        PopularSearch::class => PopularSearchPolicy::class,
     ];
     /**
      * Register services.

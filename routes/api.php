@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\DeliveryZoneApiController;
 use App\Http\Controllers\Api\FaqApiController;
 use App\Http\Controllers\Api\FeaturedSectionApiController;
+use App\Http\Controllers\Api\PopularSearchApiController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Product\ProductApiController;
 use App\Http\Controllers\Api\Product\ProductFaqApiController;
@@ -256,6 +257,8 @@ Route::prefix('featured-sections')->name('featured-sections.')->group(function (
     Route::get('/{slug}', [FeaturedSectionApiController::class, 'show'])->name('show');
     Route::get('/{slug}/products', [FeaturedSectionApiController::class, 'products'])->name('products');
 });
+
+Route::get('popular-searches', [PopularSearchApiController::class, 'index'])->name('popular-searches.index');
 
 Route::get('payment/variables', [PaymentController::class, 'paymentVariables']);
 

@@ -251,6 +251,13 @@ return [
                 ],
             ],
         ],
+        'popular_searches' => [
+            'icon' => 'ti-search',
+            'route' => 'admin.popular-searches.index',
+            'title' => 'labels.popular_searches',
+            'active' => 'popular_searches',
+            'permission' => 'popular_search.view',
+        ],
         'promos' => [
             'icon' => 'ti-ticket',
             'route' => 'admin.promos.index',

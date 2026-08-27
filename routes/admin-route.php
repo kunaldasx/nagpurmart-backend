@@ -18,6 +18,7 @@ use App\Http\Controllers\DeliveryBoyController;
 use App\Http\Controllers\DeliveryZoneController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeaturedSectionController;
+use App\Http\Controllers\PopularSearchController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PermissionController;
@@ -304,6 +305,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{id}', [FeaturedSectionController::class, 'show'])->name('show');
             Route::post('/{id}', [FeaturedSectionController::class, 'update'])->name('update');
             Route::delete('/{id}', [FeaturedSectionController::class, 'destroy'])->name('destroy');
+        });
+
+        // Popular Searches Routes
+        Route::prefix('popular-searches')->name('popular-searches.')->group(function () {
+            Route::get('/', [PopularSearchController::class, 'index'])->name('index');
+            Route::post('/', [PopularSearchController::class, 'store'])->name('store');
+            Route::get('/datatable', [PopularSearchController::class, 'datatable'])->name('datatable');
+            Route::get('/sort', [PopularSearchController::class, 'sort'])->name('sort');
+            Route::post('/sort', [PopularSearchController::class, 'updateSort'])->name('sort.update');
+            Route::get('/{id}', [PopularSearchController::class, 'show'])->name('show');
+            Route::post('/{id}', [PopularSearchController::class, 'update'])->name('update');
+            Route::delete('/{id}', [PopularSearchController::class, 'destroy'])->name('delete');
         });
 
         // Notifications Routes
