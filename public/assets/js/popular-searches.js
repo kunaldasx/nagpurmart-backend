@@ -55,6 +55,41 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const sortable = document.getElementById("popular-search-sortable");
     if (sortable && window.Sortable) new Sortable(sortable, { animation: 150 });
+
+    document
+        .getElementById("popular-search-form")
+        ?.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const form = event.currentTarget;
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+
+            fetch(form.action, {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]',
+                    ).content,
+                },
+                body: new FormData(form),
+            })
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) throw { response: { data } };
+                    window.location.href = `${base_url}/admin/popular-searches`;
+                })
+                .catch((error) => {
+                    const message =
+                        error.response?.data?.message ||
+                        "An error occurred while saving the popular search.";
+                    Toast.fire({ icon: "error", title: message });
+                    submitButton.disabled = false;
+                });
+        });
+
     document
         .getElementById("save-popular-search-order")
         ?.addEventListener("click", function () {
