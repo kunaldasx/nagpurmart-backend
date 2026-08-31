@@ -27,9 +27,17 @@ class GeminiGroceryListService
         }
 
         $prompt = <<<'PROMPT'
-TASK: Extract grocery items from this image of a handwritten or printed list. It may contain English, Hindi, or Marathi in Devanagari or Roman script.
-Return ONLY JSON with this exact shape: {"items":[{"english name":"Onion","qty":1,"unit":"kg"}]}
-Rules: translate every item name to standard English; convert text quantities to decimals (half=0.5); missing quantity=1; standardize units to kg, g, L, ml, pc, or bunch; infer a logical unit when missing; ignore crossed-out text and non-grocery notes. Maximum 30 items. For a non-grocery image, return {"items":[]}.
+Return ONLY compact JSON with this exact structure:
+{"items":[{"name":"Onion","qty":1,"unit":"kg"}]}
+Rules:
+- only keys allowed in each item: name, qty, unit
+- translate Hindi/Marathi and handwritten text to standard English names
+- qty must be a number; if missing, use 1
+- unit must be one of: kg, g, l, ml, pc, bunch
+- ignore crossed-out text and non-grocery notes
+- if image is not a grocery list, return {"items":[]}
+- no markdown, no code fences, no extra text
+- max 30 items
 PROMPT;
 
         $payload = [
@@ -44,7 +52,7 @@ PROMPT;
                 ]],
                 'generationConfig' => [
                     'temperature' => 0,
-                    'maxOutputTokens' => 500,
+                    'maxOutputTokens' => 1024,
                     'responseMimeType' => 'application/json',
                 ],
         ];
@@ -68,6 +76,19 @@ PROMPT;
         $response->throw();
 
         $data = $this->extractJsonPayload($response);
+        if ((!is_array($data) || !isset($data['items']) || !is_array($data['items'])) && $response->json('candidates.0.finishReason') === 'MAX_TOKENS') {
+            Log::warning('Gemini hit MAX_TOKENS while generating grocery JSON; retrying with a larger output budget.', [
+                'model' => $model,
+                'status' => $response->status(),
+                'response_body' => $response->body(),
+            ]);
+
+            $payload['generationConfig']['maxOutputTokens'] = 2048;
+            $response = $this->client($apiKey)->post($this->endpoint($model), $payload);
+            $response->throw();
+            $data = $this->extractJsonPayload($response);
+        }
+
         if (!is_array($data) || !isset($data['items']) || !is_array($data['items'])) {
             Log::error('Gemini returned an invalid grocery list response.', [
                 'model' => $model,
