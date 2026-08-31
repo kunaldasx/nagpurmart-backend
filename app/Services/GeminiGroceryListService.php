@@ -6,6 +6,7 @@ use App\Models\Setting;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class GeminiGroceryListService
@@ -68,6 +69,13 @@ PROMPT;
 
         $data = $this->extractJsonPayload($response);
         if (!is_array($data) || !isset($data['items']) || !is_array($data['items'])) {
+            Log::error('Gemini returned an invalid grocery list response.', [
+                'model' => $model,
+                'status' => $response->status(),
+                'response_body' => $response->body(),
+                'parsed_value' => $data,
+            ]);
+
             throw new RuntimeException('Gemini returned an invalid grocery list response.');
         }
 
