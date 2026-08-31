@@ -6,12 +6,18 @@ use App\Models\Setting;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class GeminiGroceryListService
 {
-    public function extract(UploadedFile $image): array
+    public const ALLOWED_MODELS = [
+        'gemini-3.5-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-3.1-pro-preview',
+        'gemini-2.5-flash',
+    ];
+
+    public function extract(UploadedFile $image, ?string $requestedModel = null): array
     {
         $configuredApiKey = Setting::find('system')?->value['geminiApiKey'] ?? null;
         $apiKey = filled($configuredApiKey) ? $configuredApiKey : config('services.gemini.api_key');
@@ -20,10 +26,9 @@ class GeminiGroceryListService
         }
 
         $prompt = <<<'PROMPT'
-You extract grocery lists from images. Return ONLY valid JSON matching this shape:
-{"is_grocery_list":true,"language":"en|hi|mr|mixed|unknown","raw_text":"...","items":[{"name":"canonical grocery product name","quantity":null,"unit":null,"confidence":0.0}]}
-If the image is not primarily a handwritten or printed grocery list, return is_grocery_list false, raw_text empty, and items [].
-Read English, Hindi, Marathi, and mixtures. Preserve the original item meaning in raw_text, but use a concise canonical name in items.name. Ignore prices, checkmarks, headings, phone numbers, and non-product text. Do not invent missing quantities. Maximum 30 items. Confidence must be between 0 and 1.
+TASK: Extract grocery items from this image of a handwritten or printed list. It may contain English, Hindi, or Marathi in Devanagari or Roman script.
+Return ONLY JSON with this exact shape: {"items":[{"english name":"Onion","qty":1,"unit":"kg"}]}
+Rules: translate every item name to standard English; convert text quantities to decimals (half=0.5); missing quantity=1; standardize units to kg, g, L, ml, pc, or bunch; infer a logical unit when missing; ignore crossed-out text and non-grocery notes. Maximum 30 items. For a non-grocery image, return {"items":[]}.
 PROMPT;
 
         $payload = [
@@ -38,36 +43,52 @@ PROMPT;
                 ]],
                 'generationConfig' => [
                     'temperature' => 0,
-                    'maxOutputTokens' => 900,
+                    'maxOutputTokens' => 500,
                     'responseMimeType' => 'application/json',
                 ],
         ];
 
         $configuredModel = Setting::find('system')?->value['geminiModel'] ?? null;
-        $model = filled($configuredModel) ? $configuredModel : config('services.gemini.model', 'gemini-2.5-flash');
+        $defaultModel = config('services.gemini.model', 'gemini-3.5-flash');
+        $model = $requestedModel ?: (filled($configuredModel) ? $configuredModel : $defaultModel);
+        $warning = null;
+        if (!in_array($model, self::ALLOWED_MODELS, true)) {
+            $warning = 'Invalid model_id; fell back to gemini-3.5-flash.';
+            $model = 'gemini-3.5-flash';
+        }
         $response = $this->client($apiKey)->post($this->endpoint($model), $payload);
 
-        // Recover from an old or retired model name left in the server environment.
         if ($response->status() === 404 && $model !== 'gemini-2.5-flash') {
-            Log::warning('Configured Gemini model is unavailable; retrying with gemini-2.5-flash.', [
-                'model' => $model,
-            ]);
-            $response = $this->client($apiKey)->post($this->endpoint('gemini-2.5-flash'), $payload);
+            $warning = 'Selected model was unavailable; fell back to gemini-2.5-flash.';
+            $model = 'gemini-2.5-flash';
+            $response = $this->client($apiKey)->post($this->endpoint($model), $payload);
         }
 
         $response->throw();
 
         $text = $response->json('candidates.0.content.parts.0.text');
         $data = json_decode(trim((string) $text), true);
-        if (!is_array($data) || !isset($data['is_grocery_list'], $data['items']) || !is_array($data['items'])) {
+        if (!is_array($data) || !isset($data['items']) || !is_array($data['items'])) {
             throw new RuntimeException('Gemini returned an invalid grocery list response.');
         }
 
-        $data['items'] = array_values(array_filter(array_slice($data['items'], 0, 30), function ($item) {
-            return is_array($item) && !empty(trim((string) ($item['name'] ?? '')));
-        }));
+        $data['items'] = array_values(array_filter(array_map(function ($item) {
+            if (!is_array($item) || blank($item['english name'] ?? null)) {
+                return null;
+            }
+            $unit = strtolower(trim((string) ($item['unit'] ?? 'pc')));
+            if (!in_array($unit, ['kg', 'g', 'l', 'ml', 'pc', 'bunch'], true)) {
+                $unit = 'pc';
+            }
 
-        return $data;
+            return [
+                'english name' => trim((string) $item['english name']),
+                'qty' => is_numeric($item['qty'] ?? null) && (float) $item['qty'] > 0 ? (float) $item['qty'] : 1,
+                'unit' => $unit,
+            ];
+        }, array_slice($data['items'], 0, 30))));
+
+        return ['items' => $data['items'], 'model' => $model, 'warning' => $warning];
     }
 
     private function client(string $apiKey): PendingRequest

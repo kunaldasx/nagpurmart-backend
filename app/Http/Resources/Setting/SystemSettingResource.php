@@ -64,7 +64,7 @@ class SystemSettingResource extends JsonResource
                 'referEarnNumberOfTimesBonus' => $this->value['referEarnNumberOfTimesBonus'] ?? '',
                 'currency' => $this->value['currency'] ?? 'USD',
                 'currencySymbol' => $this->value['currencySymbol'] ?? '$',
-                'geminiModel' => $this->value['geminiModel'] ?? 'gemini-2.5-flash',
+                'geminiModel' => $this->value['geminiModel'] ?? 'gemini-3.5-flash',
                 'notificationType' => NotificationTypeEnum::values() ?? [],
                 'dataFilterEnum' => DateRangeFilterEnum::values() ?? [],
                 'orderStatusEnum' => OrderStatusEnum::orderFilters() ?? [],

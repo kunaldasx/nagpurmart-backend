@@ -15,9 +15,27 @@ Send `multipart/form-data` with one field:
 | ------- | ---- | -------- | -------------------------------------- |
 | `image` | file | Yes      | JPG, JPEG, PNG, or WEBP; maximum 10 MB |
 
-The endpoint is temporarily public while frontend authentication is being integrated. If a bearer token is supplied, the list is linked to that user; without one, the extraction is stored as an anonymous record. It validates the file, sends it once to Gemini 2.5 Flash for classification and extraction, matches each extracted item against active approved products, and returns full product details for matched items.
+The endpoint is temporarily public while frontend authentication is being integrated. If a bearer token is supplied, the list is linked to that user; without one, the extraction is stored as an anonymous record. It validates the file, sends it once to Gemini for extraction, and returns only the structured grocery items. Product searching is not performed.
 
-Successful response data includes `id`, `status`, `language`, `extracted_text`, `image_url`, `created_at`, and `items`. Each item includes `name`, `quantity`, `unit`, `confidence`, and `product` (a full product resource or `null` when no match exists).
+Optional form field: `model_id`. It must be one of `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-pro-preview`, or `gemini-2.5-flash`. If omitted, the admin-selected model is used. If invalid, the request uses `gemini-3.5-flash` and returns a non-blocking warning in `metadata.warning`.
+
+Successful response data contains `items` and `metadata`. Each item contains exactly `english name`, `qty`, and `unit`.
+
+Example response:
+
+```json
+{
+    "success": true,
+    "message": "Grocery list extracted successfully.",
+    "data": {
+        "items": [
+            { "english name": "Onion", "qty": 1, "unit": "kg" },
+            { "english name": "Milk", "qty": 2, "unit": "L" }
+        ],
+        "metadata": { "list_id": 12, "model": "gemini-3.5-flash" }
+    }
+}
+```
 
 Non-grocery images return HTTP `422` with `status: rejected`, an empty item list, and `rejection_reason`. Validation errors also return `422`; an unavailable AI provider returns `500`.
 
@@ -25,7 +43,7 @@ Non-grocery images return HTTP `422` with `status: rejected`, an empty item list
 
 `GET /user/grocery-lists?per_page=15`
 
-Returns paginated lists belonging only to the authenticated user, including their extracted items and product matches.
+Returns paginated lists belonging only to the authenticated user, including their extracted items.
 
 ## Get one upload
 
@@ -35,4 +53,4 @@ Returns one list owned by the authenticated user, or `404` when it does not exis
 
 ## Configuration
 
-Configure the key and model in Admin Panel > Settings > System. The admin model setting takes precedence; when it is blank, the service uses `GEMINI_MODEL` from the server `.env`, defaulting to `gemini-2.5-flash`. If a configured model returns 404, the service retries once with `gemini-2.5-flash`. The prompt uses JSON mode, temperature 0, and a 900-token output cap; classification and extraction happen in the same request to avoid a second AI call.
+Configure the key and model in Admin Panel > Settings > System. The admin model setting takes precedence; when it is blank, the service uses `GEMINI_MODEL` from the server `.env`, defaulting to `gemini-3.5-flash`. If a selected model returns 404, the service retries once with `gemini-2.5-flash`. The prompt requests only the three required fields, uses JSON mode, temperature 0, and a 500-token output cap to minimize latency and cost.

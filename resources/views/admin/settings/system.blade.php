@@ -145,14 +145,15 @@
                                             <label class="form-label">Gemini model</label>
                                             <select class="form-select" name="geminiModel">
                                                 @foreach([
-                                                    'gemini-2.5-flash' => 'Gemini 2.5 Flash (recommended)',
-                                                    'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite (lower cost, if enabled for your API project)',
-                                                    'gemini-2.0-flash' => 'Gemini 2.0 Flash (legacy)',
+                                                    'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash-Lite (fast / budget)',
+                                                    'gemini-3.5-flash' => 'Gemini 3.5 Flash (recommended)',
+                                                    'gemini-3.1-pro-preview' => 'Gemini 3.1 Pro Preview (high accuracy)',
+                                                    'gemini-2.5-flash' => 'Gemini 2.5 Flash (legacy fallback)',
                                                 ] as $model => $label)
-                                                    <option value="{{ $model }}" {{ ($settings['geminiModel'] ?? 'gemini-2.5-flash') === $model ? 'selected' : '' }}>{{ $label }}</option>
+                                                    <option value="{{ $model }}" {{ ($settings['geminiModel'] ?? 'gemini-3.5-flash') === $model ? 'selected' : '' }}>{{ $label }}</option>
                                                 @endforeach
                                             </select>
-                                            <small class="form-hint">The selected model must be enabled for your Gemini API project. Do not use gemini-3.5-flash-lite; it is not a valid model.</small>
+                                            <small class="form-hint">The selected model must be enabled for your Gemini API project.</small>
                                         </div>
                                     </div>
                                 </div>

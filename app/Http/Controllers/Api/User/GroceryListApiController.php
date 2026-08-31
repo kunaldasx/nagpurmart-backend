@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\Api\User;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Product\ProductResource;
 use App\Models\GroceryList;
-use App\Models\Product;
 use App\Services\GeminiGroceryListService;
 use App\Types\Api\ApiResponseType;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,46 +27,37 @@ class GroceryListApiController extends Controller
             ]);
 
             $image = $request->file('image');
-            $extracted = $this->extractor->extract($image);
-            $isGroceryList = filter_var($extracted['is_grocery_list'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $extracted = $this->extractor->extract($image, $request->input('model_id'));
             $imagePath = $image->store('grocery-lists', 'public');
 
-            $list = DB::transaction(function () use ($extracted, $isGroceryList, $imagePath) {
+            $list = DB::transaction(function () use ($extracted, $imagePath) {
                 $list = GroceryList::create([
                     'user_id' => auth()->id(),
                     'image_path' => $imagePath,
-                    'status' => $isGroceryList ? 'completed' : 'rejected',
-                    'language' => $extracted['language'] ?? 'unknown',
-                    'extracted_text' => $extracted['raw_text'] ?? null,
-                    'rejection_reason' => $isGroceryList ? null : 'Image does not appear to contain a grocery list.',
+                    'status' => 'completed',
+                    'language' => 'mixed',
                 ]);
 
-                if ($isGroceryList) {
-                    foreach ($extracted['items'] as $item) {
-                        $name = trim((string) ($item['name'] ?? ''));
-                        $product = $this->findProduct($name);
-                        $list->items()->create([
-                            'product_id' => $product?->id,
-                            'extracted_name' => $name,
-                            'normalized_name' => mb_strtolower($name),
-                            'quantity' => is_numeric($item['quantity'] ?? null) ? $item['quantity'] : null,
-                            'unit' => isset($item['unit']) ? trim((string) $item['unit']) : null,
-                            'confidence' => is_numeric($item['confidence'] ?? null) ? $item['confidence'] : null,
-                        ]);
-                    }
+                foreach ($extracted['items'] as $item) {
+                    $list->items()->create([
+                        'extracted_name' => $item['english name'],
+                        'normalized_name' => mb_strtolower($item['english name']),
+                        'quantity' => $item['qty'],
+                        'unit' => $item['unit'],
+                    ]);
                 }
 
                 return $list;
             });
 
-            $list->load(['items.product' => fn (Builder $query) => $this->productRelations($query)]);
-
-            return ApiResponseType::sendJsonResponse(
-                $isGroceryList,
-                $isGroceryList ? 'Grocery list extracted successfully.' : 'The image is not a grocery list.',
-                $this->formatList($list),
-                $isGroceryList ? 200 : 422
-            );
+            return ApiResponseType::sendJsonResponse(true, 'Grocery list extracted successfully.', [
+                'items' => $extracted['items'],
+                'metadata' => array_filter([
+                    'list_id' => $list->id,
+                    'model' => $extracted['model'],
+                    'warning' => $extracted['warning'],
+                ], fn ($value) => $value !== null),
+            ]);
         } catch (ValidationException $e) {
             return ApiResponseType::sendJsonResponse(false, 'labels.validation_failed', $e->errors(), 422);
         } catch (Throwable $e) {
@@ -80,7 +68,7 @@ class GroceryListApiController extends Controller
 
     public function index(): JsonResponse
     {
-        $lists = GroceryList::with(['items.product' => fn (Builder $query) => $this->productRelations($query)])
+        $lists = GroceryList::with('items')
             ->where('user_id', auth()->id())
             ->latest()
             ->paginate(15);
@@ -91,7 +79,7 @@ class GroceryListApiController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $list = GroceryList::with(['items.product' => fn (Builder $query) => $this->productRelations($query)])
+        $list = GroceryList::with('items')
             ->where('user_id', auth()->id())->find($id);
 
         if (!$list) {
@@ -99,38 +87,6 @@ class GroceryListApiController extends Controller
         }
 
         return ApiResponseType::sendJsonResponse(true, 'Grocery list fetched successfully.', $this->formatList($list));
-    }
-
-    private function findProduct(string $name): ?Product
-    {
-        $name = trim($name);
-        if ($name === '') {
-            return null;
-        }
-
-        $product = Product::query()
-            ->where('status', 'active')->where('verification_status', 'approved')
-            ->where(function ($query) use ($name) {
-                $query->where('title', 'like', "%{$name}%")
-                    ->orWhere('tags', 'like', "%{$name}%")
-                    ->orWhereHas('category', fn ($category) => $category->where('title', 'like', "%{$name}%"));
-            })->first();
-
-        return $product?->load($this->productRelationsArray());
-    }
-
-    private function productRelations(Builder $query): Builder
-    {
-        return $query->with($this->productRelationsArray());
-    }
-
-    private function productRelationsArray(): array
-    {
-        return [
-            'category', 'brand', 'seller.user', 'variants.storeProductVariants.store',
-            'variants.attributes.attribute', 'variants.attributes.attributeValue',
-            'variantAttributes.attribute', 'variantAttributes.attributeValue',
-        ];
     }
 
     private function formatList(GroceryList $list): array
@@ -145,11 +101,9 @@ class GroceryListApiController extends Controller
             'created_at' => $list->created_at,
             'items' => $list->items->map(fn ($item) => [
                 'id' => $item->id,
-                'name' => $item->extracted_name,
-                'quantity' => $item->quantity,
+                'english name' => $item->extracted_name,
+                'qty' => $item->quantity,
                 'unit' => $item->unit,
-                'confidence' => $item->confidence,
-                'product' => $item->product ? (new ProductResource($item->product))->toArray(request()) : null,
             ])->values()->all(),
         ];
     }
