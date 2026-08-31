@@ -66,29 +66,103 @@ PROMPT;
 
         $response->throw();
 
-        $text = $response->json('candidates.0.content.parts.0.text');
-        $data = json_decode(trim((string) $text), true);
+        $data = $this->extractJsonPayload($response);
         if (!is_array($data) || !isset($data['items']) || !is_array($data['items'])) {
             throw new RuntimeException('Gemini returned an invalid grocery list response.');
         }
 
         $data['items'] = array_values(array_filter(array_map(function ($item) {
-            if (!is_array($item) || blank($item['english name'] ?? null)) {
+            if (!is_array($item)) {
                 return null;
             }
+
+            $name = $item['english name'] ?? $item['name'] ?? $item['item'] ?? null;
+            if (blank($name)) {
+                return null;
+            }
+
             $unit = strtolower(trim((string) ($item['unit'] ?? 'pc')));
             if (!in_array($unit, ['kg', 'g', 'l', 'ml', 'pc', 'bunch'], true)) {
                 $unit = 'pc';
             }
 
+            $qty = $item['qty'] ?? 1;
+            if ($qty === '' || $qty === null) {
+                $qty = 1;
+            }
+
             return [
-                'english name' => trim((string) $item['english name']),
-                'qty' => is_numeric($item['qty'] ?? null) && (float) $item['qty'] > 0 ? (float) $item['qty'] : 1,
+                'english name' => trim((string) $name),
+                'qty' => is_numeric($qty) && (float) $qty > 0 ? (float) $qty : 1,
                 'unit' => $unit,
             ];
         }, array_slice($data['items'], 0, 30))));
 
         return ['items' => $data['items'], 'model' => $model, 'warning' => $warning];
+    }
+
+    private function extractJsonPayload(
+        \Illuminate\Http\Client\Response $response
+    ): ?array {
+        $parts = $response->json('candidates.0.content.parts');
+        $text = '';
+
+        if (is_array($parts)) {
+            foreach ($parts as $part) {
+                if (is_array($part) && isset($part['text']) && is_string($part['text'])) {
+                    $text .= $part['text'];
+                }
+            }
+        }
+
+        if ($text === '') {
+            $text = (string) ($response->json('candidates.0.content.parts.0.text') ?? '');
+        }
+
+        $decoded = $this->decodeJsonString($text);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        $raw = $response->json();
+        if (is_array($raw)) {
+            $decoded = $this->decodeJsonString((string) json_encode($raw));
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return null;
+    }
+
+    private function decodeJsonString(string $text): ?array
+    {
+        $trimmed = trim($text);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        foreach (['/```(?:json)?\s*(\{.*?\})\s*```/is', '/```(?:json)?\s*(\[.*?\])\s*```/is', '/(\{.*\})/s', '/(\[.*\])/s'] as $pattern) {
+            if (preg_match($pattern, $trimmed, $matches)) {
+                $trimmed = $matches[1];
+                break;
+            }
+        }
+
+        $decoded = json_decode($trimmed, true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+
+        if (isset($decoded['items']) && is_array($decoded['items'])) {
+            return $decoded;
+        }
+
+        if (is_array($decoded) && array_is_list($decoded)) {
+            return ['items' => $decoded];
+        }
+
+        return null;
     }
 
     private function client(string $apiKey): PendingRequest
