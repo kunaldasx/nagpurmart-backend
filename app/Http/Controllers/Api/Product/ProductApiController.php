@@ -100,6 +100,48 @@ class ProductApiController extends Controller
         }
     }
 
+    public function smartSearch(GetProductsByLocationRequest $request): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $products = Product::getSmartSearchByLocation(
+                latitude: $validated['latitude'],
+                longitude: $validated['longitude'],
+                perPage: $validated['per_page'] ?? 15,
+                filter: $this->buildFilters($validated)
+            );
+
+            $products->getCollection()->transform(fn($product) => new ProductListResource($product));
+
+            return ApiResponseType::sendJsonResponse(
+                success: true,
+                message: 'labels.products_fetched_successfully',
+                data: [
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'keywords' => $products->related_keywords ?? [],
+                    'category_ids' => $products->category_ids ?? [],
+                    'brand_ids' => $products->brand_ids ?? [],
+                    'data' => $products->items(),
+                ]
+            );
+        } catch (ValidationException $e) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: 'labels.validation_error',
+                data: $e->errors()
+            );
+        } catch (\Exception $e) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: 'labels.error_fetching_products',
+                data: $e->getMessage(),
+            );
+        }
+    }
+
     /**
      * Build filters cleanly
      */

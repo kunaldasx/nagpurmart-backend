@@ -131,6 +131,7 @@ class Product extends Model implements HasMedia
         while ($category && $count < $limit) {
 
             // 🚨 Break if circular reference detected
+            use Illuminate\Pagination\LengthAwarePaginator as Paginator;
             if (in_array($category->id, $visited)) {
                 break;
             }
@@ -224,6 +225,7 @@ class Product extends Model implements HasMedia
                         $settingService = app(SettingService::class);
                         $systemSettingsResource = $settingService->getSettingByVariable(SettingTypeEnum::SYSTEM());
                         $systemSettings = $systemSettingsResource?->toArray(request())['value'] ?? [];
+
                         $lowStockLimit = (int)($systemSettings['lowStockLimit'] ?? 0);
                     } catch (\Throwable $e) {
                         $lowStockLimit = 0;
@@ -794,6 +796,90 @@ class Product extends Model implements HasMedia
         $products->category_ids = $categoryIds;
         $products->brand_ids = $brandIds;
         return $products;
+    }
+
+    public static function getSmartSearchByLocation(float $latitude, float $longitude, int $perPage = 15, array $filter = []): Paginator
+    {
+        $search = trim((string) ($filter['search'] ?? ''));
+        if ($search === '') {
+            return self::getProductsByLocation($latitude, $longitude, $perPage, $filter);
+        }
+
+        $zoneInfo = DeliveryZoneService::getZonesAtPoint($latitude, $longitude);
+        $baseFilter = $filter;
+        unset($baseFilter['search']);
+
+        $candidates = self::scopeByLocation(zoneInfo: $zoneInfo, query: self::query(), filter: $baseFilter)
+            ->setEagerLoads([])
+            ->with(['category', 'brand', 'categories'])
+            ->select(['id', 'title', 'short_description', 'description', 'tags', 'category_id', 'brand_id'])
+            ->limit(3000)
+            ->get();
+
+        $queryTerms = self::smartSearchTerms($search);
+        $ranked = $candidates->mapWithKeys(function (self $product) use ($queryTerms, $search) {
+            $text = self::normalizeSearchText(implode(' ', array_filter([
+                $product->title, $product->short_description, $product->description,
+                $product->tags, $product->category?->title, $product->brand?->title,
+                $product->categories->pluck('title')->implode(' '),
+            ])));
+
+            $score = str_contains($text, self::normalizeSearchText($search)) ? 1000 : 0;
+            foreach ($queryTerms as $term) {
+                $best = 0.0;
+                foreach (preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY) as $word) {
+                    $distance = levenshtein($term, $word);
+                    $best = max($best, 1 - ($distance / max(strlen($term), strlen($word), 1)));
+                }
+                if ($best >= 0.45) {
+                    $score += $best * 100;
+                }
+            }
+
+            return [$product->id => $score];
+        })->filter(fn(float $score) => $score > 0)->sortDesc();
+
+        if ($ranked->isEmpty()) {
+            return self::getProductsByLocation($latitude, $longitude, $perPage, $baseFilter);
+        }
+
+        $ids = $ranked->keys()->all();
+        $products = self::scopeByLocation(zoneInfo: $zoneInfo, query: self::query()->whereIn('id', $ids), filter: $baseFilter)
+            ->get()->sortBy(fn(self $product) => array_search($product->id, $ids, true))->values();
+        $page = request()->integer('page', 1);
+        $paginator = new Paginator($products->forPage($page, $perPage)->values(), $products->count(), $perPage, $page, [
+            'path' => request()->url(), 'query' => request()->query(),
+        ]);
+
+        foreach ($paginator as $product) {
+            $product->user_latitude = $latitude;
+            $product->user_longitude = $longitude;
+            $product->zone_info = $zoneInfo;
+        }
+
+        $paginator->related_keywords = [];
+        $paginator->category_ids = $products->pluck('category_id')->filter()->unique()->take(50)->values()->all();
+        $paginator->brand_ids = $products->pluck('brand_id')->filter()->unique()->take(50)->values()->all();
+
+        return $paginator;
+    }
+
+    private static function normalizeSearchText(string $value): string
+    {
+        return trim((string) preg_replace('/\s+/', ' ', Str::lower(Str::ascii($value))));
+    }
+
+    private static function smartSearchTerms(string $search): array
+    {
+        $aliases = [
+            'dudh' => 'milk', 'doodh' => 'milk', 'chai' => 'tea', 'chaay' => 'tea',
+            'shakkar' => 'sugar', 'cheeni' => 'sugar', 'atta' => 'flour', 'aata' => 'flour',
+            'chawal' => 'rice', 'dal' => 'lentil', 'tel' => 'oil', 'namak' => 'salt',
+            'sabun' => 'soap', 'biskut' => 'biscuit',
+        ];
+
+        return collect(preg_split('/\s+/', self::normalizeSearchText($search), -1, PREG_SPLIT_NO_EMPTY))
+            ->flatMap(fn(string $term) => [$term, $aliases[$term] ?? null])->filter()->unique()->values()->all();
     }
 
     public static function getProductByLocation(float $latitude, float $longitude, $id): ?Model
