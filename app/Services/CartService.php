@@ -177,6 +177,7 @@ class CartService
 
     public function getGiftOptions(User $user, string $orderMode = 'regular'): array
     {
+        $giftMinimumAmount = app(SettingService::class)->getSystemNumericSetting('giftMinimumCartAmount', 1500);
         $cart = $this->getUserCart($user);
         $totals = $cart ? $this->calculateCartTotals($cart, $orderMode) : ['qualifying_items_total' => 0];
         $qualifyingTotal = (float)($totals['qualifying_items_total'] ?? 0);
@@ -188,15 +189,15 @@ class CartService
             })
             ->with(['productVariant.product', 'productVariant'])
             ->get()
-            ->filter(function ($variant) use ($qualifyingTotal) {
-                return $qualifyingTotal >= (float)$variant->productVariant->product->gift_minimum_cart_amount;
+            ->filter(function ($variant) use ($qualifyingTotal, $giftMinimumAmount) {
+                return $qualifyingTotal >= $giftMinimumAmount;
             })
             ->values();
 
         return [
             'eligible' => $variants->isNotEmpty(),
             'qualifying_items_total' => $qualifyingTotal,
-            'options' => $variants->map(function ($variant) {
+            'options' => $variants->map(function ($variant) use ($giftMinimumAmount) {
                 return [
                     'product_id' => $variant->productVariant->product_id,
                     'product_variant_id' => $variant->product_variant_id,
@@ -206,7 +207,7 @@ class CartService
                     'price' => 1.00,
                     'regular_price' => $variant->getPriceForMode('regular'),
                     'wholesale_price' => $variant->getPriceForMode('wholesale'),
-                    'minimum_cart_amount' => (float)$variant->productVariant->product->gift_minimum_cart_amount,
+                    'minimum_cart_amount' => $giftMinimumAmount,
                     'stock' => (int)$variant->stock,
                 ];
             })->all(),
@@ -221,9 +222,10 @@ class CartService
         }
 
         $totals = $this->calculateCartTotals($cart, $orderMode);
-        if ((float)$totals['qualifying_items_total'] < (float)$product->gift_minimum_cart_amount) {
+        $giftMinimumAmount = app(SettingService::class)->getSystemNumericSetting('giftMinimumCartAmount', 1500);
+        if ((float)$totals['qualifying_items_total'] < $giftMinimumAmount) {
             return ['success' => false, 'message' => 'Add more products to unlock this gift.', 'data' => [
-                'minimum_cart_amount' => (float)$product->gift_minimum_cart_amount,
+            'minimum_cart_amount' => $giftMinimumAmount,
                 'qualifying_items_total' => (float)$totals['qualifying_items_total'],
             ]];
         }
@@ -842,8 +844,8 @@ class CartService
                 'items_total' => (float)$itemsTotal,
                 'qualifying_items_total' => (float)$qualifyingItemsTotal,
                 'order_mode' => $orderMode,
-                'wholesale_minimum_amount' => 1500,
-                'wholesale_minimum_met' => $orderMode !== 'wholesale' || $qualifyingItemsTotal >= 1500,
+                'wholesale_minimum_amount' => app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
+                'wholesale_minimum_met' => $orderMode !== 'wholesale' || $qualifyingItemsTotal >= app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
                 'per_store_drop_off_fee' => (float)$perStoreDropOffFee,
                 'is_rush_delivery' => $isRushDelivery,
                 'is_rush_delivery_available' => $isRushDeliveryAvailable,
@@ -981,8 +983,8 @@ class CartService
             'items_total' => $itemsTotal,
             'qualifying_items_total' => $qualifyingItemsTotal,
             'order_mode' => $orderMode,
-            'wholesale_minimum_amount' => 1500,
-            'wholesale_minimum_met' => $orderMode !== 'wholesale' || $qualifyingItemsTotal >= 1500,
+            'wholesale_minimum_amount' => app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
+            'wholesale_minimum_met' => $orderMode !== 'wholesale' || $qualifyingItemsTotal >= app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
             'per_store_drop_off_fee' => 0,
             'is_rush_delivery' => $isRushDelivery,
             'is_rush_delivery_available' => false,

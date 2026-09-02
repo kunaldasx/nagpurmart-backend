@@ -27,6 +27,8 @@ class SystemSettingType implements SettingInterface
     public bool $etsy = false;
     public string $checkoutType = 'multi_store';
     public float $minimumCartAmount = 0.0;
+    public float $wholesaleMinimumAmount = 1500.0;
+    public float $giftMinimumCartAmount = 1500.0;
     public float $maximumItemsAllowedInCart = 0.0;
     public string $lowStockLimit = "";
     public string $maximumDistanceToNearestStore = "";
@@ -77,6 +79,8 @@ class SystemSettingType implements SettingInterface
             'adminSignature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp'],
             'checkoutType' => ['required', 'in:multi_store,single_store'],
             'minimumCartAmount' => ['required', 'integer', 'min:0'],
+            'wholesaleMinimumAmount' => ['required', 'numeric', 'min:0'],
+            'giftMinimumCartAmount' => ['required', 'numeric', 'min:0'],
             'maximumItemsAllowedInCart' => ['required', 'numeric', 'min:1'],
             'lowStockLimit' => ['required', 'numeric', 'min:0'],
             'maximumDistanceToNearestStore' => ['nullable', 'numeric', 'min:0'],

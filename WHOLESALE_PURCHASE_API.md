@@ -7,7 +7,7 @@ Wholesale checkout uses the same cart and order endpoints as regular checkout.
 - `order_mode` is `regular` (default) or `wholesale`.
 - Regular mode uses the active special price, falling back to the regular price.
 - Wholesale mode uses each store variant's `wholesale_price`.
-- Wholesale merchandise subtotal must be at least `1500`. Delivery, handling, promotions, wallet balance, and payment method do not reduce this threshold.
+- Wholesale merchandise subtotal must be at least the configured `wholesaleMinimumAmount` (default `1500`). Delivery, handling, promotions, wallet balance, and payment method do not reduce this threshold.
 - Every order response includes `order_mode`; order items and invoices contain the selected price snapshot.
 
 Set the host and token before running examples:
@@ -37,7 +37,7 @@ curl -G "$HOST/api/cart" \
   --data-urlencode "order_mode=wholesale"
 ```
 
-The response `payment_summary` includes `order_mode`, `items_total`, `wholesale_minimum_amount`, and `wholesale_minimum_met`.
+The response `payment_summary` includes `order_mode`, `items_total`, `wholesale_minimum_amount`, and `wholesale_minimum_met`. The threshold is editable in Admin Settings under Cart & Inventory Settings.
 
 ## Create a regular order
 
@@ -71,12 +71,12 @@ For Stripe, Razorpay, or Paystack, include the existing `transaction_id` field a
 
 ## Expected failure below minimum
 
-A wholesale order whose selected wholesale item subtotal is below `1500` is rejected with the existing minimum-cart error and no order is persisted:
+A wholesale order whose selected wholesale item subtotal is below the configured wholesale minimum is rejected with the existing minimum-cart error and no order is persisted:
 
 ```json
 {
     "success": false,
-    "message": "The minimum cart amount is 1500"
+    "message": "The minimum cart amount is the configured wholesale minimum"
 }
 ```
 
@@ -123,7 +123,7 @@ The product pricing endpoint returns `wholesale_price` for each store variant.
 
 ## One-rupee gift endpoints
 
-An administrator enables a product as a gift and sets its minimum qualifying cart amount from the admin product details page. The admin form posts to `POST /admin/products/{productId}/gift-settings`. Normal product purchases are unaffected and continue to use the selected regular or wholesale price.
+An administrator enables a product as a gift from the admin product details page. The admin form posts to `POST /admin/products/{productId}/gift-settings`. The shared gift qualifying amount is configured in Admin Settings as `giftMinimumCartAmount`; every enabled gift product uses that same amount. Normal product purchases are unaffected and continue to use the selected regular or wholesale price.
 
 Fetch gift choices after adding qualifying products:
 

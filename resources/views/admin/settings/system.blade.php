@@ -215,6 +215,20 @@
                                                    value="{{$settings['minimumCartAmount'] ?? ''}}"/>
                                         </div>
                                         <div class="mb-3">
+                                            <label class="form-label required">Wholesale minimum order amount</label>
+                                            <input type="number" step="0.01" min="0" class="form-control"
+                                                   name="wholesaleMinimumAmount"
+                                                   value="{{$settings['wholesaleMinimumAmount'] ?? 1500}}"/>
+                                            <small class="form-hint">The qualifying merchandise subtotal required for every wholesale order.</small>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label required">1 rupee gift qualifying amount</label>
+                                            <input type="number" step="0.01" min="0" class="form-control"
+                                                   name="giftMinimumCartAmount"
+                                                   value="{{$settings['giftMinimumCartAmount'] ?? 1500}}"/>
+                                            <small class="form-hint">Every enabled gift product uses this same qualifying merchandise subtotal.</small>
+                                        </div>
+                                        <div class="mb-3">
                                             <label
                                                 class="form-label required">{{ __('labels.maximum_items_allowed_in_cart') }}</label>
                                             <input type="number" min="1" class="form-control"

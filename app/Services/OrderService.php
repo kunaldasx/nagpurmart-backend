@@ -468,7 +468,9 @@ class OrderService
         $orderMode = $data['order_mode'] ?? 'regular';
         $paymentSummary = $cartService->getPaymentSummary(cart: $cart, latitude: $data['address']['latitude'], longitude: $data['address']['longitude'], isRushDelivery: $data['rush_delivery'] ?? false, useWallet: $data['use_wallet'] ?? false, promoCode: $data['promo_code'] ?? null, orderMode: $orderMode);
 
-        $minimumAmount = $orderMode === 'wholesale' ? 1500 : $data['minimumCartAmount'];
+        $minimumAmount = $orderMode === 'wholesale'
+            ? app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500)
+            : $data['minimumCartAmount'];
         if (($orderMode === 'wholesale' && $paymentSummary['qualifying_items_total'] < $minimumAmount) || ($orderMode !== 'wholesale' && $paymentSummary['payable_amount'] < $minimumAmount && $data['payment_type'] !== PaymentTypeEnum::WALLET())) {
             throw new Exception(__('labels.minimum_cart_amount_not_met', ['amount' => $minimumAmount]));
         }
@@ -479,7 +481,8 @@ class OrderService
         }
         foreach ($giftItems as $giftItem) {
             $giftProduct = $giftItem->product;
-            if (!$giftProduct || $giftProduct->status !== 'active' || !$giftProduct->is_one_rupee_gift || $paymentSummary['qualifying_items_total'] < (float)$giftProduct->gift_minimum_cart_amount) {
+            $giftMinimumAmount = app(SettingService::class)->getSystemNumericSetting('giftMinimumCartAmount', 1500);
+            if (!$giftProduct || $giftProduct->status !== 'active' || !$giftProduct->is_one_rupee_gift || $paymentSummary['qualifying_items_total'] < $giftMinimumAmount) {
                 throw new Exception('This gift is no longer available for the current cart total.');
             }
         }

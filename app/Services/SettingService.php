@@ -61,6 +61,13 @@ class SettingService
         return $this->transformSetting($setting);
     }
 
+    public function getSystemNumericSetting(string $key, float $default): float
+    {
+        $value = $this->getCachedSettingValues(SettingTypeEnum::SYSTEM())[$key] ?? $default;
+
+        return is_numeric($value) ? (float)$value : $default;
+    }
+
     /**
      * Build cache key for a given setting variable
      */

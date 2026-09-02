@@ -119,7 +119,7 @@ class CartApiController extends Controller
     #[QueryParameter('rush_delivery', description: 'Whether to use rush delivery.', type: 'boolean', example: true)]
     #[QueryParameter('use_wallet', description: 'Whether to use wallet balance for payment.', type: 'boolean', example: true)]
     #[QueryParameter('promo_code', description: 'Promo code to apply discount.', type: 'string', example: 'SAVE20')]
-    #[QueryParameter('order_mode', description: 'Pricing mode: regular or wholesale. Wholesale requires a merchandise subtotal of 1500.', type: 'string', example: 'wholesale')]
+    #[QueryParameter('order_mode', description: 'Pricing mode: regular or wholesale. Wholesale requires the configured wholesale minimum merchandise subtotal.', type: 'string', example: 'wholesale')]
     #[QueryParameter('latitude', description: 'Latitude of the user location for zone-wise product counts', type: 'float', example: 23.11684540)]
     #[QueryParameter('longitude', description: 'Longitude of the user location for zone-wise product counts', type: 'float', example: 70.02805670)]
     public function getCart(Request $request): JsonResponse

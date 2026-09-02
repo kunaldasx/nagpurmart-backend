@@ -37,6 +37,8 @@ class SystemSettingResource extends JsonResource
                 'systemVendorType' => $this->value['systemVendorType'] ?? '',
                 'checkoutType' => $this->value['checkoutType'] ?? 'multi_store',
                 'minimumCartAmount' => $this->value['minimumCartAmount'] ?? 0.0,
+                'wholesaleMinimumAmount' => $this->value['wholesaleMinimumAmount'] ?? 1500.0,
+                'giftMinimumCartAmount' => $this->value['giftMinimumCartAmount'] ?? 1500.0,
                 'maximumItemsAllowedInCart' => $this->value['maximumItemsAllowedInCart'] ?? 0.0,
                 'lowStockLimit' => $this->value['lowStockLimit'] ?? '',
                 'maximumDistanceToNearestStore' => $this->value['maximumDistanceToNearestStore'] ?? '',
