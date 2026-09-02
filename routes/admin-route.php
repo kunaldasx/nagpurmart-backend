@@ -417,6 +417,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/download-template', [ProductController::class, 'downloadTemplate'])->name('download-template');
             Route::get('/{id}/pricing', [ProductController::class, 'getProductPricing'])->name('pricing');
             Route::post('/{id}/special-price', [ProductController::class, 'updateSpecialPrice'])->name('special-price');
+            Route::post('/{id}/gift-settings', [ProductController::class, 'updateGiftSettings'])->name('gift-settings');
             Route::post('/{id}/verification-status', [ProductController::class, 'updateVerificationStatus'])->name('update-verification-status');
             Route::post('/{id}/update-status', [ProductController::class, 'updateStatus'])->name('update-status');
             Route::get('/{id}', [ProductController::class, 'show'])->name('show');

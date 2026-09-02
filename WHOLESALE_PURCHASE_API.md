@@ -120,3 +120,32 @@ Variant products use the same field under each variant pricing row, for example:
 ```
 
 The product pricing endpoint returns `wholesale_price` for each store variant.
+
+## One-rupee gift endpoints
+
+An administrator enables a product as a gift and sets its minimum qualifying cart amount from the admin product details page. The admin form posts to `POST /admin/products/{productId}/gift-settings`. Normal product purchases are unaffected and continue to use the selected regular or wholesale price.
+
+Fetch gift choices after adding qualifying products:
+
+```bash
+curl -G "$HOST/api/cart/gifts" \
+  -H "Authorization: Bearer $TOKEN" \
+  --data-urlencode "order_mode=regular"
+```
+
+For wholesale mode, request `order_mode=wholesale`. The response includes `eligible`, `qualifying_items_total`, and each option's `product_variant_id`, `store_id`, and fixed gift `price` of `1.00`.
+
+Add the selected gift. The server ignores any client price and always creates a gift line at `1.00`:
+
+```bash
+curl -X POST "$HOST/api/cart/gifts/add" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json" \
+  -F "product_variant_id=12" \
+  -F "store_id=1" \
+  -F "order_mode=regular"
+```
+
+Only one gift can be selected per cart and its quantity is always one. Remove it through the existing `DELETE /api/cart/item/{cartItemId}` endpoint. The existing `POST /api/cart/add` endpoint always adds a normal-priced line, even when that product is marked as a gift.
+
+The cart response marks gift lines with `is_gift: true`. Order responses, seller/delivery order APIs, and invoices expose the same marker and the persisted ₹1 item price.

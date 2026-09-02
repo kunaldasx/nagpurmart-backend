@@ -469,8 +469,19 @@ class OrderService
         $paymentSummary = $cartService->getPaymentSummary(cart: $cart, latitude: $data['address']['latitude'], longitude: $data['address']['longitude'], isRushDelivery: $data['rush_delivery'] ?? false, useWallet: $data['use_wallet'] ?? false, promoCode: $data['promo_code'] ?? null, orderMode: $orderMode);
 
         $minimumAmount = $orderMode === 'wholesale' ? 1500 : $data['minimumCartAmount'];
-        if (($orderMode === 'wholesale' && $paymentSummary['items_total'] < $minimumAmount) || ($orderMode !== 'wholesale' && $paymentSummary['payable_amount'] < $minimumAmount && $data['payment_type'] !== PaymentTypeEnum::WALLET())) {
+        if (($orderMode === 'wholesale' && $paymentSummary['qualifying_items_total'] < $minimumAmount) || ($orderMode !== 'wholesale' && $paymentSummary['payable_amount'] < $minimumAmount && $data['payment_type'] !== PaymentTypeEnum::WALLET())) {
             throw new Exception(__('labels.minimum_cart_amount_not_met', ['amount' => $minimumAmount]));
+        }
+
+        $giftItems = $cart->items->where('is_gift', true);
+        if ($giftItems->count() > 1 || $giftItems->sum('quantity') > 1) {
+            throw new Exception('Only one gift product can be added per order.');
+        }
+        foreach ($giftItems as $giftItem) {
+            $giftProduct = $giftItem->product;
+            if (!$giftProduct || $giftProduct->status !== 'active' || !$giftProduct->is_one_rupee_gift || $paymentSummary['qualifying_items_total'] < (float)$giftProduct->gift_minimum_cart_amount) {
+                throw new Exception('This gift is no longer available for the current cart total.');
+            }
         }
 
         // Generate unique order number for customer-facing usage
@@ -701,6 +712,13 @@ class OrderService
     function calculatePricing(Order $order, $cartItem, $storeVariant): array
     {
         $commission = $storeVariant->category_commission->commission ?? 0;
+        if ($cartItem->is_gift) {
+            $price = 1.00;
+            $priceWithTax = 1.00;
+            $subtotal = $cartItem->quantity * $priceWithTax;
+            return [$subtotal, $subtotal * $commission / 100, 0, 0, $price, $priceWithTax];
+        }
+
         $price = $storeVariant->getPriceForMode($order->order_mode ?? 'regular', false);
         $priceWithTax = $storeVariant->getPriceForMode($order->order_mode ?? 'regular');
         if ($price === null || $priceWithTax === null) {
@@ -739,6 +757,7 @@ class OrderService
             'discounted_price' => 0,
             'promo_discount' => $promoDiscount,
             'discount' => 0,
+            'is_gift' => (bool)$cartItem->is_gift,
             'tax_amount' => (float)$priceWithTax - $price,
             'tax_percent' => (float)$taxPercent,
             'sku' => $storeVariant->sku ?? "N/A",

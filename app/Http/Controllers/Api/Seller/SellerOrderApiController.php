@@ -242,6 +242,7 @@ class SellerOrderApiController extends Controller
                 'raw' => (float)$sellerOrderItem->orderItem->subtotal,
                 'formatted' => $this->currencyService->format($sellerOrderItem->orderItem->subtotal),
             ],
+            'is_gift' => (bool)$sellerOrderItem->orderItem->is_gift,
             'status' => $sellerOrderItem->orderItem->status,
         ];
     }

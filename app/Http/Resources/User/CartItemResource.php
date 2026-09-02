@@ -32,6 +32,7 @@ class CartItemResource extends JsonResource
             'store_id' => $this->store_id,
             'quantity' => $this->quantity,
             'save_for_later' => $this->save_for_later,
+            'is_gift' => (bool)$this->is_gift,
             'product' => [
                 'id' => $this->product->id,
                 'name' => $this->product->title,

@@ -49,6 +49,8 @@ class OrderItemResource extends JsonResource
             'discounted_price' => $this->discounted_price,
             'promo_discount' => $this->promo_discount,
             'discount' => $this->discount,
+            'is_gift' => (bool)$this->is_gift,
+            'gift_price' => $this->is_gift ? 1.00 : null,
             'tax_amount' => $this->tax_amount,
             'tax_percent' => $this->tax_percent,
             'sku' => $this->sku,

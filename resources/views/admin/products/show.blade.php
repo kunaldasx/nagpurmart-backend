@@ -69,6 +69,23 @@
                                         <div class="datagrid-content text-capitalize">{{ $product->type }}</div>
                                     </div>
                                     <div class="datagrid-item">
+                                        <div class="datagrid-title">1 Rupee Gift</div>
+                                        <div class="datagrid-content">
+                                            <form method="POST" action="{{ route('admin.products.gift-settings', ['id' => $product->id]) }}" class="d-flex align-items-center gap-2 flex-wrap">
+                                                @csrf
+                                                <label class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" name="is_one_rupee_gift" value="1" {{ $product->is_one_rupee_gift ? 'checked' : '' }}>
+                                                </label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">{{ $systemSettings['currencySymbol'] }}</span>
+                                                    <input type="number" class="form-control" name="gift_minimum_cart_amount" min="0" step="0.01" value="{{ $product->gift_minimum_cart_amount ?: 1500 }}">
+                                                </div>
+                                                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                            </form>
+                                            <small class="text-muted">Gift unlocks at the qualifying cart amount.</small>
+                                        </div>
+                                    </div>
+                                    <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.sold_by') }}</div>
                                         <div
                                             class="datagrid-content text-capitalize">{{ $product->seller->user->name ?? "" }}</div>

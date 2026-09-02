@@ -127,7 +127,7 @@
             @foreach($vendor['items'] as $item)
 {{--                @dd($item)--}}
                 <tr>
-                    <td>{{ $item['product']['title'] }}</td>
+                    <td>{{ $item['product']['title'] }}{{ !empty($item['orderItem']['is_gift']) ? ' (1 Rupee Gift)' : '' }}</td>
                     <td>{{ $item['product']['short_description'] }}</td>
                     <td>{{ $item['quantity'] }}</td>
                     <td class="text-capitalize">{{ Str::replace('_',' ',$item['orderItem']['status']) }}</td>

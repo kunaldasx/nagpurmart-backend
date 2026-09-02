@@ -22,6 +22,7 @@ class SellerOrderItemResource extends JsonResource
             'order_item_id' => $this->order_item_id,
             'quantity' => $this->quantity,
             'price' => $this->price,
+            'is_gift' => (bool)$this->orderItem?->is_gift,
 
             // Relationships
             'product' => $this->whenLoaded('product', function() {
@@ -46,6 +47,7 @@ class SellerOrderItemResource extends JsonResource
                     'status' => $this->orderItem->status,
                     'title' => $this->orderItem->title,
                     'variant_title' => $this->orderItem->variant_title,
+                    'is_gift' => (bool)$this->orderItem->is_gift,
                 ];
             }),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),

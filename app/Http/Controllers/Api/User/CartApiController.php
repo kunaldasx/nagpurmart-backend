@@ -50,6 +50,36 @@ class CartApiController extends Controller
         );
     }
 
+    public function giftOptions(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.user_not_authenticated'), []);
+        }
+
+        $orderMode = $request->input('order_mode', 'regular');
+        if (!in_array($orderMode, ['regular', 'wholesale'], true)) {
+            $orderMode = 'regular';
+        }
+
+        return ApiResponseType::sendJsonResponse(true, 'Gift options fetched successfully.', $this->cartService->getGiftOptions($user, $orderMode));
+    }
+
+    public function addGiftToCart(AddToCartRequest $request): JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.user_not_authenticated'), []);
+        }
+
+        $result = $this->cartService->addGiftToCart($user, $request->validated());
+        return ApiResponseType::sendJsonResponse(
+            $result['success'],
+            $result['message'],
+            $result['success'] ? new CartResource($result['data']) : $result['data']
+        );
+    }
+
     /**
      * Sync cart items from multiple stores
      */

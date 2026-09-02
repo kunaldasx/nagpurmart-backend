@@ -40,6 +40,8 @@ class CartService
                 ];
             }
 
+            $isGift = (bool)($data['is_gift'] ?? false);
+
             // Check if the store is online
             if ($this->isStoreOffline($storeProductVariant)) {
                 return [
@@ -55,13 +57,25 @@ class CartService
                 ['uuid' => Str::uuid()->toString()]
             );
 
+            if ($isGift) {
+                $giftValidation = $this->validateGiftSelection($cart, $storeProductVariant, $data['order_mode'] ?? 'regular');
+                if ($giftValidation !== null) {
+                    return $giftValidation;
+                }
+            }
+
             // Check if item already exists in cart
             $cartItem = CartItem::where('cart_id', $cart->id)
                 ->where('product_id', $storeProductVariant['productVariant']['product_id'])
                 ->where('product_variant_id', $data['product_variant_id'])
                 ->where('store_id', $data['store_id'])
+                ->where('is_gift', $isGift)
                 ->first();
             $userCart = $this->getUserCart($user);
+
+            if ($isGift && $userCart->items->where('is_gift', true)->where('id', '!=', $cartItem?->id)->isNotEmpty()) {
+                return ['success' => false, 'message' => 'Only one gift product can be selected per cart.', 'data' => []];
+            }
 
             // Validate checkout type (single or multi store) similar to OrderService::validateCartAndSettings
             $singleStoreValidation = $this->validateSingleStoreCheckout($userCart, (int)$data['store_id']);
@@ -123,7 +137,8 @@ class CartService
                     'product_variant_id' => $data['product_variant_id'],
                     'store_id' => $data['store_id'],
                     'quantity' => $requestedQuantity,
-                    'save_for_later' => '0' // Changed from false to '0'
+                    'save_for_later' => '0',
+                    'is_gift' => $isGift,
                 ]);
             }
 
@@ -149,6 +164,71 @@ class CartService
                 'data' => ['error' => $e->getMessage()]
             ];
         }
+    }
+
+    public function addGiftToCart(User $user, array $data): array
+    {
+        $data['quantity'] = 1;
+        $data['replace_quantity'] = true;
+        $data['is_gift'] = true;
+
+        return $this->addToCart($user, $data);
+    }
+
+    public function getGiftOptions(User $user, string $orderMode = 'regular'): array
+    {
+        $cart = $this->getUserCart($user);
+        $totals = $cart ? $this->calculateCartTotals($cart, $orderMode) : ['qualifying_items_total' => 0];
+        $qualifyingTotal = (float)($totals['qualifying_items_total'] ?? 0);
+
+        $variants = StoreProductVariant::query()
+            ->where('stock', '>', 0)
+            ->whereHas('productVariant.product', function ($query) {
+                $query->where('is_one_rupee_gift', true)->where('status', 'active');
+            })
+            ->with(['productVariant.product', 'productVariant'])
+            ->get()
+            ->filter(function ($variant) use ($qualifyingTotal) {
+                return $qualifyingTotal >= (float)$variant->productVariant->product->gift_minimum_cart_amount;
+            })
+            ->values();
+
+        return [
+            'eligible' => $variants->isNotEmpty(),
+            'qualifying_items_total' => $qualifyingTotal,
+            'options' => $variants->map(function ($variant) {
+                return [
+                    'product_id' => $variant->productVariant->product_id,
+                    'product_variant_id' => $variant->product_variant_id,
+                    'store_id' => $variant->store_id,
+                    'name' => $variant->productVariant->product->title,
+                    'variant_title' => $variant->productVariant->title,
+                    'price' => 1.00,
+                    'regular_price' => $variant->getPriceForMode('regular'),
+                    'wholesale_price' => $variant->getPriceForMode('wholesale'),
+                    'minimum_cart_amount' => (float)$variant->productVariant->product->gift_minimum_cart_amount,
+                    'stock' => (int)$variant->stock,
+                ];
+            })->all(),
+        ];
+    }
+
+    private function validateGiftSelection(Cart $cart, StoreProductVariant $storeProductVariant, string $orderMode): ?array
+    {
+        $product = $storeProductVariant->productVariant?->product;
+        if (!$product || $product->status !== 'active' || !$product->is_one_rupee_gift) {
+            return ['success' => false, 'message' => 'This product is not available as a gift.', 'data' => []];
+        }
+
+        $totals = $this->calculateCartTotals($cart, $orderMode);
+        if ((float)$totals['qualifying_items_total'] < (float)$product->gift_minimum_cart_amount) {
+            return ['success' => false, 'message' => 'Add more products to unlock this gift.', 'data' => [
+                'minimum_cart_amount' => (float)$product->gift_minimum_cart_amount,
+                'qualifying_items_total' => (float)$totals['qualifying_items_total'],
+            ]];
+        }
+
+        return null;
     }
 
     /**
@@ -383,6 +463,7 @@ class CartService
     private function calculateCartTotals(Cart $cart, string $orderMode = 'regular'): array
     {
         $itemsTotal = 0;
+        $qualifyingItemsTotal = 0;
         $storeIds = [];
 
         foreach ($cart->items as $key => $item) {
@@ -400,14 +481,18 @@ class CartService
             $cart->items[$key]->special_price = $item->quantity * $storeVariant->special_price;
             $cart->items[$key]->wholesale_price = $item->quantity * ($storeVariant->wholesale_price ?? 0);
 
-            $selectedPrice = $storeVariant->getPriceForMode($orderMode);
+            $selectedPrice = $item->is_gift ? 1 : $storeVariant->getPriceForMode($orderMode);
             $itemsTotal += $item->quantity * ($selectedPrice ?? 0);
+            if (!$item->is_gift) {
+                $qualifyingItemsTotal += $item->quantity * ($selectedPrice ?? 0);
+            }
         }
 
         $cart->items_total = $itemsTotal;
 
         return [
             'items_total' => $itemsTotal,
+            'qualifying_items_total' => $qualifyingItemsTotal,
             'store_ids' => $storeIds
         ];
     }
@@ -689,6 +774,7 @@ class CartService
 
             $totalsResult = $this->calculateCartTotals($cart, $orderMode);
             $itemsTotal = $totalsResult['items_total'];
+            $qualifyingItemsTotal = $totalsResult['qualifying_items_total'];
             $storeIds = $totalsResult['store_ids'];
             $totalStores = count($storeIds);
 
@@ -754,9 +840,10 @@ class CartService
 
             return [
                 'items_total' => (float)$itemsTotal,
+                'qualifying_items_total' => (float)$qualifyingItemsTotal,
                 'order_mode' => $orderMode,
                 'wholesale_minimum_amount' => 1500,
-                'wholesale_minimum_met' => $orderMode !== 'wholesale' || $itemsTotal >= 1500,
+                'wholesale_minimum_met' => $orderMode !== 'wholesale' || $qualifyingItemsTotal >= 1500,
                 'per_store_drop_off_fee' => (float)$perStoreDropOffFee,
                 'is_rush_delivery' => $isRushDelivery,
                 'is_rush_delivery_available' => $isRushDeliveryAvailable,
@@ -874,8 +961,9 @@ class CartService
      */
     private function createDefaultPaymentSummary(Cart $cart, bool $isRushDelivery = false, bool $useWallet = false, string $orderMode = 'regular'): array
     {
-        $totalsResult = $this->calculateCartTotals($cart);
+        $totalsResult = $this->calculateCartTotals($cart, $orderMode);
         $itemsTotal = $totalsResult['items_total'] ?? 0;
+        $qualifyingItemsTotal = $totalsResult['qualifying_items_total'] ?? $itemsTotal;
         $walletBalance = 0;
         $walletAmountUsed = 0;
         $remainingPayable = $itemsTotal;
@@ -891,9 +979,10 @@ class CartService
 
         return [
             'items_total' => $itemsTotal,
+            'qualifying_items_total' => $qualifyingItemsTotal,
             'order_mode' => $orderMode,
             'wholesale_minimum_amount' => 1500,
-            'wholesale_minimum_met' => $orderMode !== 'wholesale' || $itemsTotal >= 1500,
+            'wholesale_minimum_met' => $orderMode !== 'wholesale' || $qualifyingItemsTotal >= 1500,
             'per_store_drop_off_fee' => 0,
             'is_rush_delivery' => $isRushDelivery,
             'is_rush_delivery_available' => false,
@@ -1046,6 +1135,10 @@ class CartService
                     'message' => __('messages.insufficient_stock_available'),
                     'data' => ['available_stock' => $storeProductVariant->stock ?? 0]
                 ];
+            }
+
+            if ($cartItem->is_gift && $quantity !== 1) {
+                return ['success' => false, 'message' => 'Gift quantity must be exactly one.', 'data' => []];
             }
 
             $cartItem->update(['quantity' => $quantity]);

@@ -88,6 +88,15 @@
                                         </div>
                                     </div>
                                     <div class="datagrid-item">
+                                        <div class="datagrid-title">1 Rupee Gift</div>
+                                        <div class="datagrid-content text-capitalize">
+                                            {{ $product->is_one_rupee_gift ? 'Enabled' : 'Disabled' }}
+                                            @if($product->is_one_rupee_gift)
+                                                (unlocks at {{ $systemSettings['currencySymbol'] }}{{ number_format($product->gift_minimum_cart_amount, 2) }})
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.status') }}</div>
                                         <div class="datagrid-content text-capitalize">
                                             <span

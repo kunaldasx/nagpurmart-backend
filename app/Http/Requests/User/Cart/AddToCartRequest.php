@@ -26,6 +26,7 @@ class AddToCartRequest extends FormRequest
             'store_id' => 'required|integer|exists:stores,id',
             'quantity' => 'sometimes|integer|min:1|max:999',
             'replace_quantity' => 'nullable|boolean',
+            'order_mode' => 'nullable|in:regular,wholesale',
         ];
     }
 

@@ -60,6 +60,8 @@ class ProductListResource extends JsonResource
             'status' => $this->status,
             'featured' => $this->featured,
             'price_drop' => (bool) $this->price_drop,
+            'is_one_rupee_gift' => (bool) $this->is_one_rupee_gift,
+            'gift_minimum_cart_amount' => (float) $this->gift_minimum_cart_amount,
             'metadata' => $this->metadata,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

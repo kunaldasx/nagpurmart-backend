@@ -28,6 +28,7 @@ class DeliveryBoyOrderItemResource extends JsonResource
             'commission_settled' => $this->commission_settled,
             'discounted_price' => $this->discounted_price,
             'discount' => $this->discount,
+            'is_gift' => (bool)$this->is_gift,
             'tax_amount' => $this->tax_amount,
             'tax_percent' => $this->tax_percent,
             'sku' => $this->sku,

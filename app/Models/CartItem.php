@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CartItem extends Model
 {
     protected $fillable = [
-        'cart_id', 'product_id', 'product_variant_id', 'store_id', 'quantity', 'save_for_later'
+        'cart_id', 'product_id', 'product_variant_id', 'store_id', 'quantity', 'save_for_later', 'is_gift'
     ];
 
     protected $casts = [
         'save_for_later' => 'boolean',
+        'is_gift' => 'boolean',
     ];
     /**
      * Set the save_for_later attribute to handle ENUM conversion

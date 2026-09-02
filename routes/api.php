@@ -137,6 +137,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('cart')->group(function () {
             Route::get('/', [CartApiController::class, 'getCart']);
             Route::post('/add', [CartApiController::class, 'addToCart']);
+            Route::get('/gifts', [CartApiController::class, 'giftOptions']);
+            Route::post('/gifts/add', [CartApiController::class, 'addGiftToCart']);
             Route::post('/item/{cartItemId}', [CartApiController::class, 'updateCartItemQuantity']);
             Route::delete('/item/{cartItemId}', [CartApiController::class, 'removeFromCart']);
             Route::get('/item/save-for-later', [CartApiController::class, 'getSaveForLaterItems']);

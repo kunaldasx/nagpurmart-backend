@@ -67,6 +67,8 @@ class Product extends Model implements HasMedia
         'rejection_reason',
         'featured',
         'price_drop',
+        'is_one_rupee_gift',
+        'gift_minimum_cart_amount',
         'requires_otp',
         'video_type',
         'video_link',
@@ -87,6 +89,8 @@ class Product extends Model implements HasMedia
         'custom_fields' => 'array',
         'base_prep_time' => 'integer',
         'price_drop' => 'boolean',
+        'is_one_rupee_gift' => 'boolean',
+        'gift_minimum_cart_amount' => 'decimal:2',
     ];
 
     /**

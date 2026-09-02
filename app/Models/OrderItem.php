@@ -35,6 +35,7 @@ class OrderItem extends Model implements HasMedia
         'discounted_price',
         'promo_discount',
         'discount',
+        'is_gift',
         'tax_amount',
         'tax_percent',
         'sku',
@@ -48,6 +49,7 @@ class OrderItem extends Model implements HasMedia
 
     protected $casts = [
         'return_eligible' => 'boolean',
+        'is_gift' => 'boolean',
         'return_deadline' => 'date',
     ];
 

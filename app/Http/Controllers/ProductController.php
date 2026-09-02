@@ -419,6 +419,26 @@ class ProductController extends Controller
         }
     }
 
+    public function updateGiftSettings(Request $request, string $id)
+    {
+        abort_unless($this->getPanel() === 'admin', 403);
+
+        $product = Product::findOrFail($id);
+        $this->authorize('view', $product);
+        $validated = $request->validate([
+            'is_one_rupee_gift' => ['nullable', 'boolean'],
+            'gift_minimum_cart_amount' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $product->update([
+            'is_one_rupee_gift' => (bool)($validated['is_one_rupee_gift'] ?? false),
+            'gift_minimum_cart_amount' => $validated['gift_minimum_cart_amount'],
+        ]);
+
+        return redirect()->route('admin.products.show', ['id' => $product->id])
+            ->with('success', 'Gift product settings updated successfully.');
+    }
+
     /**
      * Remove the specified resource from storage.
      */
