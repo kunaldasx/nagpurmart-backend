@@ -1,0 +1,47 @@
+curl --get 'https://admin.nagpurmart.in/api/delivery-zone/products/smart-search' \
+  --data-urlencode 'search=cofee' \
+  --data-urlencode 'per_page=15' \
+  --data-urlencode 'page=1' \
+  --data-urlencode 'latitude=<stored_latitude>' \
+  --data-urlencode 'longitude=<stored_longitude>' \
+  --data-urlencode 'sort=default' \
+  --header 'Accept: application/json'
+
+
+response:
+
+{
+  "success": true,
+  "message": "Products fetched successfully.",
+  "data": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 15,
+    "total": 2,
+    "keywords": [],
+    "category_ids": [4],
+    "brand_ids": [8],
+    "data": [
+      {
+        "id": 101,
+        "uuid": "product-uuid",
+        "category_id": 4,
+        "brand_id": 8,
+        "seller_id": 12,
+        "title": "Coffee Powder",
+        "slug": "coffee-powder",
+        "short_description": "Fresh coffee powder",
+        "category": "beverages",
+        "brand": "example-brand",
+        "category_name": "Beverages",
+        "brand_name": "Example Brand",
+        "main_image": "https://...",
+        "favorite": false,
+        "ratings": 4.5,
+        "rating_count": 21,
+        "variants": [],
+        "attributes": []
+      }
+    ]
+  }
+}

@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -131,7 +132,6 @@ class Product extends Model implements HasMedia
         while ($category && $count < $limit) {
 
             // 🚨 Break if circular reference detected
-            use Illuminate\Pagination\LengthAwarePaginator as Paginator;
             if (in_array($category->id, $visited)) {
                 break;
             }
@@ -818,9 +818,10 @@ class Product extends Model implements HasMedia
 
         $queryTerms = self::smartSearchTerms($search);
         $ranked = $candidates->mapWithKeys(function (self $product) use ($queryTerms, $search) {
+            $tags = is_array($product->tags) ? implode(' ', $product->tags) : (string) $product->tags;
             $text = self::normalizeSearchText(implode(' ', array_filter([
                 $product->title, $product->short_description, $product->description,
-                $product->tags, $product->category?->title, $product->brand?->title,
+                $tags, $product->category?->title, $product->brand?->title,
                 $product->categories->pluck('title')->implode(' '),
             ])));
 
