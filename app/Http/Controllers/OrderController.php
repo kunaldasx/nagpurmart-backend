@@ -200,6 +200,7 @@ class OrderController extends Controller
                         <p class='m-0 fw-medium text-secondary'>" . __('labels.order_id') . ": {$sellerOrderItem->sellerOrder->order_id}</p>
                         <p class='m-0'>" . __('labels.buyer_name') . ": " . e($sellerOrderItem->sellerOrder->order->shipping_name) . "</p>
                         <p class='m-0'>" . __('labels.payment_method') . ": " . e($sellerOrderItem->sellerOrder->order->payment_method) . "</p>
+                        <p class='m-0'>Purchase Type: " . e(ucfirst($sellerOrderItem->sellerOrder->order->order_mode ?? 'regular')) . "</p>
                         <p class='m-0'>" . __('labels.is_rush_order') . ": " . ($sellerOrderItem->sellerOrder->order->is_rush_order ? 'Yes' : 'No') . "</p>
                         <p class='m-0'>" . __('labels.order_status') . ": " . Str::ucfirst(Str::replace("_", " ", $sellerOrderItem->sellerOrder->order->status)) . "</p>"
                         . $orderNote .

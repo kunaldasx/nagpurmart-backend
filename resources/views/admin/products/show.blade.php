@@ -484,6 +484,7 @@
                                                             <th>{{ __('labels.sku') }}</th>
                                                             <th>{{ __('labels.price') }}</th>
                                                             <th>{{ __('labels.special_price') }}</th>
+                                                            <th>Wholesale price</th>
                                                             <th>Special price ends</th>
                                                             <th>{{ __('labels.cost') }}</th>
                                                             <th>{{ __('labels.stock') }}</th>
@@ -499,6 +500,7 @@
                                                                 <td>{{ $storePricing['sku'] }}</td>
                                                                 <td>{{ $systemSettings['currencySymbol'] . number_format($storePricing['price'], 2) }}</td>
                                                                 <td>{{ $storePricing['special_price'] !== null ? $systemSettings['currencySymbol'] . number_format($storePricing['special_price'], 2) : 'N/A' }}</td>
+                                                                <td>{{ $storePricing['wholesale_price'] !== null ? $systemSettings['currencySymbol'] . number_format($storePricing['wholesale_price'], 2) : 'N/A' }}</td>
                                                                 <td>{{ $storePricing['is_special_price_active'] && $storePricing['special_price_ends_at'] ? $storePricing['special_price_ends_at']->format('Y-m-d H:i') : 'N/A' }}</td>
                                                                 <td>{{ $storePricing['cost'] ? $systemSettings['currencySymbol'] . number_format($storePricing['cost'], 2) : 'N/A' }}</td>
                                                                 <td>{{ $storePricing['stock'] }}</td>

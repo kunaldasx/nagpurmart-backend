@@ -224,6 +224,7 @@ class SellerOrderApiController extends Controller
                 'uuid' => $sellerOrderItem->sellerOrder->order->uuid ?? null,
                 'buyer_name' => $sellerOrderItem->sellerOrder->order->shipping_name ?? null,
                 'payment_method' => $sellerOrderItem->sellerOrder->order->payment_method ?? null,
+                'order_mode' => $sellerOrderItem->sellerOrder->order->order_mode ?? 'regular',
                 'is_rush_order' => (bool)($sellerOrderItem->sellerOrder->order->is_rush_order ?? false),
                 'status' => $sellerOrderItem->sellerOrder->order->status ?? null,
             ],

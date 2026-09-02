@@ -100,4 +100,23 @@ Admin/seller product create and edit requests accept `wholesale_price` in each p
 }
 ```
 
-Variant products use the same field under `variant_pricing[store_id][variant_id]`. The product pricing endpoint returns `wholesale_price` for each store variant.
+Variant products use the same field under each variant pricing row, for example:
+
+```json
+{
+    "variant_pricing": [
+        {
+            "variant_id": 12,
+            "store_id": 1,
+            "price": 100,
+            "special_price": 90,
+            "wholesale_price": 75,
+            "cost": 50,
+            "stock": 20,
+            "sku": "SKU-001"
+        }
+    ]
+}
+```
+
+The product pricing endpoint returns `wholesale_price` for each store variant.
