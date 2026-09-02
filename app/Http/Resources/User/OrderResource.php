@@ -44,6 +44,7 @@ class OrderResource extends JsonResource
             'currency_code' => $this->currency_code,
             'currency_rate' => $this->currency_rate,
             'payment_method' => $this->payment_method,
+            'order_mode' => $this->order_mode ?? 'regular',
             'payment_status' => $this->payment_status,
             'status' => $this->status,
             'invoice' => url('order-invoice?id=' . $this->uuid) ?? "",

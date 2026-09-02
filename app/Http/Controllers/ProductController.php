@@ -206,6 +206,7 @@ class ProductController extends Controller
                         'store_name' => $item->store->name ?? '',
                         'price' => $item->price_exclude_tax,
                         'special_price' => $item->special_price_exclude_tax,
+                        'wholesale_price' => $item->wholesale_price_exclude_tax,
                         'original_special_price' => $item->original_special_price_exclude_tax,
                         'special_price_raw' => $item->special_price_raw,
                         'special_price_ends_at' => $item->special_price_ends_at,
@@ -323,6 +324,7 @@ class ProductController extends Controller
                             'store_name' => $item->store->name ?? '',
                             'price' => $item->price_exclude_tax,
                             'special_price' => $item->special_price_exclude_tax,
+                            'wholesale_price' => $item->wholesale_price_exclude_tax,
                             'original_special_price' => $item->original_special_price_exclude_tax,
                             'special_price_raw' => $item->special_price_raw,
                             'special_price_ends_at' => $item->special_price_ends_at,
@@ -366,6 +368,7 @@ class ProductController extends Controller
             $validated = $request->validate([
                 'store_product_variant_id' => 'required|integer|exists:store_product_variants,id',
                 'special_price' => 'nullable|numeric|min:0',
+                'wholesale_price' => 'nullable|numeric|min:0',
                 'special_price_ends_at' => 'nullable|date|after:now',
             ]);
 
@@ -373,6 +376,7 @@ class ProductController extends Controller
                 ->whereHas('productVariant', fn ($query) => $query->where('product_id', $product->id))
                 ->firstOrFail();
             $specialPrice = $validated['special_price'] ?? null;
+            $wholesalePrice = $validated['wholesale_price'] ?? null;
             $specialPriceEndsAt = $validated['special_price_ends_at'] ?? null;
 
             if ($specialPrice !== null && (float)$specialPrice >= (float)$storeVariant->price_exclude_tax) {
@@ -383,11 +387,16 @@ class ProductController extends Controller
                 return ApiResponseType::sendJsonResponse(success: false, message: 'Special price expiry is required.', data: [], status: 422);
             }
 
+            if ($wholesalePrice !== null && (float)$wholesalePrice >= (float)$storeVariant->price_exclude_tax) {
+                return ApiResponseType::sendJsonResponse(success: false, message: 'Wholesale price must be lower than the original price.', data: [], status: 422);
+            }
+
             $storeVariant->update([
                 'special_price' => $specialPrice ?? $storeVariant->original_special_price,
                 'special_price_ends_at' => $specialPrice !== null
                     ? $specialPriceEndsAt
                     : null,
+                'wholesale_price' => $wholesalePrice,
             ]);
 
             return ApiResponseType::sendJsonResponse(success: true, message: 'Special price updated successfully.', data: [
@@ -395,6 +404,7 @@ class ProductController extends Controller
                 'store_product_variant_id' => $storeVariant->id,
                 'special_price' => $storeVariant->special_price_exclude_tax,
                 'special_price_ends_at' => $storeVariant->special_price_ends_at?->toISOString(),
+                'wholesale_price' => $storeVariant->wholesale_price_exclude_tax,
                 'is_special_price_active' => $storeVariant->is_special_price_active,
             ]);
         } catch (AuthorizationException $e) {

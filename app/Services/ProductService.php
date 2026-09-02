@@ -140,6 +140,7 @@ class ProductService
                 'sku' => $r['variant_sku'] ?? null,
                 'price' => ($r['variant_price'] ?? '') !== '' ? (float)$r['variant_price'] : null,
                 'special_price' => ($r['variant_special_price'] ?? '') !== '' ? (float)$r['variant_special_price'] : null,
+                'wholesale_price' => ($r['variant_wholesale_price'] ?? '') !== '' ? (float)$r['variant_wholesale_price'] : null,
                 'cost' => ($r['variant_cost'] ?? '') !== '' ? (float)$r['variant_cost'] : null,
                 'stock' => ($r['variant_stock'] ?? '') !== '' ? (int)$r['variant_stock'] : 0,
             ];
@@ -208,6 +209,7 @@ class ProductService
                     continue;
                 }
                 $sp = $storeRow['special_price'];
+                $wp = $storeRow['wholesale_price'];
                 if ($sp !== null && $sp !== '' && $sp >= $storeRow['price']) {
                     $sp = $storeRow['price'];
                 }
@@ -216,6 +218,7 @@ class ProductService
                         'store_id' => $storeRow['store_id'],
                         'price' => $storeRow['price'],
                         'special_price' => $sp,
+                        'wholesale_price' => $wp,
                         'cost' => $storeRow['cost'],
                         'stock' => $storeRow['stock'] ?? 0,
                         'sku' => $storeRow['sku'] ?? null,
@@ -226,6 +229,7 @@ class ProductService
                         'store_id' => $storeRow['store_id'],
                         'price' => $storeRow['price'],
                         'special_price' => $sp,
+                        'wholesale_price' => $wp,
                         'cost' => $storeRow['cost'],
                         'stock' => $storeRow['stock'] ?? 0,
                         'sku' => $storeRow['sku'] ?? null,
@@ -803,6 +807,7 @@ class ProductService
                 'sku' => $pricing['sku'],
                 'special_price' => !empty($pricing['special_price']) ? $pricing['special_price'] : $pricing['price'],
                 'original_special_price' => !empty($pricing['special_price']) ? $pricing['special_price'] : $pricing['price'],
+                'wholesale_price' => $pricing['wholesale_price'] ?? null,
                 'cost' => $pricing['cost'] ?? null,
                 'stock' => $pricing['stock'] ?? 0,
             ]);

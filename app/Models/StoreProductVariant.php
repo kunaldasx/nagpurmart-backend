@@ -17,6 +17,7 @@ class StoreProductVariant extends Model
         'sku',
         'price',
         'special_price',
+        'wholesale_price',
         'original_special_price',
         'special_price_ends_at',
         'cost',
@@ -24,9 +25,10 @@ class StoreProductVariant extends Model
     ];
     protected $casts = [
         'original_special_price' => 'decimal:2',
+        'wholesale_price' => 'decimal:2',
         'special_price_ends_at' => 'datetime',
     ];
-    protected $appends = ['price_exclude_tax','special_price_exclude_tax'];
+    protected $appends = ['price_exclude_tax','special_price_exclude_tax','wholesale_price_exclude_tax'];
 
     public function productVariant(): BelongsTo
     {
@@ -94,6 +96,31 @@ class StoreProductVariant extends Model
         return $this->is_special_price_active
             ? $this->attributes['special_price']
             : ($this->attributes['original_special_price'] ?? $this->attributes['price']);
+    }
+
+    public function getWholesalePriceExcludeTaxAttribute(): ?float
+    {
+        return isset($this->attributes['wholesale_price'])
+            ? (float)$this->attributes['wholesale_price']
+            : null;
+    }
+
+    public function getWholesalePriceAttribute($value): ?float
+    {
+        return $this->getTaxAdjustedPrice($value);
+    }
+
+    public function getPriceForMode(string $mode = 'regular', bool $includeTax = true): ?float
+    {
+        if ($mode === 'wholesale') {
+            $price = $this->attributes['wholesale_price'] ?? null;
+            return $includeTax ? $this->getTaxAdjustedPrice($price) : ($price === null ? null : (float)$price);
+        }
+
+        $price = $this->is_special_price_active
+            ? ($this->attributes['special_price'] ?? null)
+            : ($this->attributes['price'] ?? null);
+        return $includeTax ? $this->getTaxAdjustedPrice($price) : ($price === null ? null : (float)$price);
     }
 
     public function getOriginalSpecialPriceExcludeTaxAttribute(): ?float

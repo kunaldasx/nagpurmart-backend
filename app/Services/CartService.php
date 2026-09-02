@@ -380,7 +380,7 @@ class CartService
      * @param Cart $cart The cart to calculate totals for
      * @return array Array containing items_total and store_ids
      */
-    private function calculateCartTotals(Cart $cart): array
+    private function calculateCartTotals(Cart $cart, string $orderMode = 'regular'): array
     {
         $itemsTotal = 0;
         $storeIds = [];
@@ -398,8 +398,10 @@ class CartService
             $storeVariant = $item->variant->storeProductVariants->where('store_id', $item->store->id)->first();
             $cart->items[$key]->price = $item->quantity * $storeVariant->price;
             $cart->items[$key]->special_price = $item->quantity * $storeVariant->special_price;
+            $cart->items[$key]->wholesale_price = $item->quantity * ($storeVariant->wholesale_price ?? 0);
 
-            $itemsTotal += $item->quantity * ($storeVariant->special_price > 0 ? $storeVariant->special_price : $storeVariant->price);
+            $selectedPrice = $storeVariant->getPriceForMode($orderMode);
+            $itemsTotal += $item->quantity * ($selectedPrice ?? 0);
         }
 
         $cart->items_total = $itemsTotal;
@@ -421,7 +423,7 @@ class CartService
      * @param string|null $promoCode Promo code to apply discount
      * @return array Cart data with success status and message
      */
-    public function getCart(User $user, float $latitude = null, float $longitude = null, bool $isRushDelivery = false, bool $useWallet = false, string $promoCode = null, $addressId = null): array
+    public function getCart(User $user, float $latitude = null, float $longitude = null, bool $isRushDelivery = false, bool $useWallet = false, string $promoCode = null, $addressId = null, string $orderMode = 'regular'): array
     {
         try {
             DB::beginTransaction();
@@ -466,7 +468,7 @@ class CartService
 //                $promoCode = null;
             }
             // Calculate payment summary
-            $cart = $this->calculateCartPaymentSummary(cart: $cart, latitude: $latitude, longitude: $longitude, isRushDelivery: $isRushDelivery, useWallet: $useWallet, removedItems: $removedItems, user: $user, promoCode: $promoCode);
+            $cart = $this->calculateCartPaymentSummary(cart: $cart, latitude: $latitude, longitude: $longitude, isRushDelivery: $isRushDelivery, useWallet: $useWallet, removedItems: $removedItems, user: $user, promoCode: $promoCode, orderMode: $orderMode);
             DB::commit();
 
             // Prepare and return the response
@@ -609,7 +611,7 @@ class CartService
      * @param string|null $promoCode Promo code to apply discount
      * @return Cart Cart with payment summary attached
      */
-    private function calculateCartPaymentSummary(Cart $cart, bool $isRushDelivery, bool $useWallet, array $removedItems, User $user, float $latitude = null, float $longitude = null, string $promoCode = null): Cart
+    private function calculateCartPaymentSummary(Cart $cart, bool $isRushDelivery, bool $useWallet, array $removedItems, User $user, float $latitude = null, float $longitude = null, string $promoCode = null, string $orderMode = 'regular'): Cart
     {
         try {
             if ($latitude !== null && $longitude !== null) {
@@ -621,19 +623,20 @@ class CartService
                     longitude: $longitude,
                     isRushDelivery: $isRushDelivery,
                     useWallet: $useWallet,
-                    promoCode: $promoCode
+                    promoCode: $promoCode,
+                    orderMode: $orderMode
                 );
                 $cart->payment_summary = $paymentSummary;
                 // Fire event
                 event(new CartUpdatedByLocation($cart, $removedItems, $user, $latitude, $longitude));
             } else {
-                $cart->payment_summary = $this->createDefaultPaymentSummary($cart, $isRushDelivery, $useWallet);
+                $cart->payment_summary = $this->createDefaultPaymentSummary($cart, $isRushDelivery, $useWallet, $orderMode);
             }
 
         } catch (\Exception $e) {
             Log::error('Error getting payment summary: ' . $e->getMessage());
             // Set empty payment summary to avoid null reference
-            $cart->payment_summary = $this->createDefaultPaymentSummary($cart, $isRushDelivery, $useWallet);
+            $cart->payment_summary = $this->createDefaultPaymentSummary($cart, $isRushDelivery, $useWallet, $orderMode);
         }
         return $cart;
     }
@@ -671,7 +674,7 @@ class CartService
      * @param string|null $promoCode Promo code to apply discount
      * @return array Payment summary details
      */
-    public function getPaymentSummary(Cart $cart, float $latitude, float $longitude, bool $isRushDelivery = false, bool $useWallet = false, string $promoCode = null): array
+    public function getPaymentSummary(Cart $cart, float $latitude, float $longitude, bool $isRushDelivery = false, bool $useWallet = false, string $promoCode = null, string $orderMode = 'regular'): array
     {
         try {
             $zone = DeliveryZoneService::getZonesAtPoint($latitude, $longitude);
@@ -684,7 +687,7 @@ class CartService
 
             $this->validateZoneData($zone, $isRushDelivery);
 
-            $totalsResult = $this->calculateCartTotals($cart);
+            $totalsResult = $this->calculateCartTotals($cart, $orderMode);
             $itemsTotal = $totalsResult['items_total'];
             $storeIds = $totalsResult['store_ids'];
             $totalStores = count($storeIds);
@@ -751,6 +754,9 @@ class CartService
 
             return [
                 'items_total' => (float)$itemsTotal,
+                'order_mode' => $orderMode,
+                'wholesale_minimum_amount' => 1500,
+                'wholesale_minimum_met' => $orderMode !== 'wholesale' || $itemsTotal >= 1500,
                 'per_store_drop_off_fee' => (float)$perStoreDropOffFee,
                 'is_rush_delivery' => $isRushDelivery,
                 'is_rush_delivery_available' => $isRushDeliveryAvailable,
@@ -773,7 +779,7 @@ class CartService
             ];
         } catch (\Exception $e) {
             Log::error('Error calculating payment summary: ' . $e->getMessage());
-            return $this->createDefaultPaymentSummary($cart, $isRushDelivery, $useWallet);
+            return $this->createDefaultPaymentSummary($cart, $isRushDelivery, $useWallet, $orderMode);
         }
     }
 
@@ -866,7 +872,7 @@ class CartService
      * @param bool $useWallet Whether to use wallet balance for payment
      * @return array Default payment summary
      */
-    private function createDefaultPaymentSummary(Cart $cart, bool $isRushDelivery = false, bool $useWallet = false): array
+    private function createDefaultPaymentSummary(Cart $cart, bool $isRushDelivery = false, bool $useWallet = false, string $orderMode = 'regular'): array
     {
         $totalsResult = $this->calculateCartTotals($cart);
         $itemsTotal = $totalsResult['items_total'] ?? 0;
@@ -885,6 +891,9 @@ class CartService
 
         return [
             'items_total' => $itemsTotal,
+            'order_mode' => $orderMode,
+            'wholesale_minimum_amount' => 1500,
+            'wholesale_minimum_met' => $orderMode !== 'wholesale' || $itemsTotal >= 1500,
             'per_store_drop_off_fee' => 0,
             'is_rush_delivery' => $isRushDelivery,
             'is_rush_delivery_available' => false,

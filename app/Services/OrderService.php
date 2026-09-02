@@ -465,10 +465,12 @@ class OrderService
     {
         // Calculate cart totals
         $cartService = app(CartService::class);
-        $paymentSummary = $cartService->getPaymentSummary(cart: $cart, latitude: $data['address']['latitude'], longitude: $data['address']['longitude'], isRushDelivery: $data['rush_delivery'] ?? false, useWallet: $data['use_wallet'] ?? false, promoCode: $data['promo_code'] ?? null);
+        $orderMode = $data['order_mode'] ?? 'regular';
+        $paymentSummary = $cartService->getPaymentSummary(cart: $cart, latitude: $data['address']['latitude'], longitude: $data['address']['longitude'], isRushDelivery: $data['rush_delivery'] ?? false, useWallet: $data['use_wallet'] ?? false, promoCode: $data['promo_code'] ?? null, orderMode: $orderMode);
 
-        if ($paymentSummary['payable_amount'] < $data['minimumCartAmount'] && $data['payment_type'] !== PaymentTypeEnum::WALLET()) {
-            throw new Exception(__('labels.minimum_cart_amount_not_met', ['amount' => $data['minimumCartAmount']]));
+        $minimumAmount = $orderMode === 'wholesale' ? 1500 : $data['minimumCartAmount'];
+        if (($orderMode === 'wholesale' && $paymentSummary['items_total'] < $minimumAmount) || ($orderMode !== 'wholesale' && $paymentSummary['payable_amount'] < $minimumAmount && $data['payment_type'] !== PaymentTypeEnum::WALLET())) {
+            throw new Exception(__('labels.minimum_cart_amount_not_met', ['amount' => $minimumAmount]));
         }
 
         // Generate unique order number for customer-facing usage
@@ -485,6 +487,7 @@ class OrderService
             'currency_code' => 'USD', // This should be dynamic based on settings
             'currency_rate' => 1, // This should be dynamic based on settings
             'payment_method' => $data['payment_type'],
+            'order_mode' => $orderMode,
             'payment_status' => PaymentStatusEnum::PENDING(),
             'fulfillment_type' => 'hyperlocal',
             'is_rush_order' => (bool)$data['rush_delivery'] ?? false,
@@ -629,16 +632,16 @@ class OrderService
             ];
         }
 
-        [$subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent] =
+        [$subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax] =
             $this->calculatePricing($order, $cartItem, $storeVariant);
 
         $storeTotalPrice += $subtotal;
 
-        $orderItem = $this->createOrderItem($order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent);
+        $orderItem = $this->createOrderItem($order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax);
 
         // Attach required attachments to order item using Spatie Media Library
         $this->attachRequiredOrderItemAttachments($orderItem, $cartItem);
-        $this->createSellerOrderItem($sellerOrder, $cartItem, $orderItem, $storeVariant);
+        $this->createSellerOrderItem($sellerOrder, $cartItem, $orderItem, $storeVariant, $price);
 
         return true;
     }
@@ -698,24 +701,27 @@ class OrderService
     function calculatePricing(Order $order, $cartItem, $storeVariant): array
     {
         $commission = $storeVariant->category_commission->commission ?? 0;
-        $specialPrice = $storeVariant->special_price_exclude_tax;
-        $specialPriceWithTax = $storeVariant->special_price;
+        $price = $storeVariant->getPriceForMode($order->order_mode ?? 'regular', false);
+        $priceWithTax = $storeVariant->getPriceForMode($order->order_mode ?? 'regular');
+        if ($price === null || $priceWithTax === null) {
+            throw new Exception('Wholesale price is not configured for one or more products.');
+        }
 
-        $subtotal = $cartItem->quantity * $specialPriceWithTax;
+        $subtotal = $cartItem->quantity * $priceWithTax;
         $adminCommissionAmount = $subtotal * $commission / 100;
 
-        $taxPercent = StoreProductVariant::scopeTaxPercentage($specialPrice, $specialPriceWithTax);
+        $taxPercent = StoreProductVariant::scopeTaxPercentage($price, $priceWithTax);
 
         $promoDiscount = 0;
         if (!empty($order['promo_code'])) {
             $promoDiscount = ((float)$subtotal / $order->subtotal) * $order->promo_discount;
         }
 
-        return [$subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent];
+        return [$subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax];
     }
 
     private
-    function createOrderItem(Order $order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent): OrderItem
+    function createOrderItem(Order $order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax): OrderItem
     {
         return OrderItem::create([
             'order_id' => $order->id,
@@ -733,11 +739,11 @@ class OrderService
             'discounted_price' => 0,
             'promo_discount' => $promoDiscount,
             'discount' => 0,
-            'tax_amount' => (float)$storeVariant->special_price - $storeVariant->special_price_exclude_tax,
+            'tax_amount' => (float)$priceWithTax - $price,
             'tax_percent' => (float)$taxPercent,
             'sku' => $storeVariant->sku ?? "N/A",
             'quantity' => (float)$cartItem->quantity,
-            'price' => (float)$storeVariant->special_price_exclude_tax,
+            'price' => (float)$price,
             'subtotal' => (float)$subtotal,
             'status' => $this->determineOrderItemStatus($order),
             'otp' => $cartItem->product->requires_otp ? mt_rand(100000, 999999) : null,
@@ -745,7 +751,7 @@ class OrderService
     }
 
     private
-    function createSellerOrderItem(SellerOrder $sellerOrder, $cartItem, OrderItem $orderItem, $storeVariant): void
+    function createSellerOrderItem(SellerOrder $sellerOrder, $cartItem, OrderItem $orderItem, $storeVariant, $price): void
     {
         SellerOrderItem::create([
             'seller_order_id' => $sellerOrder->id,
@@ -753,7 +759,7 @@ class OrderService
             'product_variant_id' => $cartItem->product_variant_id,
             'order_item_id' => $orderItem->id,
             'quantity' => (float)$cartItem->quantity,
-            'price' => (float)$storeVariant->special_price_exclude_tax,
+            'price' => (float)$price,
         ]);
     }
 

@@ -29,6 +29,7 @@ class OrderResource extends JsonResource
                 'email' => $this->order->email,
                 'status' => $this->order->status,
                 'payment_method' => $this->order->payment_method,
+                'order_mode' => $this->order->order_mode ?? 'regular',
                 'payment_status' => $this->order->payment_status,
                 'total_price' => $this->total_price,
 
@@ -104,6 +105,7 @@ class OrderResource extends JsonResource
             'email' => $this->email,
             'status' => $this->status,
             'payment_method' => $this->payment_method,
+            'order_mode' => $this->order_mode ?? 'regular',
             'payment_status' => $this->payment_status,
             'promo_code' => $this->promo_code,
             'promo_discount' => $this->promo_discount,

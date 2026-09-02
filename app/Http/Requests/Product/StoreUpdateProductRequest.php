@@ -429,6 +429,11 @@ class StoreUpdateProductRequest extends FormRequest
                     (!is_numeric($row['special_price']) || $row['special_price'] < 0),
                 'message' => __('labels.special_price_numeric_non_negative'),
             ],
+            'wholesale_price' => [
+                'condition' => isset($row['wholesale_price']) && $row['wholesale_price'] !== '' &&
+                    (!is_numeric($row['wholesale_price']) || $row['wholesale_price'] < 0),
+                'message' => __('labels.price_required_numeric'),
+            ],
             'cost' => [
                 'condition' => !isset($row['cost']) || !is_numeric($row['cost']),
                 'message' => __('labels.cost_required_numeric'),

@@ -16,6 +16,7 @@ class SellerStoreProductVariantResource extends JsonResource
             'sku' => $this->sku,
             'price' => $this->price,
             'special_price' => $this->special_price,
+            'wholesale_price' => $this->wholesale_price,
             'cost' => $this->cost,
             'stock' => $this->stock,
         ];

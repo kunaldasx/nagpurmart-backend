@@ -29,6 +29,7 @@ class CreateOrderRequest extends FormRequest
     {
         $rules = [
             'payment_type' => ['required', Rule::in(PaymentTypeEnum::values())],
+            'order_mode' => ['nullable', Rule::in(['regular', 'wholesale'])],
             'promo_code' => ['nullable', 'string', 'max:50'],
             'gift_card' => ['nullable', 'string', 'max:50'],
             'address_id' => ['required', 'numeric', 'exists:addresses,id'],

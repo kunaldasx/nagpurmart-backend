@@ -54,6 +54,7 @@ class CartItemResource extends JsonResource
                 'image' => $this->variant->image ?? null,
                 'price' => $variantPricing?->price ?? 0,
                 'special_price' => $variantPricing?->special_price ?? 0,
+                'wholesale_price' => $variantPricing?->wholesale_price ?? 0,
                 'stock' => $storeVariant?->stock ?? 0,
                 'sku' => $storeVariant?->sku ?? null,
             ],

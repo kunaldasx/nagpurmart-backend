@@ -23,6 +23,7 @@ class DeliveryBoyOrderResource extends JsonResource
             'slug' => $this->slug,
             'status' => $this->status,
             'payment_method' => $this->payment_method,
+            'order_mode' => $this->order_mode ?? 'regular',
             'payment_status' => $this->payment_status,
             'fulfillment_type' => $this->fulfillment_type,
             'estimated_delivery_time' => $this->estimated_delivery_time,

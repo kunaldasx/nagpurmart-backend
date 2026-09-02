@@ -30,6 +30,7 @@ class SellerOrderResource extends JsonResource
                     'uuid' => $this->order->uuid,
                     'email' => $this->order->email,
                     'payment_method' => $this->order->payment_method,
+                    'order_mode' => $this->order->order_mode ?? 'regular',
                     'payment_status' => $this->order->payment_status,
                     'status' => $this->order->status,
                     'billing_name' => $this->order->billing_name,

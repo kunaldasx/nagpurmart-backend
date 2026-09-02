@@ -27,6 +27,7 @@ class Order extends Model
         'currency_code',
         'currency_rate',
         'payment_method',
+        'order_mode',
         'payment_status',
         'fulfillment_type',
         'is_rush_order',

@@ -78,6 +78,7 @@
                 <b>Invoice #:</b> {{ $order['uuid'] }}<br>
                 <b>Order Date:</b> {{ $order['created_at']->format('Y-m-d H:i:s') }}<br>
                 <b>Payment Method:</b> {{ $order['payment_method'] ?? 'Cash on Delivery' }}<br>
+                <b>Purchase Type:</b> {{ ucfirst($order['order_mode'] ?? 'regular') }}<br>
                 <b>Payment Date:</b> {{ $order['created_at'] }}
             </td>
             <td>

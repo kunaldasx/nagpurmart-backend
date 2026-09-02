@@ -76,6 +76,10 @@
                                         </div>
                                     </div>
                                     <div class="datagrid-item">
+                                        <div class="datagrid-title">Purchase Type</div>
+                                        <div class="datagrid-content text-capitalize">{{ $order['order_mode'] ?? 'regular' }}</div>
+                                    </div>
+                                    <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.final_total') }}</div>
                                         <div
                                             class="datagrid-content">{{ $systemSettings['currencySymbol'] . number_format($order['final_total'], 2) }}</div>

@@ -89,6 +89,7 @@ class CartApiController extends Controller
     #[QueryParameter('rush_delivery', description: 'Whether to use rush delivery.', type: 'boolean', example: true)]
     #[QueryParameter('use_wallet', description: 'Whether to use wallet balance for payment.', type: 'boolean', example: true)]
     #[QueryParameter('promo_code', description: 'Promo code to apply discount.', type: 'string', example: 'SAVE20')]
+    #[QueryParameter('order_mode', description: 'Pricing mode: regular or wholesale. Wholesale requires a merchandise subtotal of 1500.', type: 'string', example: 'wholesale')]
     #[QueryParameter('latitude', description: 'Latitude of the user location for zone-wise product counts', type: 'float', example: 23.11684540)]
     #[QueryParameter('longitude', description: 'Longitude of the user location for zone-wise product counts', type: 'float', example: 70.02805670)]
     public function getCart(Request $request): JsonResponse
@@ -127,6 +128,10 @@ class CartApiController extends Controller
 
         // Get promo code if provided
         $promoCode = $request->input('promo_code');
+        $orderMode = $request->input('order_mode', 'regular');
+        if (!in_array($orderMode, ['regular', 'wholesale'], true)) {
+            $orderMode = 'regular';
+        }
 
         $result = $this->cartService->getCart(
             user: $user,
@@ -135,7 +140,8 @@ class CartApiController extends Controller
             isRushDelivery: $isRushDelivery,
             useWallet: $useWallet,
             promoCode: $promoCode,
-            addressId: $addressId ?? null
+            addressId: $addressId ?? null,
+            orderMode: $orderMode
         );
 
         return ApiResponseType::sendJsonResponse(
