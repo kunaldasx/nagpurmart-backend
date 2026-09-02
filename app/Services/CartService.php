@@ -197,6 +197,7 @@ class CartService
         return [
             'eligible' => $variants->isNotEmpty(),
             'qualifying_items_total' => $qualifyingTotal,
+            'gift_minimum_cart_amount' => $giftMinimumAmount,
             'options' => $variants->map(function ($variant) use ($giftMinimumAmount) {
                 return [
                     'product_id' => $variant->productVariant->product_id,
@@ -844,6 +845,7 @@ class CartService
                 'items_total' => (float)$itemsTotal,
                 'qualifying_items_total' => (float)$qualifyingItemsTotal,
                 'order_mode' => $orderMode,
+                'gift_minimum_cart_amount' => app(SettingService::class)->getSystemNumericSetting('giftMinimumCartAmount', 1500),
                 'wholesale_minimum_amount' => app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
                 'wholesale_minimum_met' => $orderMode !== 'wholesale' || $qualifyingItemsTotal >= app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
                 'per_store_drop_off_fee' => (float)$perStoreDropOffFee,
@@ -983,6 +985,7 @@ class CartService
             'items_total' => $itemsTotal,
             'qualifying_items_total' => $qualifyingItemsTotal,
             'order_mode' => $orderMode,
+            'gift_minimum_cart_amount' => app(SettingService::class)->getSystemNumericSetting('giftMinimumCartAmount', 1500),
             'wholesale_minimum_amount' => app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
             'wholesale_minimum_met' => $orderMode !== 'wholesale' || $qualifyingItemsTotal >= app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
             'per_store_drop_off_fee' => 0,

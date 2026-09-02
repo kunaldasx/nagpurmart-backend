@@ -37,7 +37,7 @@ curl -G "$HOST/api/cart" \
   --data-urlencode "order_mode=wholesale"
 ```
 
-The response `payment_summary` includes `order_mode`, `items_total`, `wholesale_minimum_amount`, and `wholesale_minimum_met`. The threshold is editable in Admin Settings under Cart & Inventory Settings.
+The response `payment_summary` includes `order_mode`, `items_total`, `gift_minimum_cart_amount`, `wholesale_minimum_amount`, and `wholesale_minimum_met`. Both thresholds are editable in Admin Settings under Cart & Inventory Settings.
 
 ## Create a regular order
 
@@ -133,7 +133,7 @@ curl -G "$HOST/api/cart/gifts" \
   --data-urlencode "order_mode=regular"
 ```
 
-For wholesale mode, request `order_mode=wholesale`. The response includes `eligible`, `qualifying_items_total`, and each option's `product_variant_id`, `store_id`, and fixed gift `price` of `1.00`.
+For wholesale mode, request `order_mode=wholesale`. The response includes `eligible`, `qualifying_items_total`, `gift_minimum_cart_amount`, and each option's `product_variant_id`, `store_id`, and fixed gift `price` of `1.00`.
 
 Add the selected gift. The server ignores any client price and always creates a gift line at `1.00`:
 

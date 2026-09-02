@@ -18,6 +18,7 @@ class PaymentSummaryResource extends JsonResource
             'items_total' => $this['items_total'] ?? 0,
             'qualifying_items_total' => $this['qualifying_items_total'] ?? $this['items_total'] ?? 0,
             'order_mode' => $this['order_mode'] ?? 'regular',
+            'gift_minimum_cart_amount' => $this['gift_minimum_cart_amount'] ?? 1500,
             'wholesale_minimum_amount' => $this['wholesale_minimum_amount'] ?? 1500,
             'wholesale_minimum_met' => $this['wholesale_minimum_met'] ?? true,
             'per_store_drop_off_fee' => $this['per_store_drop_off_fee'] ?? 0,
