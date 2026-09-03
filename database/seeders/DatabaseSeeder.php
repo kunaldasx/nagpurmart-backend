@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             CountriesSeeder::class,
+            BackfillWholesalePriceSeeder::class,
 //            CategoriesSeeder::class,
             DefaultRolesSeeder::class,
 //            SystemVendorTypeSeeder::class,
