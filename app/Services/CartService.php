@@ -187,7 +187,13 @@ class CartService
             ->whereHas('productVariant.product', function ($query) {
                 $query->where('is_one_rupee_gift', true)->where('status', 'active');
             })
-            ->with(['productVariant.product', 'productVariant'])
+            ->with([
+                'productVariant.product.category',
+                'productVariant.product.brand',
+                'productVariant.attributes.attribute',
+                'productVariant.attributes.attributeValue',
+                'store',
+            ])
             ->get()
             ->filter(function ($variant) use ($qualifyingTotal, $giftMinimumAmount) {
                 return $qualifyingTotal >= $giftMinimumAmount;
@@ -204,12 +210,45 @@ class CartService
                     'product_variant_id' => $variant->product_variant_id,
                     'store_id' => $variant->store_id,
                     'name' => $variant->productVariant->product->title,
+                    'slug' => $variant->productVariant->product->slug,
+                    'short_description' => $variant->productVariant->product->short_description,
+                    'description' => $variant->productVariant->product->description,
+                    'main_image' => $variant->productVariant->product->main_image,
+                    'additional_images' => $variant->productVariant->product->additional_images,
+                    'image_fit' => $variant->productVariant->product->image_fit,
                     'variant_title' => $variant->productVariant->title,
+                    'variant_slug' => $variant->productVariant->slug,
+                    'variant_image' => $variant->productVariant->image ?: $variant->productVariant->product->main_image,
+                    'variant_attributes' => $variant->productVariant->attributes->mapWithKeys(function ($attribute) {
+                        return [$attribute->attribute?->slug => $attribute->attributeValue?->title];
+                    })->filter()->all(),
                     'price' => 1.00,
                     'regular_price' => $variant->getPriceForMode('regular'),
                     'wholesale_price' => $variant->getPriceForMode('wholesale'),
+                    'special_price' => $variant->special_price,
+                    'original_price' => $variant->price,
+                    'original_special_price' => $variant->original_special_price_exclude_tax,
+                    'special_price_ends_at' => $variant->special_price_ends_at?->toISOString(),
+                    'is_special_price_active' => $variant->is_special_price_active,
                     'minimum_cart_amount' => $giftMinimumAmount,
                     'stock' => (int)$variant->stock,
+                    'sku' => $variant->sku,
+                    'category' => [
+                        'id' => $variant->productVariant->product->category?->id,
+                        'name' => $variant->productVariant->product->category?->title,
+                        'slug' => $variant->productVariant->product->category?->slug,
+                    ],
+                    'brand' => [
+                        'id' => $variant->productVariant->product->brand?->id,
+                        'name' => $variant->productVariant->product->brand?->title,
+                        'slug' => $variant->productVariant->product->brand?->slug,
+                    ],
+                    'store' => [
+                        'id' => $variant->store?->id,
+                        'name' => $variant->store?->name,
+                        'slug' => $variant->store?->slug,
+                        'status' => $variant->store?->checkStoreStatus() ?? [],
+                    ],
                 ];
             })->all(),
         ];

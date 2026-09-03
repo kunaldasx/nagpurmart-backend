@@ -133,7 +133,7 @@ curl -G "$HOST/api/cart/gifts" \
   --data-urlencode "order_mode=regular"
 ```
 
-For wholesale mode, request `order_mode=wholesale`. The response includes `eligible`, `qualifying_items_total`, `gift_minimum_cart_amount`, and each option's `product_variant_id`, `store_id`, and fixed gift `price` of `1.00`.
+For wholesale mode, request `order_mode=wholesale`. The response includes `eligible`, `qualifying_items_total`, `gift_minimum_cart_amount`, and each option's `product_variant_id`, `store_id`, and fixed gift `price` of `1.00`. Each option also includes `name`, `slug`, `short_description`, `description`, `main_image`, `additional_images`, `image_fit`, `variant_title`, `variant_slug`, `variant_image`, `variant_attributes`, `regular_price`, `special_price`, `wholesale_price`, `original_price`, `original_special_price`, `special_price_ends_at`, `is_special_price_active`, `sku`, `stock`, `category`, `brand`, and `store`.
 
 Add the selected gift. The server ignores any client price and always creates a gift line at `1.00`:
 
