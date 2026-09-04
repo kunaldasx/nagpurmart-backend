@@ -30,7 +30,7 @@ class GroceryListApiController extends Controller
 
             $list = DB::transaction(function () use ($extracted) {
                 $list = GroceryList::create([
-                    'user_id' => auth()->id(),
+                    'user_id' => auth('sanctum')->id(),
                     'status' => 'completed',
                     'language' => 'mixed',
                 ]);

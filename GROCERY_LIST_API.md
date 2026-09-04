@@ -15,7 +15,7 @@ Send `multipart/form-data` with one field:
 | ------- | ---- | -------- | -------------------------------------- |
 | `image` | file | Yes      | JPG, JPEG, PNG, or WEBP; maximum 10 MB |
 
-The endpoint is temporarily public while frontend authentication is being integrated. If a bearer token is supplied, the scan is linked to that user; without one, the extracted output is stored as an anonymous record. The uploaded image is processed in memory and is not stored. It validates the file, sends it to Gemini for extraction, and returns only the structured grocery items. Product searching is not performed.
+The endpoint is temporarily public while frontend authentication is being integrated. The `Authorization: Bearer <token>` header is optional: a valid Sanctum token links the scan to that customer, while no token (or an invalid token) stores it anonymously with `user_id` set to `null`. The uploaded image is processed in memory and is not stored. It validates the file, sends it to Gemini for extraction, and returns only the structured grocery items. Product searching is not performed.
 
 Optional form field: `model_id`. It must be one of `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-pro-preview`, or `gemini-2.5-flash`. If omitted, the admin-selected model is used. If invalid, the request uses `gemini-3.5-flash` and returns a non-blocking warning in `metadata.warning`.
 
