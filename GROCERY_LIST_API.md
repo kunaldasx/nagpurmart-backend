@@ -15,7 +15,7 @@ Send `multipart/form-data` with one field:
 | ------- | ---- | -------- | -------------------------------------- |
 | `image` | file | Yes      | JPG, JPEG, PNG, or WEBP; maximum 10 MB |
 
-The endpoint is temporarily public while frontend authentication is being integrated. If a bearer token is supplied, the list is linked to that user; without one, the extraction is stored as an anonymous record. It validates the file, sends it once to Gemini for extraction, and returns only the structured grocery items. Product searching is not performed.
+The endpoint is temporarily public while frontend authentication is being integrated. If a bearer token is supplied, the list is linked to that user; without one, the extraction is stored as an anonymous record. It validates the file, sends it to Gemini for extraction, and returns only the structured grocery items. Product searching is not performed.
 
 Optional form field: `model_id`. It must be one of `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-pro-preview`, or `gemini-2.5-flash`. If omitted, the admin-selected model is used. If invalid, the request uses `gemini-3.5-flash` and returns a non-blocking warning in `metadata.warning`.
 
@@ -53,4 +53,4 @@ Returns one list owned by the authenticated user, or `404` when it does not exis
 
 ## Configuration
 
-Configure the key and model in Admin Panel > Settings > System. The admin model setting takes precedence; when it is blank, the service uses `GEMINI_MODEL` from the server `.env`, defaulting to `gemini-3.5-flash`. If a selected model returns 404, the service retries once with `gemini-2.5-flash`. The prompt requests only the three required fields, uses JSON mode, temperature 0, and a 500-token output cap to minimize latency and cost.
+Configure the key and model in Admin Panel > Settings > System. The admin model setting takes precedence; when it is blank, the service uses `GEMINI_MODEL` from the server `.env`, defaulting to `gemini-3.5-flash`. If a selected model returns 404 or remains truncated, the service falls back to `gemini-3.5-flash`. The prompt reads up to 50 visible lines, translates or transliterates Hindi/Marathi and handwriting, uses JSON mode, temperature 0, minimizes reasoning for this deterministic extraction, and validates the response against a JSON schema. The service starts with an 8192-token output budget, retries once with 16384 tokens after a truncated `MAX_TOKENS` response, and returns complete items from the response if the final JSON is cut off.
