@@ -31,14 +31,12 @@ class GeminiGroceryListService
 
         $prompt = <<<'PROMPT'
 Return ONLY compact JSON with this exact structure:
-{"items":[{"name":"Onion","qty":1,"unit":"kg"}]}
+{"items":[{"name":"Onion"}]}
 Rules:
-- only keys allowed in each item: name, qty, unit
+- only key allowed in each item: name
 - translate Hindi/Marathi and handwritten text to standard English grocery names
-- read every visible line from top to bottom; each line is a separate item unless it is clearly a continuation
+- read every visible line from top to bottom; each distinct grocery is a separate item, even when multiple groceries appear on one line separated by commas, "and", or semicolons
 - transliterate or translate Hindi/Marathi names, but do not invent items that are not visible
-- preserve a clearly written quantity and unit; if either is missing or unclear, use qty 1 and unit pc
-- unit must be one of: kg, g, l, ml, pc, bunch
 - ignore crossed-out text, prices, headings, phone numbers, and non-grocery notes
 - if image is not a grocery list, return {"items":[]}
 - no markdown, no code fences, no extra text
@@ -69,10 +67,8 @@ PROMPT;
                                     'type' => 'OBJECT',
                                     'properties' => [
                                         'name' => ['type' => 'STRING'],
-                                        'qty' => ['type' => 'NUMBER'],
-                                        'unit' => ['type' => 'STRING'],
                                     ],
-                                    'required' => ['name', 'qty', 'unit'],
+                                    'required' => ['name'],
                                 ],
                             ],
                         ],
@@ -159,7 +155,7 @@ PROMPT;
             throw new RuntimeException('Gemini returned an invalid grocery list response.');
         }
 
-        $data['items'] = $this->normalizeItems(array_slice($data['items'], 0, self::MAX_ITEMS));
+        $data['items'] = $this->normalizeItems($this->expandCombinedItems($data['items']));
 
         return ['items' => $data['items'], 'model' => $model, 'warning' => $warning];
     }
@@ -176,22 +172,40 @@ PROMPT;
                 return null;
             }
 
-            $unit = strtolower(trim((string) ($item['unit'] ?? 'pc')));
-            if (!in_array($unit, ['kg', 'g', 'l', 'ml', 'pc', 'bunch'], true)) {
-                $unit = 'pc';
-            }
-
-            $qty = $item['qty'] ?? 1;
-            if ($qty === '' || $qty === null) {
-                $qty = 1;
-            }
-
-            return [
-                'english name' => trim((string) $name),
-                'qty' => is_numeric($qty) && (float) $qty > 0 ? (float) $qty : 1,
-                'unit' => $unit,
-            ];
+            return ['english name' => trim((string) $name)];
         }, $items)));
+    }
+
+    private function expandCombinedItems(array $items): array
+    {
+        $expanded = [];
+
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $name = $item['english name'] ?? $item['name'] ?? $item['item'] ?? null;
+            if (!is_string($name) || !preg_match('/[,;&]|\band\b/i', $name)) {
+                $expanded[] = $item;
+                continue;
+            }
+
+            $names = preg_split('/\s*(?:,|;|&|\band\b)\s*/i', $name, -1, PREG_SPLIT_NO_EMPTY);
+            if (count($names) < 2) {
+                $expanded[] = $item;
+                continue;
+            }
+
+            foreach ($names as $singleName) {
+                $singleItem = $item;
+                $singleItem['name'] = trim($singleName);
+                unset($singleItem['english name'], $singleItem['item']);
+                $expanded[] = $singleItem;
+            }
+        }
+
+        return array_slice($expanded, 0, self::MAX_ITEMS);
     }
 
     private function extractJsonPayload(

@@ -14,7 +14,7 @@ it('parses markdown-wrapped json from Gemini into grocery items', function () {
                     'parts' => [[
                         'text' => <<<'JSON'
 ```json
-{"items":[{"english name":"Tomato","qty":"1","unit":"kg"},{"english name":"Milk","qty":"0.5","unit":"L"},{"english name":"Onion","qty":"","unit":""}]}
+{"items":[{"name":"Tomato"},{"name":"Milk"},{"name":"Onion"}]}
 ```
 JSON,
                     ]],
@@ -27,21 +27,9 @@ JSON,
     $result = $service->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
 
     expect($result['items'])->toHaveCount(3)
-        ->and($result['items'][0])->toMatchArray([
-            'english name' => 'Tomato',
-            'qty' => 1.0,
-            'unit' => 'kg',
-        ])
-        ->and($result['items'][1])->toMatchArray([
-            'english name' => 'Milk',
-            'qty' => 0.5,
-            'unit' => 'l',
-        ])
-        ->and($result['items'][2])->toMatchArray([
-            'english name' => 'Onion',
-            'qty' => 1,
-            'unit' => 'pc',
-        ]);
+        ->and($result['items'][0])->toBe(['english name' => 'Tomato'])
+        ->and($result['items'][1])->toBe(['english name' => 'Milk'])
+        ->and($result['items'][2])->toBe(['english name' => 'Onion']);
 
     Http::assertSent(function ($request) {
         $generationConfig = $request->data()['generationConfig'];
@@ -66,18 +54,14 @@ it('retries truncated Gemini JSON with a larger budget', function () {
         ])
         ->push([
             'candidates' => [[
-                'content' => ['parts' => [['text' => '{"items":[{"name":"Rice","qty":1,"unit":"kg"}]}']]],
+                'content' => ['parts' => [['text' => '{"items":[{"name":"Rice"}]}']]],
             ]],
         ]);
 
     $result = app(GeminiGroceryListService::class)
         ->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
 
-    expect($result['items'])->toMatchArray([[
-        'english name' => 'Rice',
-        'qty' => 1.0,
-        'unit' => 'kg',
-    ]]);
+    expect($result['items'])->toMatchArray([['english name' => 'Rice']]);
 
     Http::assertSentCount(2);
     Http::assertSent(function ($request) {
@@ -91,7 +75,7 @@ it('returns completed items when Gemini truncates the final response', function 
     $truncated = [
         'candidates' => [[
             'content' => ['parts' => [[
-                'text' => '{"items":[{"name":"Rice","qty":1,"unit":"kg"},{"name":"Dal","qty":2,"unit":"kg"},{"name":"Oil"',
+                'text' => '{"items":[{"name":"Rice"},{"name":"Dal"},{"name":"Oil"',
             ]]],
             'finishReason' => 'MAX_TOKENS',
         ]],
@@ -103,9 +87,35 @@ it('returns completed items when Gemini truncates the final response', function 
         ->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
 
     expect($result['items'])->toMatchArray([
-        ['english name' => 'Rice', 'qty' => 1.0, 'unit' => 'kg'],
-        ['english name' => 'Dal', 'qty' => 2.0, 'unit' => 'kg'],
+        ['english name' => 'Rice'],
+        ['english name' => 'Dal'],
     ])->and($result['warning'])->toContain('truncated');
 
     Http::assertSentCount(2);
+});
+
+it('splits distinct groceries combined on one line', function () {
+    config(['services.gemini.api_key' => 'test-key']);
+
+    Http::fake([
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent' => Http::response([
+            'candidates' => [[
+                'content' => ['parts' => [[
+                    'text' => '{"items":[{"name":"Cashew, Almond, Raisin, Foxnuts"},{"name":"Tomato Sauce, Red Chili Sauce"}]}',
+                ]]],
+            ]],
+        ]),
+    ]);
+
+    $result = app(GeminiGroceryListService::class)
+        ->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
+
+    expect(array_column($result['items'], 'english name'))->toBe([
+        'Cashew',
+        'Almond',
+        'Raisin',
+        'Foxnuts',
+        'Tomato Sauce',
+        'Red Chili Sauce',
+    ]);
 });

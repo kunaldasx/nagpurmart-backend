@@ -9,7 +9,6 @@ use App\Types\Api\ApiResponseType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -28,12 +27,10 @@ class GroceryListApiController extends Controller
 
             $image = $request->file('image');
             $extracted = $this->extractor->extract($image, $request->input('model_id'));
-            $imagePath = $image->store('grocery-lists', 'public');
 
-            $list = DB::transaction(function () use ($extracted, $imagePath) {
+            $list = DB::transaction(function () use ($extracted) {
                 $list = GroceryList::create([
                     'user_id' => auth()->id(),
-                    'image_path' => $imagePath,
                     'status' => 'completed',
                     'language' => 'mixed',
                 ]);
@@ -42,8 +39,6 @@ class GroceryListApiController extends Controller
                     $list->items()->create([
                         'extracted_name' => $item['english name'],
                         'normalized_name' => mb_strtolower($item['english name']),
-                        'quantity' => $item['qty'],
-                        'unit' => $item['unit'],
                     ]);
                 }
 
@@ -97,13 +92,10 @@ class GroceryListApiController extends Controller
             'language' => $list->language,
             'extracted_text' => $list->extracted_text,
             'rejection_reason' => $list->rejection_reason,
-            'image_url' => $list->image_path ? Storage::disk('public')->url($list->image_path) : null,
             'created_at' => $list->created_at,
             'items' => $list->items->map(fn ($item) => [
                 'id' => $item->id,
                 'english name' => $item->extracted_name,
-                'qty' => $item->quantity,
-                'unit' => $item->unit,
             ])->values()->all(),
         ];
     }
