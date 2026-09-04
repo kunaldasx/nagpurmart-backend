@@ -47,7 +47,7 @@
                     <div class="row w-full p-3">
                         <x-datatable id="customers-table" :columns="$columns"
                                      route="{{ route('admin.customers.datatable') }}"
-                                     :options="['order' => [[0, 'desc']], 'pageLength' => 10, 'columnDefs' => [['targets' => 4, 'orderable' => false]]]"/>
+                                     :options="['order' => [[0, 'desc']], 'pageLength' => 10, 'columnDefs' => [['targets' => [4, 6], 'orderable' => false]]]"/>
                     </div>
                 </div>
             </div>

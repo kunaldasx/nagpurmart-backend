@@ -56,6 +56,7 @@ class CustomerController extends Controller
             ['data' => 'wallet_balance', 'name' => 'wallet_balance', 'title' => __('labels.wallet_balance')],
             ['data' => 'grocery_lists', 'name' => 'grocery_lists', 'title' => 'Grocery lists'],
             ['data' => 'created_at', 'name' => 'created_at', 'title' => __('labels.created_at')],
+            ['data' => 'grocery_lists_action', 'name' => 'grocery_lists_action', 'title' => 'Scan history'],
         ];
 
         return view('admin.customers.index', compact('columns'));
@@ -114,6 +115,7 @@ class CustomerController extends Controller
                     'wallet_balance' => $this->currencyService->format($user?->wallet->balance ?? 0),
                     'grocery_lists' => '<a href="' . route('admin.customers.grocery-lists', $user->id) . '">' . $user->grocery_lists_count . '</a>',
                     'created_at' => $user->created_at?->format('Y-m-d'),
+                    'grocery_lists_action' => '<a class="btn btn-sm btn-outline-primary" href="' . route('admin.customers.grocery-lists', $user->id) . '">View scans</a>',
                 ];
             })
             ->toArray();
