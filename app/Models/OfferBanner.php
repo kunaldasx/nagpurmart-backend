@@ -15,7 +15,7 @@ class OfferBanner extends Model implements HasMedia
     use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
-        'title', 'slug', 'position', 'scope_type', 'scope_id', 'visibility_status', 'display_order', 'metadata'
+        'title', 'slug', 'template_code', 'position', 'scope_type', 'scope_id', 'visibility_status', 'display_order', 'metadata'
     ];
 
     protected $casts = [

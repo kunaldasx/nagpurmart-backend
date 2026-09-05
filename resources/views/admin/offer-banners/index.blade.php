@@ -38,6 +38,9 @@
                                 </div>
                                 <div class="col-auto">
                                     <div class="btn-list">
+                                        <a href="{{ route('admin.offer-banner-templates.index') }}" class="btn btn-outline-secondary d-none d-sm-inline-block">
+                                            Manage Templates
+                                        </a>
                                         <a href="{{ route('admin.offer-banners.create') }}" class="btn btn-primary d-none d-sm-inline-block">
                                             {{ __('labels.create_offer_banner') }}
                                         </a>

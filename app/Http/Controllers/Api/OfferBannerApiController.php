@@ -22,6 +22,7 @@ class OfferBannerApiController extends Controller
             return [
                 'id' => $b->id,
                 'title' => $b->title,
+                'template_code' => $b->template_code,
                 'position' => $b->position,
                 'scope_type' => $b->scope_type,
                 'scope_id' => $b->scope_id,

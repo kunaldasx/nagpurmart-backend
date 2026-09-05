@@ -81,6 +81,36 @@
                             </div>
                         </div>
 
+                        <div class="mt-5 pt-4 border-top">
+                            <div class="mb-4">
+                                <h4 class="mb-1">Banner Template</h4>
+                                <p class="text-secondary mb-0">Choose the visual layout used by the app for this offer banner.</p>
+                            </div>
+
+                            <div class="row g-3">
+                                @foreach($templates as $template)
+                                    <div class="col-6 col-md-3">
+                                        <label class="template-option d-block h-100">
+                                            <input
+                                                type="radio"
+                                                name="template_code"
+                                                value="{{ $template->code }}"
+                                                class="template-radio visually-hidden"
+                                                {{ old('template_code', $banner->template_code ?? 'T_1') === $template->code ? 'checked' : '' }}
+                                            >
+                                            <span class="card h-100 border template-card">
+                                                <img src="{{ $template->preview_url }}" alt="{{ $template->name }}" class="card-img-top" style="aspect-ratio: 16 / 9; object-fit: cover;">
+                                                <span class="card-body py-2 d-flex justify-content-between align-items-center">
+                                                    <span>{{ $template->name }}</span>
+                                                    <span class="badge bg-blue-lt">{{ $template->code }}</span>
+                                                </span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
                         {{-- Display Scope --}}
                         <div class="mt-5 pt-4 border-top">
                             <div class="mb-4">
@@ -392,6 +422,13 @@
         </div>
     </div>
 @endsection
+
+@push('styles')
+    <style>
+        .template-card { transition: border-color .15s ease, box-shadow .15s ease; }
+        .template-radio:checked + .template-card { border-color: var(--tblr-primary) !important; box-shadow: 0 0 0 2px rgba(var(--tblr-primary-rgb), .2); }
+    </style>
+@endpush
 
 @push('scripts')
     <script src="{{ hyperAsset('assets/js/offer-banner.js') }}" defer></script>

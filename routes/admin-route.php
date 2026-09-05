@@ -267,6 +267,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/datatable', [\App\Http\Controllers\OfferBannerController::class, 'getOfferBanners'])->name('datatable');
         });
 
+        Route::prefix('offer-banner-templates')->name('offer-banner-templates.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\OfferBannerTemplateController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\OfferBannerTemplateController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\OfferBannerTemplateController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [\App\Http\Controllers\OfferBannerTemplateController::class, 'edit'])->name('edit');
+            Route::post('/{id}', [\App\Http\Controllers\OfferBannerTemplateController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\App\Http\Controllers\OfferBannerTemplateController::class, 'destroy'])->name('delete');
+        });
+
         // wallet transactions and deposits
         Route::prefix('wallet')->name('wallet.')->group(function () {
             // All transactions

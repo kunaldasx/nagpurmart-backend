@@ -6,6 +6,7 @@ use App\Http\Requests\OfferBanner\StoreUpdateOfferBannerRequest;
 use App\Models\Category;
 use App\Models\OfferBanner;
 use App\Models\OfferBannerItem;
+use App\Models\OfferBannerTemplate;
 use App\Traits\PanelAware;
 use App\Traits\ChecksPermissions;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -36,6 +37,7 @@ class OfferBannerController extends Controller
         $columns = [
             ['data' => 'id', 'name' => 'id', 'title' => __('labels.id')],
             ['data' => 'title', 'name' => 'title', 'title' => __('labels.title')],
+            ['data' => 'template_code', 'name' => 'template_code', 'title' => 'Template'],
             ['data' => 'banner_images', 'name' => 'banner_images', 'title' => __('labels.banner_images')],
             ['data' => 'position', 'name' => 'position', 'title' => __('labels.position')],
             ['data' => 'scope_type', 'name' => 'scope_type', 'title' => __('labels.scope_type')],
@@ -57,7 +59,8 @@ class OfferBannerController extends Controller
     {
         if ($this->getPanel() === 'admin' && !$this->createPermission) abort(403);
         $scopeTypes = ['global', 'category'];
-        return view($this->panelView('offer-banners.form'), compact('scopeTypes'));
+        $templates = OfferBannerTemplate::where('is_active', true)->orderBy('display_order')->get();
+        return view($this->panelView('offer-banners.form'), compact('scopeTypes', 'templates'));
     }
 
     public function store(StoreUpdateOfferBannerRequest $request): JsonResponse
@@ -106,11 +109,17 @@ class OfferBannerController extends Controller
     {
         $banner = OfferBanner::with('items')->findOrFail($id);
         $scopeTypes = ['global', 'category'];
+        $selectedTemplateCode = $banner->template_code;
+        $templates = OfferBannerTemplate::where('is_active', true)
+            ->orWhere('code', $selectedTemplateCode)
+            ->orderBy('display_order')
+            ->get()
+            ->unique('code');
         $scopeCategory = null;
         if ($banner->scope_type === 'category') {
             $scopeCategory = Category::select('id', 'title')->where('id', $banner->scope_id)->first();
         }
-        return view($this->panelView('offer-banners.form'), compact('banner', 'scopeTypes', 'scopeCategory'));
+        return view($this->panelView('offer-banners.form'), compact('banner', 'scopeTypes', 'scopeCategory', 'templates'));
     }
 
     public function update(StoreUpdateOfferBannerRequest $request, $id): JsonResponse
@@ -197,6 +206,7 @@ class OfferBannerController extends Controller
             return [
                 'id' => $b->id,
                 'title' => $b->title,
+                'template_code' => $b->template_code,
                 'banner_images' => view('partials.image', ['image' => $b->getFirstMediaUrl('offer_banner_images')])->render(),
                 'position' => view('partials.status', ['status' => $b->position])->render(),
                 'scope_type' => view('partials.status', ['status' => $b->scope_type])->render(),
