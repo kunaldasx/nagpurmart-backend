@@ -19,7 +19,7 @@ The endpoint is temporarily public while frontend authentication is being integr
 
 Optional form field: `model_id`. It must be one of `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-pro-preview`, or `gemini-2.5-flash`. If omitted, the admin-selected model is used. If invalid, the request uses `gemini-3.5-flash` and returns a non-blocking warning in `metadata.warning`.
 
-Successful response data contains `items` and `metadata`. Each item contains exactly `english name`.
+Successful response data contains `items` and `metadata`. `items` is a flat array of searchable grocery-name strings.
 
 Example response:
 
@@ -28,7 +28,7 @@ Example response:
     "success": true,
     "message": "Grocery list extracted successfully.",
     "data": {
-        "items": [{ "english name": "Onion" }, { "english name": "Milk" }],
+        "items": ["Onion", "Milk"],
         "metadata": { "list_id": 12, "model": "gemini-3.5-flash" }
     }
 }
@@ -50,4 +50,4 @@ Returns one list owned by the authenticated user, or `404` when it does not exis
 
 ## Configuration
 
-Configure the key and model in Admin Panel > Settings > System. The admin model setting takes precedence; when it is blank, the service uses `GEMINI_MODEL` from the server `.env`, defaulting to `gemini-3.5-flash`. If a selected model returns 404 or remains truncated, the service falls back to `gemini-3.5-flash`. The prompt reads up to 50 visible lines, emits one item for each distinct grocery even when several appear on one line, translates or transliterates Hindi/Marathi and handwriting, uses JSON mode, temperature 0, minimizes reasoning for this deterministic extraction, and validates the response against a JSON schema. The service also splits clear comma-, semicolon-, ampersand-, and "and"-separated grocery names as a safety net. It starts with an 8192-token output budget, retries once with 16384 tokens after a truncated `MAX_TOKENS` response, and returns complete items from the response if the final JSON is cut off.
+Configure the key and model in Admin Panel > Settings > System. The admin model setting takes precedence; when it is blank, the service uses `GEMINI_MODEL` from the server `.env`, defaulting to `gemini-3.5-flash`. If a selected model returns 404 or remains truncated, the service falls back to `gemini-3.5-flash`. The prompt reads up to 50 visible lines, emits one string for each distinct grocery even when several appear on one line, prefers familiar Indian retail names such as `Maida`, `Rawa/Suji`, and `Mota Poha`, translates or transliterates Hindi/Marathi and handwriting, uses JSON mode, temperature 0, minimizes reasoning for this deterministic extraction, and validates a string-array response schema. The service also splits clear comma-, semicolon-, ampersand-, and "and"-separated grocery names as a safety net. It starts with an 8192-token output budget, retries once with 16384 tokens after a truncated `MAX_TOKENS` response, and returns complete items from the response if the final JSON is cut off.

@@ -27,9 +27,7 @@ JSON,
     $result = $service->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
 
     expect($result['items'])->toHaveCount(3)
-        ->and($result['items'][0])->toBe(['english name' => 'Tomato'])
-        ->and($result['items'][1])->toBe(['english name' => 'Milk'])
-        ->and($result['items'][2])->toBe(['english name' => 'Onion']);
+        ->and($result['items'])->toBe(['Tomato', 'Milk', 'Onion']);
 
     Http::assertSent(function ($request) {
         $generationConfig = $request->data()['generationConfig'];
@@ -37,7 +35,8 @@ JSON,
         return $generationConfig['maxOutputTokens'] === 8192
             && $generationConfig['thinkingConfig']['thinkingLevel'] === 'MINIMAL'
             && $generationConfig['responseSchema']['properties']['items']['type'] === 'ARRAY'
-            && $generationConfig['responseSchema']['properties']['items']['maxItems'] === 50;
+            && $generationConfig['responseSchema']['properties']['items']['maxItems'] === 50
+            && $generationConfig['responseSchema']['properties']['items']['items']['type'] === 'STRING';
     });
 });
 
@@ -61,7 +60,7 @@ it('retries truncated Gemini JSON with a larger budget', function () {
     $result = app(GeminiGroceryListService::class)
         ->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
 
-    expect($result['items'])->toMatchArray([['english name' => 'Rice']]);
+    expect($result['items'])->toMatchArray(['Rice']);
 
     Http::assertSentCount(2);
     Http::assertSent(function ($request) {
@@ -87,8 +86,8 @@ it('returns completed items when Gemini truncates the final response', function 
         ->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
 
     expect($result['items'])->toMatchArray([
-        ['english name' => 'Rice'],
-        ['english name' => 'Dal'],
+        'Rice',
+        'Dal',
     ])->and($result['warning'])->toContain('truncated');
 
     Http::assertSentCount(2);
@@ -110,7 +109,7 @@ it('splits distinct groceries combined on one line', function () {
     $result = app(GeminiGroceryListService::class)
         ->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
 
-    expect(array_column($result['items'], 'english name'))->toBe([
+    expect($result['items'])->toBe([
         'Cashew',
         'Almond',
         'Raisin',
@@ -118,4 +117,23 @@ it('splits distinct groceries combined on one line', function () {
         'Tomato Sauce',
         'Red Chili Sauce',
     ]);
+});
+
+it('normalizes formal translations to Indian catalog names', function () {
+    config(['services.gemini.api_key' => 'test-key']);
+
+    Http::fake([
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent' => Http::response([
+            'candidates' => [[
+                'content' => ['parts' => [[
+                    'text' => '{"items":["Refined Wheat Flour","Semolina","Thick Flattened Rice","Whole Wheat Flour"]}',
+                ]]],
+            ]],
+        ]),
+    ]);
+
+    $result = app(GeminiGroceryListService::class)
+        ->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
+
+    expect($result['items'])->toBe(['Maida', 'Rawa/Suji', 'Mota Poha', 'Atta']);
 });

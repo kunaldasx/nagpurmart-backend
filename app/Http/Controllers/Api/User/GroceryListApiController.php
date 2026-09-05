@@ -37,8 +37,8 @@ class GroceryListApiController extends Controller
 
                 foreach ($extracted['items'] as $item) {
                     $list->items()->create([
-                        'extracted_name' => $item['english name'],
-                        'normalized_name' => mb_strtolower($item['english name']),
+                        'extracted_name' => $item,
+                        'normalized_name' => mb_strtolower($item),
                     ]);
                 }
 
@@ -93,10 +93,7 @@ class GroceryListApiController extends Controller
             'extracted_text' => $list->extracted_text,
             'rejection_reason' => $list->rejection_reason,
             'created_at' => $list->created_at,
-            'items' => $list->items->map(fn ($item) => [
-                'id' => $item->id,
-                'english name' => $item->extracted_name,
-            ])->values()->all(),
+            'items' => $list->items->pluck('extracted_name')->values()->all(),
         ];
     }
 }

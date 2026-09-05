@@ -31,12 +31,16 @@ class GeminiGroceryListService
 
         $prompt = <<<'PROMPT'
 Return ONLY compact JSON with this exact structure:
-{"items":[{"name":"Onion"}]}
+{"items":["Onion"]}
 Rules:
-- only key allowed in each item: name
-- translate Hindi/Marathi and handwritten text to standard English grocery names
+- each item must be a plain string; do not return objects
+- use familiar Indian household and grocery-catalog names where appropriate: Atta, Maida, Rawa/Suji, Poha, Mota Poha, Besan, Dal, Chana, etc.
+- use these canonical catalog mappings when applicable: whole wheat flour -> Atta; refined wheat flour -> Maida; semolina -> Rawa/Suji; thick flattened rice -> Mota Poha; chickpea flour -> Besan
+- do not replace a familiar Indian name with an unnecessarily formal translation
+- translate or transliterate Hindi/Marathi and handwritten text into a concise searchable grocery name
 - read every visible line from top to bottom; each distinct grocery is a separate item, even when multiple groceries appear on one line separated by commas, "and", or semicolons
-- transliterate or translate Hindi/Marathi names, but do not invent items that are not visible
+- preserve visible brands, flavors, varieties, and pack descriptors when they are part of the item name
+- do not invent items that are not visible
 - ignore crossed-out text, prices, headings, phone numbers, and non-grocery notes
 - if image is not a grocery list, return {"items":[]}
 - no markdown, no code fences, no extra text
@@ -64,11 +68,7 @@ PROMPT;
                                 'type' => 'ARRAY',
                                 'maxItems' => self::MAX_ITEMS,
                                 'items' => [
-                                    'type' => 'OBJECT',
-                                    'properties' => [
-                                        'name' => ['type' => 'STRING'],
-                                    ],
-                                    'required' => ['name'],
+                                    'type' => 'STRING',
                                 ],
                             ],
                         ],
@@ -163,17 +163,38 @@ PROMPT;
     private function normalizeItems(array $items): array
     {
         return array_values(array_filter(array_map(function ($item) {
-            if (!is_array($item)) {
-                return null;
-            }
-
-            $name = $item['english name'] ?? $item['name'] ?? $item['item'] ?? null;
+            $name = is_string($item)
+                ? $item
+                : (is_array($item) ? ($item['english name'] ?? $item['name'] ?? $item['item'] ?? null) : null);
             if (blank($name)) {
                 return null;
             }
 
-            return ['english name' => trim((string) $name)];
+            return $this->canonicalizeName((string) $name);
         }, $items)));
+    }
+
+    private function canonicalizeName(string $name): string
+    {
+        $name = trim((string) preg_replace('/\s+/', ' ', $name));
+        $canonicalNames = [
+            'refined wheat flour' => 'Maida',
+            'refined flour' => 'Maida',
+            'all purpose flour' => 'Maida',
+            'semolina' => 'Rawa/Suji',
+            'sooji' => 'Rawa/Suji',
+            'suji' => 'Rawa/Suji',
+            'thick flattened rice' => 'Mota Poha',
+            'thick poha' => 'Mota Poha',
+            'flattened rice' => 'Poha',
+            'beaten rice' => 'Poha',
+            'whole wheat flour' => 'Atta',
+            'wheat flour' => 'Atta',
+            'chickpea flour' => 'Besan',
+            'gram flour' => 'Besan',
+        ];
+
+        return $canonicalNames[strtolower($name)] ?? $name;
     }
 
     private function expandCombinedItems(array $items): array
@@ -181,11 +202,9 @@ PROMPT;
         $expanded = [];
 
         foreach ($items as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
-
-            $name = $item['english name'] ?? $item['name'] ?? $item['item'] ?? null;
+            $name = is_string($item)
+                ? $item
+                : (is_array($item) ? ($item['english name'] ?? $item['name'] ?? $item['item'] ?? null) : null);
             if (!is_string($name) || !preg_match('/[,;&]|\band\b/i', $name)) {
                 $expanded[] = $item;
                 continue;
@@ -198,10 +217,7 @@ PROMPT;
             }
 
             foreach ($names as $singleName) {
-                $singleItem = $item;
-                $singleItem['name'] = trim($singleName);
-                unset($singleItem['english name'], $singleItem['item']);
-                $expanded[] = $singleItem;
+                $expanded[] = trim($singleName);
             }
         }
 
