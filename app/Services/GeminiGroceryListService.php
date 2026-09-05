@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -314,7 +315,9 @@ PROMPT;
     {
         return Http::acceptJson()
             ->withOptions(['query' => ['key' => $apiKey]])
-            ->timeout((int) config('services.gemini.timeout', 30));
+            ->connectTimeout(15)
+            ->timeout((int) config('services.gemini.timeout', 120))
+            ->retry(1, 1000, fn ($exception) => $exception instanceof ConnectionException);
     }
 
     private function thinkingConfigForModel(string $model): array

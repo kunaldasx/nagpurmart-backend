@@ -13,6 +13,7 @@ php artisan migrate --force
 
 **Set Gemini model if needed**:
 GEMINI_MODEL=gemini-3.5-flash
+GEMINI_TIMEOUT=120
 
 **Clear and rebuild Laravel caches:**
 php artisan config:clear
@@ -30,6 +31,8 @@ sudo systemctl reload nginx
 git pull
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
+grep -q '^GEMINI_TIMEOUT=' .env && sed -i 's/^GEMINI_TIMEOUT=.*/GEMINI_TIMEOUT=120/' .env || echo 'GEMINI_TIMEOUT=120' >> .env
+grep -q '^GEMINI_TIMEOUT=' .env && sed -i 's/^GEMINI_TIMEOUT=.*/GEMINI_TIMEOUT=120/' .env || echo 'GEMINI_TIMEOUT=120' >> .env
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear

@@ -7,6 +7,7 @@ use App\Models\GroceryList;
 use App\Services\GeminiGroceryListService;
 use App\Types\Api\ApiResponseType;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -55,6 +56,9 @@ class GroceryListApiController extends Controller
             ]);
         } catch (ValidationException $e) {
             return ApiResponseType::sendJsonResponse(false, 'labels.validation_failed', $e->errors(), 422);
+        } catch (ConnectionException $e) {
+            report($e);
+            return ApiResponseType::sendJsonResponse(false, 'Grocery recognition service timed out. Please try again.', [], 504);
         } catch (Throwable $e) {
             report($e);
             return ApiResponseType::sendJsonResponse(false, 'Unable to process grocery list image.', [], 500);

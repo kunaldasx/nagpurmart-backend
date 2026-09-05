@@ -34,7 +34,7 @@ Example response:
 }
 ```
 
-Non-grocery images return HTTP `422` with `status: rejected`, an empty item list, and `rejection_reason`. Validation errors also return `422`; an unavailable AI provider returns `500`.
+Non-grocery images return HTTP `422` with `status: rejected`, an empty item list, and `rejection_reason`. Validation errors also return `422`; an AI provider timeout returns `504`; other unavailable-provider errors return `500`.
 
 ## List previous uploads
 
@@ -51,3 +51,5 @@ Returns one list owned by the authenticated user, or `404` when it does not exis
 ## Configuration
 
 Configure the key and model in Admin Panel > Settings > System. The admin model setting takes precedence; when it is blank, the service uses `GEMINI_MODEL` from the server `.env`, defaulting to `gemini-3.5-flash`. If a selected model returns 404 or remains truncated, the service falls back to `gemini-3.5-flash`. The prompt reads up to 50 visible lines, emits one string for each distinct grocery even when several appear on one line, prefers familiar Indian retail names such as `Maida`, `Rawa/Suji`, and `Mota Poha`, translates or transliterates Hindi/Marathi and handwriting, uses JSON mode, temperature 0, minimizes reasoning for this deterministic extraction, and validates a string-array response schema. The service also splits clear comma-, semicolon-, ampersand-, and "and"-separated grocery names as a safety net. It starts with an 8192-token output budget, retries once with 16384 tokens after a truncated `MAX_TOKENS` response, and returns complete items from the response if the final JSON is cut off.
+
+Set `GEMINI_TIMEOUT=120` in production. The client uses a 15-second connection timeout and retries one transport failure before returning a timeout response.
