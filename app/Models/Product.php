@@ -819,29 +819,44 @@ class Product extends Model implements HasMedia
         $queryTerms = self::smartSearchTerms($search);
         $ranked = $candidates->mapWithKeys(function (self $product) use ($queryTerms, $search) {
             $tags = is_array($product->tags) ? implode(' ', $product->tags) : (string) $product->tags;
-            $text = self::normalizeSearchText(implode(' ', array_filter([
-                $product->title, $product->short_description, $product->description,
-                $tags, $product->category?->title, $product->brand?->title,
-                $product->categories->pluck('title')->implode(' '),
-            ])));
+            $fields = [
+                'title' => self::normalizeSearchText((string) $product->title),
+                'tags' => self::normalizeSearchText($tags),
+                'category' => self::normalizeSearchText(implode(' ', array_filter([
+                    $product->category?->title,
+                    $product->categories->pluck('title')->implode(' '),
+                ]))),
+                'brand' => self::normalizeSearchText((string) $product->brand?->title),
+                'description' => self::normalizeSearchText(implode(' ', array_filter([
+                    $product->short_description, $product->description,
+                ]))),
+            ];
+            $normalizedSearch = self::normalizeSearchText($search);
+            $score = str_contains($fields['title'], $normalizedSearch) ? 1000 : 0;
 
-            $score = str_contains($text, self::normalizeSearchText($search)) ? 1000 : 0;
             foreach ($queryTerms as $term) {
-                $best = 0.0;
-                foreach (preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY) as $word) {
-                    $distance = levenshtein($term, $word);
-                    $best = max($best, 1 - ($distance / max(strlen($term), strlen($word), 1)));
-                }
-                if ($best >= 0.45) {
-                    $score += $best * 100;
+                $score += self::smartSearchTokenScore($term, $fields['title']) * 220;
+                $score += self::smartSearchTokenScore($term, $fields['tags']) * 180;
+                $score += self::smartSearchTokenScore($term, $fields['category']) * 160;
+                $score += self::smartSearchTokenScore($term, $fields['brand']) * 120;
+
+                if ($fields['description'] !== '' && str_contains($fields['description'], $term)) {
+                    $score += 25;
                 }
             }
 
             return [$product->id => $score];
-        })->filter(fn(float $score) => $score > 0)->sortDesc();
+        })->filter(fn(float $score) => $score >= 75)->sortDesc();
 
         if ($ranked->isEmpty()) {
-            return self::getProductsByLocation($latitude, $longitude, $perPage, $baseFilter);
+            $page = request()->integer('page', 1);
+            $paginator = new Paginator(collect(), 0, $perPage, $page, [
+                'path' => request()->url(), 'query' => request()->query(),
+            ]);
+            $paginator->related_keywords = [];
+            $paginator->category_ids = [];
+            $paginator->brand_ids = [];
+            return $paginator;
         }
 
         $ids = $ranked->keys()->all();
@@ -863,6 +878,31 @@ class Product extends Model implements HasMedia
         $paginator->brand_ids = $products->pluck('brand_id')->filter()->unique()->take(50)->values()->all();
 
         return $paginator;
+    }
+
+    private static function smartSearchTokenScore(string $term, string $text): float
+    {
+        if ($term === '' || $text === '') {
+            return 0.0;
+        }
+
+        foreach (preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY) as $word) {
+            if ($word === $term || str_starts_with($word, $term) || str_starts_with($term, $word)) {
+                return 1.0;
+            }
+
+            if (strlen($term) < 4 || strlen($word) < 3) {
+                continue;
+            }
+
+            $distance = levenshtein($term, $word);
+            $similarity = 1 - ($distance / max(strlen($term), strlen($word)));
+            if ($similarity >= 0.72) {
+                return $similarity;
+            }
+        }
+
+        return 0.0;
     }
 
     private static function normalizeSearchText(string $value): string
