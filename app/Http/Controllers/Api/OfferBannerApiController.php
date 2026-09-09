@@ -23,6 +23,8 @@ class OfferBannerApiController extends Controller
                 'id' => $b->id,
                 'title' => $b->title,
                 'template_code' => $b->template_code,
+                'background_color' => $b->background_color,
+                'font_color' => $b->font_color,
                 'position' => $b->position,
                 'scope_type' => $b->scope_type,
                 'scope_id' => $b->scope_id,

@@ -179,6 +179,46 @@
                             </div>
                         </div>
 
+                        {{-- Banner Colors --}}
+                        <div class="mt-5 pt-4 border-top">
+                            <div class="mb-4">
+                                <h4 class="mb-1">Banner Colors</h4>
+                                <p class="text-secondary mb-0">
+                                    Choose the background and text colors used when this banner is displayed.
+                                </p>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label required" for="background-color-input">
+                                        Background Color
+                                    </label>
+                                    <input
+                                        type="color"
+                                        class="form-control form-control-color w-100"
+                                        name="background_color"
+                                        id="background-color-input"
+                                        value="{{ old('background_color', $banner->background_color ?? '#ffffff') }}"
+                                        title="Choose background color"
+                                    >
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label required" for="font-color-input">
+                                        Font Color
+                                    </label>
+                                    <input
+                                        type="color"
+                                        class="form-control form-control-color w-100"
+                                        name="font_color"
+                                        id="font-color-input"
+                                        value="{{ old('font_color', $banner->font_color ?? '#000000') }}"
+                                        title="Choose font color"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Offer Items --}}
                         <div class="mt-5 pt-4 border-top">
                             <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">

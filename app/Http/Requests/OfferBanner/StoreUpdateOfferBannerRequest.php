@@ -17,6 +17,8 @@ class StoreUpdateOfferBannerRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255', 'unique:offer_banners,title,' . ($this->route()->id ?? '')],
             'template_code' => ['required', 'string', 'exists:offer_banner_templates,code'],
+            'background_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'font_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'position' => ['required', 'in:top,carousel'],
             'scope_type' => ['required', 'in:global,category'],
             'scope_id' => ['required_if:scope_type,category', 'nullable', 'exists:categories,id'],
