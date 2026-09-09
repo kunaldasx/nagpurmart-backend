@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Http\Resources\Product\ProductResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class HighlightedSectionItemResource extends JsonResource
