@@ -58,6 +58,23 @@ class HighlightedSectionController extends Controller
         return ApiResponseType::sendJsonResponse(true, 'Highlighted section retrieved successfully.', new HighlightedSectionResource($section));
     }
 
+    public function searchCategories(Request $request): JsonResponse
+    {
+        $search = trim((string) ($request->input('search') ?? $request->input('q', '')));
+
+        return response()->json(Category::query()
+            ->where('title', 'like', "%{$search}%")
+            ->select(['id', 'title'])
+            ->orderBy('title')
+            ->limit(20)
+            ->get()
+            ->map(fn (Category $category) => [
+                'id' => $category->id,
+                'value' => $category->id,
+                'text' => $category->title,
+            ]));
+    }
+
     public function update(UpdateHighlightedSectionRequest $request, int $id): JsonResponse
     {
         $section = HighlightedSection::find($id);

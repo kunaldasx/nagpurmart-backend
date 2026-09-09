@@ -321,6 +321,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [HighlightedSectionController::class, 'index'])->name('index');
             Route::post('/', [HighlightedSectionController::class, 'store'])->name('store');
             Route::get('/datatable', [HighlightedSectionController::class, 'datatable'])->name('datatable');
+            Route::get('/categories/search', [HighlightedSectionController::class, 'searchCategories'])->name('categories.search');
             Route::get('/{id}', [HighlightedSectionController::class, 'show'])->name('show');
             Route::post('/{id}', [HighlightedSectionController::class, 'update'])->name('update');
             Route::delete('/{id}', [HighlightedSectionController::class, 'destroy'])->name('destroy');
