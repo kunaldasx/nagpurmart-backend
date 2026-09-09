@@ -28,11 +28,6 @@ class HighlightedSectionController extends Controller
 {
     use ChecksPermissions, PanelAware, AuthorizesRequests;
 
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     public function index(): View
     {
         $columns = [
