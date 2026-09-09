@@ -39,9 +39,9 @@
                         <div class="row">
                             <div class="col-md-6 mb-3"><label class="form-label required">Heading</label><input class="form-control" name="title" required></div>
                             <div class="col-md-6 mb-3"><label class="form-label">Subheading</label><input class="form-control" name="subtitle"></div>
-                            <div class="col-md-4 mb-3"><label class="form-label required">Template</label><select class="form-select" name="template" required>
+                            <div class="col-md-4 mb-3"><label class="form-label required">Template</label><select class="form-select highlighted-template-select" name="template" required style="text-transform:none !important;letter-spacing:normal !important;word-spacing:normal !important;">
                                 <option value="">Select template</option>
-                                @foreach(HighlightedSectionTemplateEnum::cases() as $template)<option value="{{ $template->value }}">{{ str($template->name)->headline() }}</option>@endforeach
+                                @foreach(HighlightedSectionTemplateEnum::cases() as $template)<option value="{{ $template->value }}" style="text-transform:none !important;letter-spacing:normal !important;word-spacing:normal !important;">{{ str($template->name)->headline() }}</option>@endforeach
                             </select></div>
                             <div class="col-md-4 mb-3"><label class="form-label required">Scope</label><select class="form-select" name="scope_type" id="highlighted-scope-type" required>@foreach(HomePageScopeEnum::values() as $scope)<option value="{{ $scope }}">{{ ucfirst($scope) }}</option>@endforeach</select></div>
                             <div class="col-md-4 mb-3" id="highlighted-scope-category-field" style="display:none"><label class="form-label required">Category</label><select class="form-select" name="scope_id" id="highlighted-scope-category"><option value="">Search category</option></select></div>

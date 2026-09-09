@@ -65,11 +65,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const file = event.target.files?.[0];
             if (!file) {
                 imagePreview.hidden = true;
+                imagePreview.style.display = "none";
                 imagePreview.removeAttribute("src");
                 return;
             }
             imagePreview.src = URL.createObjectURL(file);
             imagePreview.hidden = false;
+            imagePreview.style.display = "block";
         });
         row.querySelector(".remove-item").addEventListener("click", () =>
             row.remove(),
