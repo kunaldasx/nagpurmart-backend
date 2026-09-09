@@ -10,6 +10,13 @@
 @endsection
 
 @section('admin-content')
+    <style>
+        #highlighted-section-modal select[name="template"],
+        #highlighted-section-modal select[name="template"] option {
+            text-transform: none !important;
+            letter-spacing: normal !important;
+        }
+    </style>
     <div class="row"><div class="col-12"><div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">{{ __('labels.highlighted_sections') }}</h3>

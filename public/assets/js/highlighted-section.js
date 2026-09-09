@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const itemIndex = index++;
         const row = document.createElement("div");
         row.className = "row align-items-end mb-3 highlighted-item-row";
-        row.innerHTML = `<input type="hidden" name="items[${itemIndex}][id]" value="${data?.id || ""}"><div class="col-md-2"><label class="form-label">Type</label><select class="form-select item-type" name="items[${itemIndex}][item_type]"><option value="product">Product</option><option value="category">Category</option><option value="brand">Brand</option></select></div><div class="col-md-3"><label class="form-label">Record</label><select class="form-select item-record" name="items[${itemIndex}][item_id]"><option value="">Search record</option></select></div><div class="col-md-2"><label class="form-label">Title</label><input class="form-control" name="items[${itemIndex}][title]" required></div><div class="col-md-2"><label class="form-label">Subtitle</label><input class="form-control" name="items[${itemIndex}][subtitle]"></div><div class="col-md-2"><label class="form-label">Image</label><input type="file" accept="image/*" class="form-control" name="items[${itemIndex}][image]">${data?.image ? `<img src="${data.image}" alt="" class="mt-1" style="max-width:50px;max-height:40px">` : ""}</div><div class="col-md-1 px-1"><button type="button" class="btn btn-outline-danger remove-item w-100 px-1" title="Remove item" aria-label="Remove item"><span aria-hidden="true">&times;</span></button></div>`;
+        row.innerHTML = `<input type="hidden" name="items[${itemIndex}][id]" value="${data?.id || ""}"><div class="col-md-2"><label class="form-label">Type</label><select class="form-select item-type" name="items[${itemIndex}][item_type]"><option value="product">Product</option><option value="category">Category</option><option value="brand">Brand</option></select></div><div class="col-md-3"><label class="form-label">Record</label><select class="form-select item-record" name="items[${itemIndex}][item_id]"><option value="">Search record</option></select></div><div class="col-md-2"><label class="form-label">Title</label><input class="form-control" name="items[${itemIndex}][title]" required></div><div class="col-md-2"><label class="form-label">Subtitle</label><input class="form-control" name="items[${itemIndex}][subtitle]"></div><div class="col-md-2"><label class="form-label">Image</label><input type="file" accept="image/*" class="form-control" name="items[${itemIndex}][image]"><img src="${data?.image || ""}" alt="Selected item preview" class="item-image-preview mt-1" style="max-width:50px;max-height:40px;object-fit:cover;${data?.image ? "" : "display:none;"}" ${data?.image ? "" : "hidden"}></div><div class="col-md-1 px-1"><button type="button" class="btn btn-outline-danger remove-item w-100 px-1" title="Remove item" aria-label="Remove item"><span aria-hidden="true">&times;</span></button></div>`;
         items.appendChild(row);
         const type = data?.item_type || "product";
         row.querySelector(".item-type").value = type;
@@ -59,6 +59,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         row.querySelector('[name$="[title]"]').value = data?.title || "";
         row.querySelector('[name$="[subtitle]"]').value = data?.subtitle || "";
+        const imageInput = row.querySelector('input[type="file"]');
+        const imagePreview = row.querySelector(".item-image-preview");
+        imageInput.addEventListener("change", (event) => {
+            const file = event.target.files?.[0];
+            if (!file) {
+                imagePreview.hidden = true;
+                imagePreview.removeAttribute("src");
+                return;
+            }
+            imagePreview.src = URL.createObjectURL(file);
+            imagePreview.hidden = false;
+        });
         row.querySelector(".remove-item").addEventListener("click", () =>
             row.remove(),
         );
