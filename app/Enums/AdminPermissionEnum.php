@@ -52,6 +52,10 @@ use ArchTech\Enums\Values;
  * @method static FEATURED_SECTION_SORTING_MODIFY()
  * @method static FEATURED_SECTION_VIEW()
  * @method static FEATURED_SECTION_SORTING_VIEW()
+ * @method static HIGHLIGHTED_SECTION_CREATE()
+ * @method static HIGHLIGHTED_SECTION_EDIT()
+ * @method static HIGHLIGHTED_SECTION_DELETE()
+ * @method static HIGHLIGHTED_SECTION_VIEW()
  * @method static DELIVERY_BOY_EDIT()
  * @method static DELIVERY_BOY_DELETE()
  * @method static DELIVERY_BOY_VIEW()
@@ -190,6 +194,10 @@ enum AdminPermissionEnum: string
     case FEATURED_SECTION_SORTING_MODIFY = 'featured_section.sorting_modify';
     case FEATURED_SECTION_VIEW = 'featured_section.view';
     case FEATURED_SECTION_SORTING_VIEW = 'featured_section.sorting_view';
+    case HIGHLIGHTED_SECTION_CREATE = 'highlighted_section.create';
+    case HIGHLIGHTED_SECTION_EDIT = 'highlighted_section.edit';
+    case HIGHLIGHTED_SECTION_DELETE = 'highlighted_section.delete';
+    case HIGHLIGHTED_SECTION_VIEW = 'highlighted_section.view';
     case DELIVERY_BOY_EDIT = 'delivery_boy.edit';
     case DELIVERY_BOY_DELETE = 'delivery_boy.delete';
     case DELIVERY_BOY_VIEW = 'delivery_boy.view';
@@ -381,6 +389,13 @@ enum AdminPermissionEnum: string
                 'permissions' => [
                     self::FEATURED_SECTION_SORTING_VIEW(),
                     self::FEATURED_SECTION_SORTING_MODIFY(),
+                ],
+            ],
+            'highlighted_section' => [
+                'name' => 'Highlighted Sections',
+                'permissions' => [
+                    self::HIGHLIGHTED_SECTION_VIEW(), self::HIGHLIGHTED_SECTION_CREATE(),
+                    self::HIGHLIGHTED_SECTION_EDIT(), self::HIGHLIGHTED_SECTION_DELETE(),
                 ],
             ],
             'popular_search' => [

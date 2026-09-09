@@ -60,6 +60,8 @@ use App\Policies\SystemUserPolicy;
 use App\Policies\TaxClassPolicy;
 use App\Policies\OrderReturnPolicy;
 use App\Policies\PopularSearchPolicy;
+use App\Models\HighlightedSection;
+use App\Policies\HighlightedSectionPolicy;
 use App\Models\Wallet;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -101,6 +103,7 @@ class AuthServiceProvider extends ServiceProvider
         Wallet::class => WalletPolicy::class,
         SellerStatement::class => SellerStatementPolicy::class,
         PopularSearch::class => PopularSearchPolicy::class,
+        HighlightedSection::class => HighlightedSectionPolicy::class,
     ];
     /**
      * Register services.

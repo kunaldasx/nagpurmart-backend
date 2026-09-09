@@ -18,6 +18,7 @@ use App\Http\Controllers\DeliveryBoyController;
 use App\Http\Controllers\DeliveryZoneController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeaturedSectionController;
+use App\Http\Controllers\HighlightedSectionController;
 use App\Http\Controllers\PopularSearchController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
@@ -314,6 +315,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{id}', [FeaturedSectionController::class, 'show'])->name('show');
             Route::post('/{id}', [FeaturedSectionController::class, 'update'])->name('update');
             Route::delete('/{id}', [FeaturedSectionController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('highlighted-sections')->name('highlighted-sections.')->group(function () {
+            Route::get('/', [HighlightedSectionController::class, 'index'])->name('index');
+            Route::post('/', [HighlightedSectionController::class, 'store'])->name('store');
+            Route::get('/datatable', [HighlightedSectionController::class, 'datatable'])->name('datatable');
+            Route::get('/{id}', [HighlightedSectionController::class, 'show'])->name('show');
+            Route::post('/{id}', [HighlightedSectionController::class, 'update'])->name('update');
+            Route::delete('/{id}', [HighlightedSectionController::class, 'destroy'])->name('destroy');
         });
 
         // Popular Searches Routes

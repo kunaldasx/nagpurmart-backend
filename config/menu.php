@@ -251,6 +251,13 @@ return [
                 ],
             ],
         ],
+        'highlighted_section' => [
+            'icon' => 'ti-layout-grid',
+            'route' => 'admin.highlighted-sections.index',
+            'title' => 'labels.highlighted_sections',
+            'active' => 'highlighted_section',
+            'permission' => 'highlighted_section.view',
+        ],
         'popular_searches' => [
             'icon' => 'ti-search',
             'route' => 'admin.popular-searches.index',

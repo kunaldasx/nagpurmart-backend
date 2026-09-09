@@ -1818,6 +1818,7 @@ return [
     'earning_history' => 'Earning History',
     'cash_collection_history' => 'Cash Collection History',
     'featured_section' => 'Manage Featured Section',
+    'highlighted_sections' => 'Highlighted Sections',
     'sort_featured_section' => 'Sort Featured Section',
 
     // Delivery Partner Menu Labels
