@@ -14,6 +14,7 @@ use App\Http\Requests\Product\StoreUpdateProductRequest;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductLabel;
 use App\Models\ProductVariant;
 use App\Models\StoreProductVariant;
 use App\Services\CategoryService;
@@ -133,7 +134,8 @@ class ProductController extends Controller
 
         $categories = json_encode($categories->toArray());
         $attributes = json_encode($attributes->toArray());
-        return view($this->panelView('products.form'), compact('categories', 'attributes'));
+        $labels = ProductLabel::query()->orderBy('name')->get();
+        return view($this->panelView('products.form'), compact('categories', 'attributes', 'labels'));
     }
 
     /**
@@ -261,7 +263,8 @@ class ProductController extends Controller
         $attributes = GlobalAttributeService::getAttributesWithValue($this->sellerId);
         $categories = json_encode($categories->toArray());
         $attributes = json_encode($attributes->toArray());
-        return view($this->panelView('products.form'), compact('product', 'productVariants', 'singleProductVariant', 'categories', 'attributes'));
+        $labels = ProductLabel::query()->orderBy('name')->get();
+        return view($this->panelView('products.form'), compact('product', 'productVariants', 'singleProductVariant', 'categories', 'attributes', 'labels'));
     }
 
     /**

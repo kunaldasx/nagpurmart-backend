@@ -9,6 +9,7 @@ use App\Enums\Product\ProductVideoTypeEnum;
 use App\Events\Product\ProductStatusAfterUpdate;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductLabel;
 use App\Models\ProductVariant;
 use App\Models\ProductVariantAttribute;
 use App\Models\CustomProductSection;
@@ -569,6 +570,7 @@ class ProductService
             'description' => $validated['description'],
             'indicator' => $validated['indicator'] ?? null,
             'label' => self::normalizeLabel($validated['label'] ?? null),
+            'product_label_id' => self::resolveLabelId($validated['label'] ?? null),
             'image_fit' => $validated['image_fit'] ?? 'cover',
             'minimum_order_quantity' => $validated['minimum_order_quantity'] ?? 1,
             'quantity_step_size' => $validated['quantity_step_size'] ?? 1,
@@ -827,6 +829,7 @@ class ProductService
             'description' => $validated['description'],
             'indicator' => $validated['indicator'] ?? null,
             'label' => self::normalizeLabel($validated['label'] ?? null),
+            'product_label_id' => self::resolveLabelId($validated['label'] ?? null),
             'image_fit' => $validated['image_fit'] ?? $product->image_fit,
             'hsn_code' => $validated['hsn_code'] ?? null,
             'minimum_order_quantity' => $validated['minimum_order_quantity'] ?? 1,
@@ -887,6 +890,13 @@ class ProductService
         $normalized = trim((string) $value);
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private static function resolveLabelId(mixed $value): ?int
+    {
+        $label = self::normalizeLabel($value);
+
+        return $label ? ProductLabel::where('name', $label)->value('id') : null;
     }
 
     private function handleVariantMediaUploads($variant, $payload_image): void

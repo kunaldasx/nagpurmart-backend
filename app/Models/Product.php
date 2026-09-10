@@ -50,6 +50,7 @@ class Product extends Model implements HasMedia
         'description',
         'indicator',
         'label',
+        'product_label_id',
         'download_allowed',
         'download_link',
         'minimum_order_quantity',
@@ -93,6 +94,11 @@ class Product extends Model implements HasMedia
         'is_one_rupee_gift' => 'boolean',
         'gift_minimum_cart_amount' => 'decimal:2',
     ];
+
+    public function productLabel(): BelongsTo
+    {
+        return $this->belongsTo(ProductLabel::class);
+    }
 
     /**
      * Scope to eager-load category and its immediate parent to reduce queries

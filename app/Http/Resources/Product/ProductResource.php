@@ -11,6 +11,7 @@ class ProductResource extends JsonResource
 
     public function toArray($request): array
     {
+        $this->resource->loadMissing('productLabel');
         $reviews = Review::scopeProductRatingStats($this->id);
         $stats = SellerFeedback::getSellerFeedbackStatistics($this->seller_id);
 
@@ -33,7 +34,9 @@ class ProductResource extends JsonResource
             'brand_name' => $this->brand?->title,
             'seller' => $this->seller?->user->name ?? "N/A",
             'indicator' => $this->indicator,
-            'label' => $this->label,
+            'label' => $this->productLabel?->name ?? $this->label,
+            'label_bg' => $this->productLabel?->bg_color,
+            'label_font_color' => $this->productLabel?->font_color,
             'favorite' => $this->favorite,
             'estimated_delivery_time' => $this->estimated_delivery_time,
             'base_prep_time' => $this->base_prep_time ?? 0,

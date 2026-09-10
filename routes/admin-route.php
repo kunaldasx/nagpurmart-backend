@@ -24,6 +24,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductLabelController;
 use App\Http\Controllers\ProductFaqController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -290,6 +291,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         Route::get('products/search', [ProductController::class, 'search'])->name('products.search');
+
+        Route::prefix('product-labels')->name('product-labels.')->group(function () {
+            Route::get('/', [ProductLabelController::class, 'index'])->name('index');
+            Route::post('/', [ProductLabelController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [ProductLabelController::class, 'edit'])->name('edit');
+            Route::post('/{id}', [ProductLabelController::class, 'update'])->name('update');
+            Route::delete('/{id}', [ProductLabelController::class, 'destroy'])->name('delete');
+        });
 
         // delivery zones
         Route::prefix('delivery-zones')->name('delivery-zones.')->group(function () {

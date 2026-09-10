@@ -162,6 +162,13 @@ return [
                 ],
             ],
         ],
+        'product_labels' => [
+            'icon' => 'ti-tag',
+            'route' => 'admin.product-labels.index',
+            'title' => 'labels.product_labels',
+            'active' => 'product_labels',
+            'permission' => 'product.view',
+        ],
         'tax_rates' => [
             'icon' => 'ti-square-rounded-percentage',
             'route' => 'admin.tax-rates.index',

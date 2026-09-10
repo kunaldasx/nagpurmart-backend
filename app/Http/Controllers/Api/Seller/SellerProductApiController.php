@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\Seller;
 
 use App\Enums\Product\ProductFilterEnum;
-use App\Enums\Product\ProductLabelEnum;
+use App\Models\ProductLabel;
 use App\Enums\Product\ProductStatusEnum;
 use App\Enums\Product\ProductTypeEnum;
 use App\Enums\Product\ProductVarificationStatusEnum;
@@ -289,7 +289,10 @@ class SellerProductApiController extends Controller
                 'status' => ProductStatusEnum::values(),
                 'verification_status' => ProductVarificationStatusEnum::values(),
                 'product_filter' => ProductFilterEnum::values(),
-                'label' => ProductLabelEnum::values(),
+                'label' => ProductLabel::query()->orderBy('name')->pluck('name')->values(),
+                'labels' => ProductLabel::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'bg_color', 'font_color']),
             ]
         );
     }

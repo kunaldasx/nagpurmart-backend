@@ -189,8 +189,8 @@
                             <label class="form-label">{{ __('labels.label') }}</label>
                             <select class="form-select" name="label">
                                 <option value="">{{ __('labels.select_label') }}</option>
-                                @foreach(\App\Enums\Product\ProductLabelEnum::values() as $label)
-                                    <option value="{{ $label }}" {{ !empty($product->label) && $product->label == $label ? 'selected' : '' }}>{{ $label }}</option>
+                                @foreach($labels as $label)
+                                    <option value="{{ $label->name }}" {{ !empty($product->label) && $product->label == $label->name ? 'selected' : '' }}>{{ $label->name }}</option>
                                 @endforeach
                             </select>
                         </div>

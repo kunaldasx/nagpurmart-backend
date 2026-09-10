@@ -70,6 +70,7 @@ return [
     'submit' => 'Submit',
     'export' => 'Export',
     'customers' => 'Customers',
+    'product_labels' => 'Product Labels',
 
     // Subscription (Seller Web)
     'subscription_plan_details' => 'Subscription Plan Details',
