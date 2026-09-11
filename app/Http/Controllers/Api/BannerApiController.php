@@ -28,6 +28,7 @@ class BannerApiController extends Controller
      * Display a listing of the banners.
      */
     #[QueryParameter('position', description: 'position filter', type: 'string', example: "top, carousel")]
+    #[QueryParameter('scope_type', description: 'scope filter', type: 'string', example: "global, category, payment")]
     #[QueryParameter('scope_category_slug', description: 'if you pass slug then banners will be filtered by category', type: 'string', example: "apple, amul")]
     #[QueryParameter('latitude', description: 'Latitude of the user location for zone-wise availability', type: 'float', example: 23.11684540)]
     #[QueryParameter('longitude', description: 'Longitude of the user location for zone-wise availability', type: 'float', example: 70.02805670)]
@@ -65,6 +66,10 @@ class BannerApiController extends Controller
             }
         }
 
+        if ($request->has('scope_type') && !in_array($request->input('scope_type'), HomePageScopeEnum::values(), true)) {
+            return ApiResponseType::sendJsonResponse(success: false, message: __('labels.invalid_scope_type'), data: []);
+        }
+
         // Validate scope parameter
         if ($request->has('scope_category_slug')) {
             $categorySlug = $request->input('scope_category_slug');
@@ -98,6 +103,8 @@ class BannerApiController extends Controller
             $categorySlug = $request->input('scope_category_slug');
             $category = Category::where('slug', $categorySlug)->first();
             $query = Banner::scopeByCategory($query, $category->id);
+        } elseif ($request->filled('scope_type')) {
+            $query->where('scope_type', $request->input('scope_type'));
         } else {
             $query->where('scope_type', HomePageScopeEnum::GLOBAL());
         }

@@ -10,6 +10,7 @@ use ArchTech\Enums\Values;
  * Enum values for active and inactive status.
  * @method static GLOBAL()
  * @method static CATEGORY()
+ * @method static PAYMENT()
  */
 enum HomePageScopeEnum: string
 {
@@ -17,4 +18,5 @@ enum HomePageScopeEnum: string
 
     case GLOBAL = 'global';
     case CATEGORY = 'category';
+    case PAYMENT = 'payment';
 }

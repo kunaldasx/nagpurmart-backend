@@ -1488,9 +1488,11 @@ function toggleScopeFields() {
     const bannerScopeEl = document.getElementById("scopeType");
     if (!bannerScopeEl) return;
     const type = bannerScopeEl.value;
-    document.getElementById("scopeCategoryField").style.display = "none";
+    const scopeCategoryField = document.getElementById("scopeCategoryField");
+    if (!scopeCategoryField) return;
+    scopeCategoryField.style.display = "none";
     if (type === "category") {
-        document.getElementById("scopeCategoryField").style.display = "";
+        scopeCategoryField.style.display = "";
     }
 }
 
