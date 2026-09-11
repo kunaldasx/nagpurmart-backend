@@ -19,7 +19,7 @@ The endpoint is temporarily public while frontend authentication is being integr
 
 Optional form field: `model_id`. It must be one of `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-pro-preview`, or `gemini-2.5-flash`. If omitted, the admin-selected model is used. If invalid, the request uses `gemini-3.5-flash` and returns a non-blocking warning in `metadata.warning`.
 
-Successful response data contains `items` and `metadata`. `items` is a flat array of searchable grocery-name strings.
+Successful response data contains `items` and `metadata`. `items` is a flat array of searchable grocery-name strings. Names are returned in English or commonly used Indian Hinglish, with quantities and pack units removed; for example, `2 किलो आलु` becomes `Potato` and `Aashirvaad गहू पीठ 1 kg` becomes `Aashirvaad Atta`.
 
 Example response:
 

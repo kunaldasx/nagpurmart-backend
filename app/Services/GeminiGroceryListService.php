@@ -36,9 +36,11 @@ Return ONLY compact JSON with this exact structure:
 Rules:
 - each item must be a plain string; do not return objects
 - use familiar Indian household and grocery-catalog names where appropriate: Atta, Maida, Rawa/Suji, Poha, Mota Poha, Besan, Dal, Chana, etc.
+- return names in English or commonly used Indian Hinglish, not Devanagari words; for example आलु/आलू/बटाटा -> Potato, प्याज/कांदा -> Onion, टोमॅटो/टमाटर -> Tomato, दूध -> Milk, अंडी -> Eggs
 - use these canonical catalog mappings when applicable: whole wheat flour -> Atta; refined wheat flour -> Maida; semolina -> Rawa/Suji; thick flattened rice -> Mota Poha; chickpea flour -> Besan
 - do not replace a familiar Indian name with an unnecessarily formal translation
 - translate or transliterate Hindi/Marathi and handwritten text into a concise searchable grocery name
+- omit all quantities and pack units from every item, including kg, gram, litre, packet, dozen, and their Hindi/Marathi forms; return `Aashirvaad Atta`, not `Aashirvaad गहू पीठ 1 kg`
 - read every visible line from top to bottom; each distinct grocery is a separate item, even when multiple groceries appear on one line separated by commas, "and", or semicolons
 - preserve visible brands, flavors, varieties, and pack descriptors when they are part of the item name
 - do not invent items that are not visible
@@ -178,6 +180,39 @@ PROMPT;
     private function canonicalizeName(string $name): string
     {
         $name = trim((string) preg_replace('/\s+/', ' ', $name));
+        $name = (string) preg_replace('/(?:^|\s)(?:\d+(?:\.\d+)?|\d+\s*\/\s*\d+)(?=\s|$)/u', ' ', $name);
+        $name = (string) preg_replace('/\b(?:kg|kgs|kilogram|kilograms|g|gm|gram|grams|l|lt|ltr|litre|liter|litres|liters|ml|millilitre|milliliter|packet|packets|pkt|dozen)\b/iu', ' ', $name);
+        $name = (string) preg_replace('/(?:किलो|कि\.ग्रा|किलोग्राम|ग्राम|ग्रॅम|लिटर|लीटर|मिली|पॅकेट|पैकेट|पैक|डझन|दर्जन)/u', ' ', $name);
+        $name = trim((string) preg_replace('/\s+/', ' ', $name), " \t\n\r\0\x0B,.-");
+
+        $hinglishNames = [
+            'आलु' => 'Potato',
+            'आलू' => 'Potato',
+            'बटाटा' => 'Potato',
+            'बटाटे' => 'Potato',
+            'प्याज' => 'Onion',
+            'कांदा' => 'Onion',
+            'कांदे' => 'Onion',
+            'टोमॅटो' => 'Tomato',
+            'टमाटर' => 'Tomato',
+            'हरभरा डाळ' => 'Chana Dal',
+            'चना दाल' => 'Chana Dal',
+            'दूध पावडर' => 'Milk Powder',
+            'दूध' => 'Milk',
+            'गहू पीठ' => 'Atta',
+            'सोयाबीन तेल' => 'Soybean Oil',
+            'अंडी' => 'Eggs',
+            'ब्रेड' => 'Bread',
+        ];
+        if (isset($hinglishNames[$name])) {
+            return $hinglishNames[$name];
+        }
+        foreach ($hinglishNames as $source => $target) {
+            if (str_contains($name, $source)) {
+                $name = trim(str_replace($source, $target, $name));
+            }
+        }
+
         $canonicalNames = [
             'refined wheat flour' => 'Maida',
             'refined flour' => 'Maida',

@@ -137,3 +137,48 @@ it('normalizes formal translations to Indian catalog names', function () {
 
     expect($result['items'])->toBe(['Maida', 'Rawa/Suji', 'Mota Poha', 'Atta']);
 });
+
+it('removes quantities and translates common Hindi and Marathi grocery names', function () {
+    config(['services.gemini.api_key' => 'test-key']);
+
+    Http::fake([
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent' => Http::response([
+            'candidates' => [[
+                'content' => ['parts' => [[
+                    'text' => json_encode(['items' => [
+                        '2 किलो आलु',
+                        '1 kg प्याज',
+                        '1/2 kg टोमॅटो',
+                        '1 kg कांदे',
+                        '250 ग्राम हरभरा डाळ',
+                        '1 लिटर दूध',
+                        'Aashirvaad गहू पीठ 1 kg',
+                        'Fortune सोयाबीन तेल 1 लिटर',
+                        'Tata Salt 1 packet',
+                        '1 dozen अंडी',
+                        'ब्रेड 1 पॅकेट',
+                        'दूध पावडर 500 ग्राम',
+                    ]]),
+                ]]],
+            ]],
+        ]),
+    ]);
+
+    $result = app(GeminiGroceryListService::class)
+        ->extract(UploadedFile::fake()->image('grocery.png', 640, 480));
+
+    expect($result['items'])->toBe([
+        'Potato',
+        'Onion',
+        'Tomato',
+        'Onion',
+        'Chana Dal',
+        'Milk',
+        'Aashirvaad Atta',
+        'Fortune Soybean Oil',
+        'Tata Salt',
+        'Eggs',
+        'Bread',
+        'Milk Powder',
+    ]);
+});
