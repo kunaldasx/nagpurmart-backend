@@ -1,6 +1,6 @@
 @php
     use App\Enums\HighlightedSection\HighlightedSectionTemplateEnum;
-    use App\Enums\HomePageScopeEnum;
+    use App\Enums\HighlightedSection\HighlightedSectionScopeEnum;
 @endphp
 @extends('layouts.admin.app', ['page' => $menuAdmin['highlighted_section']['active'] ?? ''])
 
@@ -43,7 +43,7 @@
                                 <option value="">Select template</option>
                                 @foreach(HighlightedSectionTemplateEnum::cases() as $template)<option value="{{ $template->value }}" style="text-transform:none !important;letter-spacing:normal !important;word-spacing:normal !important;">{{ str($template->name)->headline() }}</option>@endforeach
                             </select></div>
-                            <div class="col-md-4 mb-3"><label class="form-label required">Scope</label><select class="form-select" name="scope_type" id="highlighted-scope-type" required>@foreach(HomePageScopeEnum::values() as $scope)<option value="{{ $scope }}">{{ ucfirst($scope) }}</option>@endforeach</select></div>
+                            <div class="col-md-4 mb-3"><label class="form-label required">Scope</label><select class="form-select" name="scope_type" id="highlighted-scope-type" required>@foreach(HighlightedSectionScopeEnum::values() as $scope)<option value="{{ $scope }}">{{ ucfirst($scope) }}</option>@endforeach</select></div>
                             <div class="col-md-4 mb-3" id="highlighted-scope-category-field" style="display:none"><label class="form-label required">Category</label><select class="form-select" name="scope_id" id="highlighted-scope-category"><option value="">Search category</option></select></div>
                             <div class="col-md-3 mb-3"><label class="form-label">Background color</label><input type="color" class="form-control form-control-color w-100" name="background_color" value="#ffffff"></div>
                             <div class="col-md-3 mb-3"><label class="form-label">Font color</label><input type="color" class="form-control form-control-color w-100" name="font_color" value="#000000"></div>

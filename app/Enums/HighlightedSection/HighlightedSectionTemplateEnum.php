@@ -15,4 +15,5 @@ enum HighlightedSectionTemplateEnum: string
     case CURATED_PICKS = 'curated_picks';
     case RAIN_READY = 'rain_ready';
     case SPOTLIGHT = 'spotlight';
+    case DEALS = 'deals';
 }

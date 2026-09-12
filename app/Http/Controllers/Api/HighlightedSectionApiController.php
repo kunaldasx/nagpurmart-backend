@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\HighlightedSection\HighlightedSectionItemTypeEnum;
+use App\Enums\HighlightedSection\HighlightedSectionScopeEnum;
 use App\Enums\HighlightedSection\HighlightedSectionTemplateEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\HighlightedSectionResource;
 use App\Models\Category;
 use App\Models\HighlightedSection;
 use App\Types\Api\ApiResponseType;
-use App\Enums\HomePageScopeEnum;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +20,7 @@ class HighlightedSectionApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'scope_type' => 'nullable|in:global,category',
+            'scope_type' => 'nullable|in:' . implode(',', HighlightedSectionScopeEnum::values()),
             'category_id' => 'nullable|integer|exists:categories,id',
             'scope_category_slug' => 'nullable|string',
             'template' => 'nullable|string|in:' . implode(',', HighlightedSectionTemplateEnum::values()),
@@ -34,7 +34,7 @@ class HighlightedSectionApiController extends Controller
         if ($request->filled('template')) $query->where('template', $request->template);
         if ($request->filled('template_code')) $query->where('template', $request->template_code);
         if ($request->filled('slug')) $query->where('slug', $request->slug);
-        if ($request->filled('category_id') && !$request->filled('scope_type')) $query->where('scope_type', HomePageScopeEnum::CATEGORY());
+        if ($request->filled('category_id') && !$request->filled('scope_type')) $query->where('scope_type', HighlightedSectionScopeEnum::CATEGORY());
         if ($request->filled('scope_category_slug')) {
             $category = Category::where('slug', $request->scope_category_slug)->first();
             if (!$category) return ApiResponseType::sendJsonResponse(false, 'Category not found.', [], 404);

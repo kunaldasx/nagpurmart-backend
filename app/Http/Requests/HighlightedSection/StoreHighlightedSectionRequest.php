@@ -4,8 +4,8 @@ namespace App\Http\Requests\HighlightedSection;
 
 use App\Enums\ActiveInactiveStatusEnum;
 use App\Enums\HighlightedSection\HighlightedSectionItemTypeEnum;
+use App\Enums\HighlightedSection\HighlightedSectionScopeEnum;
 use App\Enums\HighlightedSection\HighlightedSectionTemplateEnum;
-use App\Enums\HomePageScopeEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 
@@ -19,7 +19,7 @@ class StoreHighlightedSectionRequest extends FormRequest
             'title' => 'required|string|max:255',
             'subtitle' => 'nullable|string|max:1000',
             'template' => ['required', new Enum(HighlightedSectionTemplateEnum::class)],
-            'scope_type' => ['required', new Enum(HomePageScopeEnum::class)],
+            'scope_type' => ['required', new Enum(HighlightedSectionScopeEnum::class)],
             'scope_id' => 'required_if:scope_type,category|nullable|exists:categories,id',
             'background_color' => 'nullable|string|max:30',
             'font_color' => 'nullable|string|max:30',

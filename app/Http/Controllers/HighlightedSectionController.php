@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ActiveInactiveStatusEnum;
 use App\Enums\HighlightedSection\HighlightedSectionItemTypeEnum;
-use App\Enums\HomePageScopeEnum;
+use App\Enums\HighlightedSection\HighlightedSectionScopeEnum;
 use App\Http\Requests\HighlightedSection\StoreHighlightedSectionRequest;
 use App\Http\Requests\HighlightedSection\UpdateHighlightedSectionRequest;
 use App\Http\Resources\HighlightedSectionResource;
@@ -116,8 +116,8 @@ class HighlightedSectionController extends Controller
     private function save(array $validated, ?HighlightedSection $section = null): JsonResponse
     {
         $validated['status'] ??= ActiveInactiveStatusEnum::INACTIVE();
-        $validated['scope_type'] ??= HomePageScopeEnum::GLOBAL();
-        if ($validated['scope_type'] === HomePageScopeEnum::GLOBAL()) $validated['scope_id'] = null;
+        $validated['scope_type'] ??= HighlightedSectionScopeEnum::GLOBAL();
+        if ($validated['scope_type'] === HighlightedSectionScopeEnum::GLOBAL()) $validated['scope_id'] = null;
         $items = $validated['items'];
         unset($validated['items']);
         DB::transaction(function () use (&$section, $validated, $items) {
