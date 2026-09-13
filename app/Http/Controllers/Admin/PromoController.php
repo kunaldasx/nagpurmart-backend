@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -72,6 +73,12 @@ class PromoController extends Controller
         try {
             $this->authorize('create', Promo::class);
             $validated = $request->validated();
+
+            if ($request->hasFile('banner_image')) {
+                $bannerFile = $request->file('banner_image');
+                $storedPath = $bannerFile->store('promo-banners', 'public');
+                $validated['banner_image'] = Storage::disk('public')->url($storedPath);
+            }
 
             // Set default values if not provided
             if (empty($validated['usage_count'])) {
@@ -133,6 +140,12 @@ class PromoController extends Controller
             $promo = Promo::findOrFail($id);
             $this->authorize('update', $promo);
             $validated = $request->validated();
+
+            if ($request->hasFile('banner_image')) {
+                $bannerFile = $request->file('banner_image');
+                $storedPath = $bannerFile->store('promo-banners', 'public');
+                $validated['banner_image'] = Storage::disk('public')->url($storedPath);
+            }
 
             $promo->update($validated);
 

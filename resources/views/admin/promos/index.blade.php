@@ -89,7 +89,7 @@
         >
             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                 <div class="modal-content">
-                    <form class="form-submit" action="{{route('admin.promos.store')}}" method="POST">
+                    <form class="form-submit" action="{{route('admin.promos.store')}}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="id" id="promo-id" value=""/>
                         <div class="modal-header">
@@ -140,8 +140,8 @@
 
                             <div class="mb-3">
                                 <label class="form-label">{{ __('labels.banner_image') }}</label>
-                                <input type="text" class="form-control" name="banner_image"
-                                       placeholder="{{ __('labels.enter_banner_image_url') }}"/>
+                                <input type="file" class="form-control" name="banner_image" accept="image/*"/>
+                                <small class="form-text text-muted">Upload a banner image or keep the URL field blank if the image is already hosted.</small>
                             </div>
 
                             <div class="mb-3">

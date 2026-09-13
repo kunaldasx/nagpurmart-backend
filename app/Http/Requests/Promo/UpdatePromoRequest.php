@@ -5,6 +5,7 @@ namespace App\Http\Requests\Promo;
 use App\Enums\PromoDiscountTypeEnum;
 use App\Enums\PromoModeEnum;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
@@ -37,7 +38,21 @@ class UpdatePromoRequest extends FormRequest
             'description' => 'nullable|string',
             'heading' => 'nullable|string|max:255',
             'sub_heading' => 'nullable|string|max:255',
-            'banner_image' => 'nullable|string|max:2048',
+            'banner_image' => ['nullable', 'sometimes', function ($attribute, $value, $fail) {
+                if ($value === null || $value === '') {
+                    return;
+                }
+
+                if (is_string($value)) {
+                    return;
+                }
+
+                if ($value instanceof UploadedFile) {
+                    return;
+                }
+
+                $fail('The banner image field must be a valid URL or image file.');
+            }],
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
             'discount_type' => ['required', new Enum(PromoDiscountTypeEnum::class)],
