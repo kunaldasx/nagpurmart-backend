@@ -1808,4 +1808,19 @@ return [
     'admin_credentials' => 'Credenciales Admin',
     'seller_credentials' => 'Credenciales Vendedor',
     'copy_and_fill' => 'Copiar y Rellenar',
+
+    // Gift Section Labels
+    'gift_section' => 'Sección de Regalos',
+    'edit_gift_section' => 'Editar Sección de Regalos',
+    'gift_section_settings' => 'Configuración de Sección de Regalos',
+    'heading' => 'Encabezado',
+    'sub_heading' => 'Subtítulo',
+    'bg_color' => 'Color de Fondo',
+    'icon_image' => 'Imagen de Icono',
+    'save_changes' => 'Guardar Cambios',
+    'cancel' => 'Cancelar',
+    'current_image' => 'Imagen Actual',
+    'edit' => 'Editar',
+    'max_size' => 'Tamaño Máximo',
+    'supported_formats' => 'Formatos Soportados',
 ];

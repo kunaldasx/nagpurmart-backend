@@ -288,4 +288,19 @@ return [
     'store' => 'Filiale',
     'cost' => 'Kosten',
     'no_store_pricing_available' => 'Keine filialweise Preisgestaltung verfügbar',
+
+    // Gift Section Labels
+    'gift_section' => 'Geschenk-Bereich',
+    'edit_gift_section' => 'Geschenk-Bereich bearbeiten',
+    'gift_section_settings' => 'Einstellungen für Geschenk-Bereich',
+    'heading' => 'Überschrift',
+    'sub_heading' => 'Unterüberschrift',
+    'bg_color' => 'Hintergrundfarbe',
+    'icon_image' => 'Symbilbild',
+    'save_changes' => 'Änderungen speichern',
+    'cancel' => 'Abbrechen',
+    'current_image' => 'Aktuelles Bild',
+    'edit' => 'Bearbeiten',
+    'max_size' => 'Maximale Größe',
+    'supported_formats' => 'Unterstützte Formate',
 ];

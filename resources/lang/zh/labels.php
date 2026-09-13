@@ -288,4 +288,19 @@ return [
     'store' => '店铺',
     'cost' => '成本',
     'no_store_pricing_available' => '没有可用的店铺定价',
+
+    // Gift Section Labels
+    'gift_section' => '礼物部分',
+    'edit_gift_section' => '编辑礼物部分',
+    'gift_section_settings' => '礼物部分设置',
+    'heading' => '标题',
+    'sub_heading' => '副标题',
+    'bg_color' => '背景颜色',
+    'icon_image' => '图标图片',
+    'save_changes' => '保存更改',
+    'cancel' => '取消',
+    'current_image' => '当前图片',
+    'edit' => '编辑',
+    'max_size' => '最大尺寸',
+    'supported_formats' => '支持的格式',
 ];

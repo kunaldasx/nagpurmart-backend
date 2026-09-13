@@ -288,4 +288,19 @@ return [
     'store' => 'Magasin',
     'cost' => 'Coût',
     'no_store_pricing_available' => 'Aucun prix par magasin disponible',
+
+    // Gift Section Labels
+    'gift_section' => 'Section Cadeau',
+    'edit_gift_section' => 'Modifier Section Cadeau',
+    'gift_section_settings' => 'Paramètres Section Cadeau',
+    'heading' => 'Titre',
+    'sub_heading' => 'Sous-titre',
+    'bg_color' => 'Couleur de Fond',
+    'icon_image' => 'Image Icône',
+    'save_changes' => 'Enregistrer les Modifications',
+    'cancel' => 'Annuler',
+    'current_image' => 'Image Actuelle',
+    'edit' => 'Modifier',
+    'max_size' => 'Taille Max',
+    'supported_formats' => 'Formats Supportés',
 ];

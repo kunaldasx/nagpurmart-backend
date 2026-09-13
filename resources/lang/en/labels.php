@@ -2166,4 +2166,19 @@ return [
     'choose_your_plan' => 'Choose your plan',
     'skip_for_now' => 'Skip for now',
     'please_wait' => 'Please wait',
+
+    // Gift Section Labels
+    'gift_section' => 'Gift Section',
+    'edit_gift_section' => 'Edit Gift Section',
+    'gift_section_settings' => 'Gift Section Settings',
+    'heading' => 'Heading',
+    'sub_heading' => 'Sub Heading',
+    'bg_color' => 'Background Color',
+    'icon_image' => 'Icon Image',
+    'save_changes' => 'Save Changes',
+    'cancel' => 'Cancel',
+    'current_image' => 'Current Image',
+    'edit' => 'Edit',
+    'max_size' => 'Max Size',
+    'supported_formats' => 'Supported Formats',
 ];
