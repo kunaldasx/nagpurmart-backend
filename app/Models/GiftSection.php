@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Enums\SpatieMediaCollectionName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class GiftSection extends Model
+class GiftSection extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
         'heading',
@@ -29,5 +32,17 @@ class GiftSection extends Model
             'font_color' => '#222222',
             'icon_image' => null,
         ]);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(SpatieMediaCollectionName::GIFT_SECTION_ICON())->singleFile();
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function ($giftSection) {
+            $giftSection->clearMediaCollection(SpatieMediaCollectionName::GIFT_SECTION_ICON());
+        });
     }
 }
