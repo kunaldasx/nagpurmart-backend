@@ -182,6 +182,9 @@ class CartService
         $totals = $cart ? $this->calculateCartTotals($cart, $orderMode) : ['qualifying_items_total' => 0];
         $qualifyingTotal = (float)($totals['qualifying_items_total'] ?? 0);
 
+        // Get gift section details
+        $giftSection = \App\Models\GiftSection::getInstance();
+
         $variants = StoreProductVariant::query()
             ->where('stock', '>', 0)
             ->whereHas('productVariant.product', function ($query) {
@@ -204,6 +207,11 @@ class CartService
             'eligible' => $variants->isNotEmpty(),
             'qualifying_items_total' => $qualifyingTotal,
             'gift_minimum_cart_amount' => $giftMinimumAmount,
+            'heading' => $giftSection->heading,
+            'sub_heading' => $giftSection->sub_heading,
+            'bg_color' => $giftSection->bg_color,
+            'font_color' => $giftSection->font_color,
+            'icon_image' => $giftSection->icon_image,
             'options' => $variants->map(function ($variant) use ($giftMinimumAmount) {
                 return [
                     'product_id' => $variant->productVariant->product_id,

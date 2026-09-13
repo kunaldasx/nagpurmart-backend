@@ -18,6 +18,7 @@ use App\Http\Controllers\DeliveryBoyController;
 use App\Http\Controllers\DeliveryZoneController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeaturedSectionController;
+use App\Http\Controllers\GiftSectionController;
 use App\Http\Controllers\HighlightedSectionController;
 use App\Http\Controllers\PopularSearchController;
 use App\Http\Controllers\NotificationController;
@@ -334,6 +335,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{id}', [HighlightedSectionController::class, 'show'])->name('show');
             Route::post('/{id}', [HighlightedSectionController::class, 'update'])->name('update');
             Route::delete('/{id}', [HighlightedSectionController::class, 'destroy'])->name('destroy');
+        });
+
+        // Gift Section Routes
+        Route::prefix('gift-section')->name('gift-section.')->group(function () {
+            Route::get('/', [GiftSectionController::class, 'index'])->name('index');
+            Route::get('/edit', [GiftSectionController::class, 'edit'])->name('edit');
+            Route::post('/update', [GiftSectionController::class, 'update'])->name('update');
+            Route::get('/show', [GiftSectionController::class, 'show'])->name('show');
         });
 
         // Popular Searches Routes

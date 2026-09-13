@@ -265,6 +265,13 @@ return [
             'active' => 'highlighted_section',
             'permission' => 'highlighted_section.view',
         ],
+        'gift_section' => [
+            'icon' => 'ti-gift',
+            'route' => 'admin.gift-section.index',
+            'title' => 'labels.gift_section',
+            'active' => 'gift_section',
+            'permission' => 'gift_section.view',
+        ],
         'popular_searches' => [
             'icon' => 'ti-search',
             'route' => 'admin.popular-searches.index',

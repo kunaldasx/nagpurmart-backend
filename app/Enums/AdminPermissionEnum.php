@@ -56,6 +56,10 @@ use ArchTech\Enums\Values;
  * @method static HIGHLIGHTED_SECTION_EDIT()
  * @method static HIGHLIGHTED_SECTION_DELETE()
  * @method static HIGHLIGHTED_SECTION_VIEW()
+ * @method static GIFT_SECTION_CREATE()
+ * @method static GIFT_SECTION_EDIT()
+ * @method static GIFT_SECTION_DELETE()
+ * @method static GIFT_SECTION_VIEW()
  * @method static DELIVERY_BOY_EDIT()
  * @method static DELIVERY_BOY_DELETE()
  * @method static DELIVERY_BOY_VIEW()
@@ -198,6 +202,10 @@ enum AdminPermissionEnum: string
     case HIGHLIGHTED_SECTION_EDIT = 'highlighted_section.edit';
     case HIGHLIGHTED_SECTION_DELETE = 'highlighted_section.delete';
     case HIGHLIGHTED_SECTION_VIEW = 'highlighted_section.view';
+    case GIFT_SECTION_CREATE = 'gift_section.create';
+    case GIFT_SECTION_EDIT = 'gift_section.edit';
+    case GIFT_SECTION_DELETE = 'gift_section.delete';
+    case GIFT_SECTION_VIEW = 'gift_section.view';
     case DELIVERY_BOY_EDIT = 'delivery_boy.edit';
     case DELIVERY_BOY_DELETE = 'delivery_boy.delete';
     case DELIVERY_BOY_VIEW = 'delivery_boy.view';
@@ -396,6 +404,13 @@ enum AdminPermissionEnum: string
                 'permissions' => [
                     self::HIGHLIGHTED_SECTION_VIEW(), self::HIGHLIGHTED_SECTION_CREATE(),
                     self::HIGHLIGHTED_SECTION_EDIT(), self::HIGHLIGHTED_SECTION_DELETE(),
+                ],
+            ],
+            'gift_section' => [
+                'name' => 'Gift Sections',
+                'permissions' => [
+                    self::GIFT_SECTION_VIEW(), self::GIFT_SECTION_CREATE(),
+                    self::GIFT_SECTION_EDIT(), self::GIFT_SECTION_DELETE(),
                 ],
             ],
             'popular_search' => [
