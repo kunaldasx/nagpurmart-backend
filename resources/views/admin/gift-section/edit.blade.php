@@ -86,71 +86,99 @@
 
 @push('scripts')
 <script>
+    // Handle image preview
+    const iconImageInput = document.getElementById('icon-image-input');
+    const imagePreviewContainer = document.getElementById('image-preview-container');
+    const imagePreview = document.getElementById('image-preview');
+
+    if (iconImageInput) {
+        iconImageInput.addEventListener('change', function(e) {
+            handleImagePreview(e);
+        });
+
+        iconImageInput.addEventListener('input', function(e) {
+            handleImagePreview(e);
+        });
+    }
+
+    function handleImagePreview(event) {
+        const file = event.target.files[0];
+        
+        if (file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!validTypes.includes(file.type)) {
+                alert('Invalid file type. Please select a JPEG, PNG, GIF, WebP, or SVG image.');
+                iconImageInput.value = '';
+                imagePreviewContainer.style.display = 'none';
+                return;
+            }
+
+            // Validate file size (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File size too large. Maximum size is 2MB.');
+                iconImageInput.value = '';
+                imagePreviewContainer.style.display = 'none';
+                return;
+            }
+
+            // Read and display the preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (imagePreview) {
+                    imagePreview.src = e.target.result;
+                }
+                if (imagePreviewContainer) {
+                    imagePreviewContainer.style.display = 'block';
+                }
+                const currentPreview = document.getElementById('current-image-preview');
+                if (currentPreview) {
+                    currentPreview.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
+        } else {
+            clearImagePreview();
+        }
+    }
+
+    function clearImagePreview() {
+        if (iconImageInput) {
+            iconImageInput.value = '';
+        }
+        if (imagePreviewContainer) {
+            imagePreviewContainer.style.display = 'none';
+        }
+        const currentImagePreview = document.getElementById('current-image-preview');
+        if (currentImagePreview) {
+            currentImagePreview.style.display = 'block';
+        }
+    }
+
+    // Color picker text sync
     document.addEventListener('DOMContentLoaded', function() {
-        // Update text input when color picker changes
         const bgColorPicker = document.querySelector('input[name="bg_color"]');
         const bgColorText = document.querySelector('input[name="bg_color_text"]');
         const fontColorPicker = document.querySelector('input[name="font_color"]');
         const fontColorText = document.querySelector('input[name="font_color_text"]');
 
-        bgColorPicker?.addEventListener('change', function() {
-            bgColorText.value = this.value;
-        });
-
-        fontColorPicker?.addEventListener('change', function() {
-            fontColorText.value = this.value;
-        });
-
-        // Handle image preview
-        const iconImageInput = document.getElementById('icon-image-input');
-        const imagePreviewContainer = document.getElementById('image-preview-container');
-        const imagePreview = document.getElementById('image-preview');
-
-        iconImageInput?.addEventListener('change', function() {
-            const file = this.files[0];
-            
-            if (file) {
-                // Validate file type
-                const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
-                if (!validTypes.includes(file.type)) {
-                    alert('{{ __("messages.invalid_file_type") }}');
-                    this.value = '';
-                    imagePreviewContainer.style.display = 'none';
-                    return;
-                }
-
-                // Validate file size (2MB)
-                if (file.size > 2 * 1024 * 1024) {
-                    alert('{{ __("messages.file_too_large") }}');
-                    this.value = '';
-                    imagePreviewContainer.style.display = 'none';
-                    return;
-                }
-
-                // Read and display the preview
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreviewContainer.style.display = 'block';
-                    document.getElementById('current-image-preview')?.style.display = 'none';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                clearImagePreview();
-            }
-        });
-    });
-
-    function clearImagePreview() {
-        const iconImageInput = document.getElementById('icon-image-input');
-        const imagePreviewContainer = document.getElementById('image-preview-container');
-        const currentImagePreview = document.getElementById('current-image-preview');
-        
-        iconImageInput.value = '';
-        imagePreviewContainer.style.display = 'none';
-        if (currentImagePreview) {
-            currentImagePreview.style.display = 'block';
+        if (bgColorPicker && bgColorText) {
+            bgColorPicker.addEventListener('change', function() {
+                bgColorText.value = this.value;
+            });
+            bgColorPicker.addEventListener('input', function() {
+                bgColorText.value = this.value;
+            });
         }
-    }
+
+        if (fontColorPicker && fontColorText) {
+            fontColorPicker.addEventListener('change', function() {
+                fontColorText.value = this.value;
+            });
+            fontColorPicker.addEventListener('input', function() {
+                fontColorText.value = this.value;
+            });
+        }
+    });
 </script>
 @endpush
