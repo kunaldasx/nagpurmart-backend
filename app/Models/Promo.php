@@ -21,6 +21,8 @@ class Promo extends Model
         'heading',
         'sub_heading',
         'banner_image',
+        'bg_color',
+        'font_color',
         'start_date',
         'end_date',
         'discount_type',

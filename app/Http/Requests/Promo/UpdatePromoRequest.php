@@ -53,6 +53,8 @@ class UpdatePromoRequest extends FormRequest
 
                 $fail('The banner image field must be a valid URL or image file.');
             }],
+            'bg_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'font_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
             'discount_type' => ['required', new Enum(PromoDiscountTypeEnum::class)],

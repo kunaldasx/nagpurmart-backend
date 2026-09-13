@@ -14,12 +14,20 @@ function viewPromo(id) {
                     promo.sub_heading || "N/A";
                 const bannerImage =
                     document.getElementById("promo-banner-image");
+                const bannerShell =
+                    document.getElementById("promo-banner-shell");
+                const bgColor = promo.bg_color || "#F5E6C8";
+                const fontColor = promo.font_color || "#111827";
+
+                bannerShell.style.backgroundColor = bgColor;
+                bannerShell.style.color = fontColor;
+
                 if (promo.banner_image || promo.image) {
                     bannerImage.src = promo.banner_image || promo.image;
-                    bannerImage.style.display = "block";
+                    bannerShell.style.display = "block";
                 } else {
                     bannerImage.removeAttribute("src");
-                    bannerImage.style.display = "none";
+                    bannerShell.style.display = "none";
                 }
                 document.getElementById("promo-description").textContent =
                     promo.description || "N/A";
@@ -71,6 +79,10 @@ function editPromo(id) {
                     promo.heading || "";
                 document.querySelector('input[name="sub_heading"]').value =
                     promo.sub_heading || "";
+                document.querySelector('input[name="bg_color"]').value =
+                    promo.bg_color || "#F5E6C8";
+                document.querySelector('input[name="font_color"]').value =
+                    promo.font_color || "#111827";
                 document.querySelector('input[name="banner_image"]').value =
                     promo.banner_image || promo.image || "";
                 document.querySelector('textarea[name="description"]').value =

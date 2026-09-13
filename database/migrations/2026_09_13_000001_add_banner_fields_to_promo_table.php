@@ -15,6 +15,8 @@ return new class extends Migration
             $table->string('heading')->nullable()->after('description');
             $table->string('sub_heading')->nullable()->after('heading');
             $table->string('banner_image')->nullable()->after('sub_heading');
+            $table->string('bg_color', 20)->nullable()->after('banner_image');
+            $table->string('font_color', 20)->nullable()->after('bg_color');
         });
     }
 
@@ -24,7 +26,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('promo', function (Blueprint $table) {
-            $table->dropColumn(['heading', 'sub_heading', 'banner_image']);
+            $table->dropColumn(['heading', 'sub_heading', 'banner_image', 'bg_color', 'font_color']);
         });
     }
 };

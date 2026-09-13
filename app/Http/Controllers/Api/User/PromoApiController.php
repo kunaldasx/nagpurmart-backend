@@ -134,6 +134,8 @@ class PromoApiController extends Controller
             'sub_heading' => $promo->sub_heading ?? $promo->description,
             'image' => $promo->banner_image ?? $promo->image,
             'banner_image' => $promo->banner_image ?? $promo->image,
+            'bg_color' => $promo->bg_color ?? '#F5E6C8',
+            'font_color' => $promo->font_color ?? '#111827',
             'discount_type' => $promo->discount_type,
             'discount_amount' => $promo->discount_amount,
             'promo_mode' => $promo->promo_mode,

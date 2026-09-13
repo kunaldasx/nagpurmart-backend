@@ -138,6 +138,21 @@
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('labels.background_color') }}</label>
+                                        <input type="color" class="form-control form-control-color" name="bg_color" value="#F5E6C8"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('labels.font_color') }}</label>
+                                        <input type="color" class="form-control form-control-color" name="font_color" value="#111827"/>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mb-3">
                                 <label class="form-label">{{ __('labels.banner_image') }}</label>
                                 <input type="file" class="form-control" name="banner_image" accept="image/*"/>
@@ -277,7 +292,9 @@
                         <h4 id="promo-code" class="fs-3"></h4>
                         <p id="promo-heading" class="fs-4 fw-semibold"></p>
                         <p id="promo-sub-heading" class="text-muted"></p>
-                        <img id="promo-banner-image" src="" alt="Promo banner" class="img-fluid rounded mb-3" style="max-height:180px; width:100%; object-fit:cover; display:none;"/>
+                        <div id="promo-banner-shell" class="rounded p-3 mb-3" style="display:none;">
+                            <img id="promo-banner-image" src="" alt="Promo banner" class="img-fluid rounded" style="max-height:180px; width:100%; object-fit:cover;"/>
+                        </div>
                         <p id="promo-description" class="fs-4"></p>
                         <div class="row">
                             <div class="col-md-12">
