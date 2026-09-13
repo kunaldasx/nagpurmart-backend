@@ -34,6 +34,22 @@ class GiftSection extends Model implements HasMedia
         ]);
     }
 
+    /**
+     * Get the icon image URL from media library
+     */
+    public function getIconImageUrl(): string
+    {
+        return $this->getFirstMediaUrl(SpatieMediaCollectionName::GIFT_SECTION_ICON());
+    }
+
+    /**
+     * Check if icon image exists
+     */
+    public function hasIconImage(): bool
+    {
+        return $this->hasMedia(SpatieMediaCollectionName::GIFT_SECTION_ICON());
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(SpatieMediaCollectionName::GIFT_SECTION_ICON())->singleFile();

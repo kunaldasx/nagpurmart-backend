@@ -47,7 +47,6 @@ class GiftSectionController extends Controller
             $giftSection->clearMediaCollection(SpatieMediaCollectionName::GIFT_SECTION_ICON());
             $giftSection->addMediaFromRequest('icon_image')
                 ->toMediaCollection(SpatieMediaCollectionName::GIFT_SECTION_ICON());
-            $data['icon_image'] = $giftSection->getFirstMediaUrl(SpatieMediaCollectionName::GIFT_SECTION_ICON());
         }
         
         $giftSection->update([

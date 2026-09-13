@@ -32,11 +32,11 @@
                             </p>
                         </div>
                     </div>
-                    @if($giftSection->icon_image)
+                    @if($giftSection->hasIconImage())
                         <div class="row mt-3">
                             <div class="col-md-4">
                                 <p><strong>{{ __('labels.icon_image') }}:</strong></p>
-                                <img src="{{ $giftSection->icon_image }}" alt="Gift Icon" style="max-width: 200px; max-height: 200px;">
+                                <img src="{{ $giftSection->getIconImageUrl() }}" alt="Gift Icon" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; padding: 5px;">
                             </div>
                         </div>
                     @endif

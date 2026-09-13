@@ -58,10 +58,10 @@
 
                         <div class="row">
                             <div class="col-md-12 mb-3">
-                                @if($giftSection->icon_image)
+                                @if($giftSection->hasIconImage())
                                     <div class="mt-3">
                                         <p><strong>{{ __('labels.current_image') }}:</strong></p>
-                                        <img id="current-image-preview" src="{{ $giftSection->icon_image }}" alt="Gift Icon" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; padding: 5px; margin-bottom: 15px;">
+                                        <img id="current-image-preview" src="{{ $giftSection->getIconImageUrl() }}" alt="Gift Icon" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; padding: 5px; margin-bottom: 15px;">
                                     </div>
                                 @endif
                                 
