@@ -140,7 +140,7 @@
 
                             <div class="mb-3">
                                 <label class="form-label">{{ __('labels.banner_image') }}</label>
-                                <input type="url" class="form-control" name="banner_image"
+                                <input type="text" class="form-control" name="banner_image"
                                        placeholder="{{ __('labels.enter_banner_image_url') }}"/>
                             </div>
 
