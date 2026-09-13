@@ -1,3 +1,32 @@
+function getDateTimeLocalValue(value) {
+    if (!value) return "";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        const text = String(value).replace(" ", "T");
+        return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text)
+            ? text.slice(0, 16)
+            : "";
+    }
+
+    const adjusted = new Date(
+        date.getTime() - date.getTimezoneOffset() * 60000,
+    );
+    return adjusted.toISOString().slice(0, 16);
+}
+
+function setFieldValue(selector, value, fallback = "") {
+    const field = document.querySelector(selector);
+    if (!field) return;
+
+    if (field.type === "checkbox" || field.type === "radio") {
+        field.checked = Boolean(value);
+        return;
+    }
+
+    field.value = value ?? fallback;
+}
+
 function viewPromo(id) {
     axios
         .get(`/admin/promos/${id}`)
@@ -74,39 +103,65 @@ function editPromo(id) {
 
                 // Populate form fields
                 document.getElementById("promo-id").value = promo.id;
-                document.querySelector('input[name="code"]').value = promo.code;
-                document.querySelector('input[name="heading"]').value =
-                    promo.heading || "";
-                document.querySelector('input[name="sub_heading"]').value =
-                    promo.sub_heading || "";
-                document.querySelector('input[name="bg_color"]').value =
-                    promo.bg_color || "#F5E6C8";
-                document.querySelector('input[name="font_color"]').value =
-                    promo.font_color || "#111827";
-                document.querySelector('input[name="banner_image"]').value =
-                    promo.banner_image || promo.image || "";
-                document.querySelector('textarea[name="description"]').value =
-                    promo.description || "";
-                document.querySelector('select[name="discount_type"]').value =
-                    promo.discount_type;
-                document.querySelector('input[name="discount_amount"]').value =
-                    promo.discount_amount;
-                document.querySelector(
+                setFieldValue('input[name="code"]', promo.code);
+                setFieldValue('input[name="heading"]', promo.heading);
+                setFieldValue('input[name="sub_heading"]', promo.sub_heading);
+                setFieldValue(
+                    'input[name="bg_color"]',
+                    promo.bg_color || "#F5E6C8",
+                );
+                setFieldValue(
+                    'input[name="font_color"]',
+                    promo.font_color || "#111827",
+                );
+                setFieldValue(
+                    'textarea[name="description"]',
+                    promo.description,
+                );
+
+                const discountTypeField = document.querySelector(
+                    'select[name="discount_type"]',
+                );
+                if (discountTypeField && promo.discount_type) {
+                    discountTypeField.value = promo.discount_type;
+                }
+
+                setFieldValue(
+                    'input[name="discount_amount"]',
+                    promo.discount_amount,
+                );
+                setFieldValue(
                     'input[name="max_discount_value"]',
-                ).value = promo.max_discount_value || "";
-                document.querySelector('input[name="start_date"]').value =
-                    promo.start_date ? promo.start_date.slice(0, 16) : "";
-                document.querySelector('input[name="end_date"]').value =
-                    promo.end_date ? promo.end_date.slice(0, 16) : "";
-                document.querySelector('input[name="min_order_total"]').value =
-                    promo.min_order_total || "";
-                document.querySelector('select[name="promo_mode"]').value =
-                    promo.promo_mode || "";
-                document.querySelector('input[name="max_total_usage"]').value =
-                    promo.max_total_usage || "";
-                document.querySelector(
+                    promo.max_discount_value,
+                );
+                setFieldValue(
+                    'input[name="start_date"]',
+                    getDateTimeLocalValue(promo.start_date),
+                );
+                setFieldValue(
+                    'input[name="end_date"]',
+                    getDateTimeLocalValue(promo.end_date),
+                );
+                setFieldValue(
+                    'input[name="min_order_total"]',
+                    promo.min_order_total,
+                );
+
+                const promoModeField = document.querySelector(
+                    'select[name="promo_mode"]',
+                );
+                if (promoModeField && promo.promo_mode) {
+                    promoModeField.value = promo.promo_mode;
+                }
+
+                setFieldValue(
+                    'input[name="max_total_usage"]',
+                    promo.max_total_usage,
+                );
+                setFieldValue(
                     'input[name="max_usage_per_user"]',
-                ).value = promo.max_usage_per_user || "";
+                    promo.max_usage_per_user,
+                );
                 // document.querySelector('input[name="individual_use"]').checked = promo.individual_use == 1;
 
                 // Update modal title and button text
