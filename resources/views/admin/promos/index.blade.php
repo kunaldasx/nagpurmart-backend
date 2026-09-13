@@ -121,6 +121,29 @@
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('labels.heading') }}</label>
+                                        <input type="text" class="form-control" name="heading"
+                                               placeholder="{{ __('labels.enter_heading') }}"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('labels.sub_heading') }}</label>
+                                        <input type="text" class="form-control" name="sub_heading"
+                                               placeholder="{{ __('labels.enter_sub_heading') }}"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('labels.banner_image') }}</label>
+                                <input type="url" class="form-control" name="banner_image"
+                                       placeholder="{{ __('labels.enter_banner_image_url') }}"/>
+                            </div>
+
                             <div class="mb-3">
                                 <label class="form-label required">{{ __('labels.description') }}</label>
                                 <textarea class="form-control" name="description" rows="3"
@@ -252,6 +275,9 @@
                 <div class="card-body px-0">
                     <div>
                         <h4 id="promo-code" class="fs-3"></h4>
+                        <p id="promo-heading" class="fs-4 fw-semibold"></p>
+                        <p id="promo-sub-heading" class="text-muted"></p>
+                        <img id="promo-banner-image" src="" alt="Promo banner" class="img-fluid rounded mb-3" style="max-height:180px; width:100%; object-fit:cover; display:none;"/>
                         <p id="promo-description" class="fs-4"></p>
                         <div class="row">
                             <div class="col-md-12">

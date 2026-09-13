@@ -39,37 +39,8 @@ class PromoApiController extends Controller
         }
 
         try {
-            // Get all active promos that are currently valid
-            $now = now();
-            $promos = Promo::where(function ($query) use ($now) {
-                $query->where('start_date', '<=', $now)
-                    ->orWhereNull('start_date');
-            })
-                ->where(function ($query) use ($now) {
-                    $query->where('end_date', '>=', $now)
-                        ->orWhereNull('end_date');
-                })
-                ->where(function ($query) {
-                    // Check if promo hasn't reached max total usage
-                    $query->whereNull('max_total_usage')
-                        ->orWhereRaw('usage_count < max_total_usage');
-                })
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            // Filter promos based on user-specific usage limits
-            $availablePromos = $promos->filter(function ($promo) use ($user) {
-                if ($promo->max_usage_per_user) {
-                    $userUsageCount = OrderPromoLine::where('promo_id', $promo->id)
-                        ->whereHas('order', function ($query) use ($user) {
-                            $query->where('user_id', $user->id);
-                        })
-                        ->count();
-
-                    return $userUsageCount < $promo->max_usage_per_user;
-                }
-                return true;
-            });
+            $availablePromos = $this->getAvailablePromosForUser($user)
+                ->map(fn (Promo $promo) => $this->mapPromoForFrontend($promo));
 
             return ApiResponseType::sendJsonResponse(
                 true,
@@ -84,6 +55,97 @@ class PromoApiController extends Controller
                 []
             );
         }
+    }
+
+    /**
+     * Get promo banners for frontend hero cards.
+     */
+    public function getUserPromoBanners(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                __('labels.user_not_authenticated'),
+                []
+            );
+        }
+
+        try {
+            $banners = $this->getAvailablePromosForUser($user)
+                ->map(fn (Promo $promo) => $this->mapPromoForFrontend($promo));
+
+            return ApiResponseType::sendJsonResponse(
+                true,
+                __('messages.promos_retrieved_successfully'),
+                $banners->values()
+            );
+        } catch (\Exception $e) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                __('labels.something_went_wrong'),
+                []
+            );
+        }
+    }
+
+    private function getAvailablePromosForUser($user)
+    {
+        $now = now();
+        $promos = Promo::where(function ($query) use ($now) {
+            $query->where('start_date', '<=', $now)
+                ->orWhereNull('start_date');
+        })
+            ->where(function ($query) use ($now) {
+                $query->where('end_date', '>=', $now)
+                    ->orWhereNull('end_date');
+            })
+            ->where(function ($query) {
+                $query->whereNull('max_total_usage')
+                    ->orWhereRaw('usage_count < max_total_usage');
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $promos->filter(function ($promo) use ($user) {
+            if ($promo->max_usage_per_user) {
+                $userUsageCount = OrderPromoLine::where('promo_id', $promo->id)
+                    ->whereHas('order', function ($query) use ($user) {
+                        $query->where('user_id', $user->id);
+                    })
+                    ->count();
+
+                return $userUsageCount < $promo->max_usage_per_user;
+            }
+
+            return true;
+        });
+    }
+
+    private function mapPromoForFrontend(Promo $promo): array
+    {
+        return [
+            'id' => $promo->id,
+            'code' => $promo->code,
+            'promo_code' => $promo->code,
+            'description' => $promo->description,
+            'heading' => $promo->heading ?? $promo->code,
+            'sub_heading' => $promo->sub_heading ?? $promo->description,
+            'image' => $promo->banner_image ?? $promo->image,
+            'banner_image' => $promo->banner_image ?? $promo->image,
+            'discount_type' => $promo->discount_type,
+            'discount_amount' => $promo->discount_amount,
+            'promo_mode' => $promo->promo_mode,
+            'start_date' => $promo->start_date ? $promo->start_date->toISOString() : null,
+            'end_date' => $promo->end_date ? $promo->end_date->toISOString() : null,
+            'min_order_total' => $promo->min_order_total,
+            'max_discount_value' => $promo->max_discount_value,
+            'max_total_usage' => $promo->max_total_usage,
+            'max_usage_per_user' => $promo->max_usage_per_user,
+            'usage_count' => $promo->usage_count,
+            'status' => $promo->status,
+        ];
     }
 
     /**

@@ -13,11 +13,14 @@ class Promo extends Model
 
     protected $table = 'promo';
 
-    protected $appends = ['status'];
+    protected $appends = ['status', 'image'];
 
     protected $fillable = [
         'code',
         'description',
+        'heading',
+        'sub_heading',
+        'banner_image',
         'start_date',
         'end_date',
         'discount_type',
@@ -64,5 +67,10 @@ class Promo extends Model
             $this->usage_count < $this->max_total_usage;
 
         return ($isDateValid && $isUsageLimitValid) ? PromoStatusEnum::ACTIVE() : PromoStatusEnum::EXPIRED();
+    }
+
+    public function getImageAttribute(): ?string
+    {
+        return $this->banner_image;
     }
 }

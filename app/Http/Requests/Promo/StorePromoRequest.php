@@ -27,6 +27,9 @@ class StorePromoRequest extends FormRequest
         return [
             'code' => 'required|string|max:255|unique:promo,code',
             'description' => 'nullable|string',
+            'heading' => 'nullable|string|max:255',
+            'sub_heading' => 'nullable|string|max:255',
+            'banner_image' => 'nullable|url|max:2048',
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after:start_date',
             'discount_type' => ['required', new Enum(PromoDiscountTypeEnum::class)],

@@ -151,6 +151,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Promo routes
         Route::prefix('promos')->group(function () {
             Route::get('/available', [PromoApiController::class, 'getUserAvailablePromos']);
+            Route::get('/banners', [PromoApiController::class, 'getUserPromoBanners']);
             Route::get('/validate', [PromoApiController::class, 'validatePromoCode']);
         });
 

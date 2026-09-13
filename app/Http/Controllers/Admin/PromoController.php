@@ -45,6 +45,8 @@ class PromoController extends Controller
         $columns = [
             ['data' => 'id', 'name' => 'id', 'title' => __('labels.id')],
             ['data' => 'code', 'name' => 'code', 'title' => __('labels.promo_code')],
+            ['data' => 'heading', 'name' => 'heading', 'title' => __('labels.heading')],
+            ['data' => 'sub_heading', 'name' => 'sub_heading', 'title' => __('labels.sub_heading')],
             ['data' => 'promo_mode', 'name' => 'promo_mode', 'title' => __('labels.promo_mode')],
             ['data' => 'discount_type', 'name' => 'discount_type', 'title' => __('labels.discount_type')],
             ['data' => 'discount_amount', 'name' => 'discount_amount', 'title' => __('labels.discount_amount')],
@@ -227,6 +229,8 @@ class PromoController extends Controller
             return [
                 'id' => $promo->id,
                 'code' => $promo->code,
+                'heading' => $promo->heading,
+                'sub_heading' => $promo->sub_heading,
                 'promo_mode' => ucfirst($promo->promo_mode),
                 'discount_type' => ucfirst(Str::replace("_", " ", $promo->discount_type)),
                 'discount_amount' => $promo->discount_amount,
