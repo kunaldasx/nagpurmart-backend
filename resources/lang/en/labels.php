@@ -1528,6 +1528,10 @@ return [
     'unknown_category' => 'Unknown Category',
     'icon' => 'Icon',
     'active_icon' => 'Active Icon',
+    'scroll_icon' => 'Scroll Icon',
+    'scroll_active_icon' => 'Scroll Active Icon',
+    'scroll_background' => 'Scroll Background',
+    'scroll_font' => 'Scroll Font',
 
     // Profile Management Labels
     'profile' => 'Profile',

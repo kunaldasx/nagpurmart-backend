@@ -125,6 +125,26 @@
                                                    name="activeIcon"
                                                    data-image-url="{{$settings['activeIcon'] ?? ''}}"/>
                                         </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ __('labels.scroll_icon') }}</label>
+                                            <input type="file" class="form-control" name="scroll_icon"
+                                                   data-image-url="{{$settings['scroll_icon'] ?? ''}}"/>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ __('labels.scroll_active_icon') }}</label>
+                                            <input type="file" class="form-control" name="scroll_active_icon"
+                                                   data-image-url="{{$settings['scroll_active_icon'] ?? ''}}"/>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ __('labels.scroll_background') }}</label>
+                                            <input type="file" class="form-control" name="scroll_background"
+                                                   data-image-url="{{$settings['scroll_background'] ?? ''}}"/>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ __('labels.scroll_font') }}</label>
+                                            <input type="file" class="form-control" name="scroll_font"
+                                                   data-image-url="{{$settings['scroll_font'] ?? ''}}"/>
+                                        </div>
                                         <div class="mb-3" id="background-color-field"
                                              style="{{ isset($settings['backgroundType']) && $settings['backgroundType'] === 'color' ? 'display: block;' : 'display: none;' }}">
                                             <label class="form-label">{{ __('labels.background_color') }}</label>

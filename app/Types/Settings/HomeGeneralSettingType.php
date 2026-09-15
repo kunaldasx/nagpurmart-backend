@@ -20,6 +20,10 @@ class HomeGeneralSettingType implements SettingInterface
     public string $fontColor = "#000000";
     public string $icon = '';
     public string $activeIcon = '';
+    public string $scroll_icon = '';
+    public string $scroll_active_icon = '';
+    public string $scroll_background = '';
+    public string $scroll_font = '';
 
     /**
      * Get Laravel validation rules for the properties
@@ -36,6 +40,10 @@ class HomeGeneralSettingType implements SettingInterface
             'backgroundImage' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'icon'       => 'nullable|mimes:jpeg,png,jpg,webp,svg',
             'activeIcon' => 'nullable|mimes:jpeg,png,jpg,webp,svg',
+            'scroll_icon' => 'nullable|mimes:jpeg,png,jpg,webp,svg',
+            'scroll_active_icon' => 'nullable|mimes:jpeg,png,jpg,webp,svg',
+            'scroll_background' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'scroll_font' => 'nullable|file|mimes:ttf,otf,woff,woff2|max:2048',
             'fontColor' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
         ];
     }

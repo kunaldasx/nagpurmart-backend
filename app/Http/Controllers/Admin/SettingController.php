@@ -242,6 +242,26 @@ class SettingController extends Controller
                 'path' => 'settings'
             ],
 
+            'scroll_icon' => [
+                'name' => fn($file) => uniqid() . '-scroll-icon.' . $file->getClientOriginalExtension(),
+                'path' => 'settings'
+            ],
+
+            'scroll_active_icon' => [
+                'name' => fn($file) => uniqid() . '-scroll-active-icon.' . $file->getClientOriginalExtension(),
+                'path' => 'settings'
+            ],
+
+            'scroll_background' => [
+                'name' => fn($file) => uniqid() . '-scroll-background.' . $file->getClientOriginalExtension(),
+                'path' => 'settings'
+            ],
+
+            'scroll_font' => [
+                'name' => fn($file) => uniqid() . '-scroll-font.' . $file->getClientOriginalExtension(),
+                'path' => 'settings'
+            ],
+
             'serviceAccountFile' => ['name' => 'service-account-file.json', 'path' => 'settings', 'disk' => 'local'],
             'pwaLogo192x192' => [
                 'name' => fn($file) => 'pwa-logo-192x192-' . time() . '.png',
