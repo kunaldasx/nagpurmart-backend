@@ -16,6 +16,9 @@ document.addEventListener("show.bs.modal", function (event) {
         const backgroundImageUpload = document.querySelector(
             "#background-image-upload",
         );
+        const tabularHeaderImageUpload = document.querySelector(
+            "#tabular-header-image-upload",
+        );
         const backgroundTypeSelect = document.querySelector(
             "#background-type-select",
         );
@@ -43,6 +46,10 @@ document.addEventListener("show.bs.modal", function (event) {
             if (scrollActiveIconPond) scrollActiveIconPond.removeFiles();
             const backgroundImagePond = FilePond.find(backgroundImageUpload);
             if (backgroundImagePond) backgroundImagePond.removeFiles();
+            const tabularHeaderImagePond = FilePond.find(
+                tabularHeaderImageUpload,
+            );
+            if (tabularHeaderImagePond) tabularHeaderImagePond.removeFiles();
         }
         if (categoryId) {
             // Fetch category data
@@ -64,6 +71,11 @@ document.addEventListener("show.bs.modal", function (event) {
                     ).checked = !!data.requires_approval;
                     form.querySelector('input[name="is_tabular"]').checked =
                         !!data.is_tabular;
+                    form.querySelector('input[name="tabular_subtitle"]').value =
+                        data.tabular_subtitle || "";
+                    form.querySelector(
+                        'input[name="tabular_subtitle_color"]',
+                    ).value = data.tabular_subtitle_color || "#000000";
                     form.querySelector('input[name="commission"]').value =
                         data.commission || 0;
 
@@ -191,6 +203,19 @@ document.addEventListener("show.bs.modal", function (event) {
                                 );
                             }
                         }
+                        if (
+                            data.tabular_header_image &&
+                            tabularHeaderImageUpload
+                        ) {
+                            const tabularHeaderImagePond = FilePond.find(
+                                tabularHeaderImageUpload,
+                            );
+                            if (tabularHeaderImagePond) {
+                                tabularHeaderImagePond.addFile(
+                                    data.tabular_header_image,
+                                );
+                            }
+                        }
                     }
 
                     // Change form action to update route
@@ -223,6 +248,9 @@ document.addEventListener("show.bs.modal", function (event) {
             }
             form.querySelector('input[name="background_color"]').value = "";
             form.querySelector('input[name="is_tabular"]').checked = false;
+            form.querySelector('input[name="tabular_subtitle"]').value = "";
+            form.querySelector('input[name="tabular_subtitle_color"]').value =
+                "#000000";
 
             // Set action for create
             form.querySelector('input[id="category-id"]').value = "";

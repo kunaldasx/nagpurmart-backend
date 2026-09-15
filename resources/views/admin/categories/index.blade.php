@@ -283,6 +283,25 @@
                             </div>
 
                             <div class="mb-3">
+                                <label class="form-label">{{ __('labels.tabular_header_image') }}</label>
+                                <input type="file" class="form-control" id="tabular-header-image-upload"
+                                       name="tabular_header_image"
+                                       accept="image/jpeg,image/png,image/jpg,image/webp"
+                                       data-image-url=""/>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('labels.tabular_subtitle') }}</label>
+                                <input type="text" class="form-control" name="tabular_subtitle" maxlength="255"/>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('labels.tabular_subtitle_color') }}</label>
+                                <input type="color" class="form-control form-control-color w-100"
+                                       name="tabular_subtitle_color" value="#000000"/>
+                            </div>
+
+                            <div class="mb-3">
                                 <label class="form-label">{{ __('labels.font_color') }}</label>
                                 <input type="color" class="form-control form-control-color w-100" name="font_color"
                                        id="font-color-input"/>

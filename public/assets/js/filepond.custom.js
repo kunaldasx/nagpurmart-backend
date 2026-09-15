@@ -158,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
         initializeFilePond("store_logo");
         initializeFilePond("store_banner");
         initializeFilePond("adminSignature");
+        initializeFilePond("tabular_header_image");
 
         const input = document.querySelector(`[name="additional_images[]"]`);
         if (input) {

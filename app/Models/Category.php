@@ -24,7 +24,7 @@ class Category extends Model implements HasMedia
 {
     use SoftDeletes, InteractsWithMedia;
 
-    protected $appends = ['image', 'banner', 'icon', 'active_icon', 'scroll_icon', 'scroll_active_icon', 'background_image'];
+    protected $appends = ['image', 'banner', 'icon', 'active_icon', 'scroll_icon', 'scroll_active_icon', 'background_image', 'tabular_header_image'];
 
     protected $fillable = [
         'uuid',
@@ -35,6 +35,8 @@ class Category extends Model implements HasMedia
         'status',
         'requires_approval',
         'is_tabular',
+        'tabular_subtitle',
+        'tabular_subtitle_color',
         'commission',
         'sort_order',
         'is_home_category',
@@ -109,6 +111,11 @@ class Category extends Model implements HasMedia
         return $this->getFirstMediaUrl(SpatieMediaCollectionName::CATEGORY_BACKGROUND_IMAGE());
     }
 
+    public function getTabularHeaderImageAttribute(): ?string
+    {
+        return $this->getFirstMediaUrl(SpatieMediaCollectionName::CATEGORY_TABULAR_HEADER_IMAGE());
+    }
+
     // Relationships
     public function parent(): BelongsTo
     {
@@ -158,6 +165,7 @@ class Category extends Model implements HasMedia
         $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ICON())->singleFile();
         $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON())->singleFile();
         $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_BACKGROUND_IMAGE())->singleFile();
+        $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_TABULAR_HEADER_IMAGE())->singleFile();
     }
 
     protected static function booted(): void
@@ -177,6 +185,7 @@ class Category extends Model implements HasMedia
             $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ICON());
             $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON());
             $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_BACKGROUND_IMAGE());
+            $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_TABULAR_HEADER_IMAGE());
         });
     }
 }

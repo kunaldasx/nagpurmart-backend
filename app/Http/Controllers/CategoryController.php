@@ -38,6 +38,7 @@ class CategoryController extends Controller
         'scroll_icon' => SpatieMediaCollectionName::CATEGORY_SCROLL_ICON,
         'scroll_active_icon' => SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON,
         'background_image' => SpatieMediaCollectionName::CATEGORY_BACKGROUND_IMAGE,
+        'tabular_header_image' => SpatieMediaCollectionName::CATEGORY_TABULAR_HEADER_IMAGE,
     ];
 
     public function __construct()
@@ -388,6 +389,7 @@ class CategoryController extends Controller
             $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ICON());
             $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON());
             $category->clearMediaCollection('background_image');
+            $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_TABULAR_HEADER_IMAGE());
             $category->children()->update(['parent_id' => null]);
             DB::commit();
             return ApiResponseType::sendJsonResponse(

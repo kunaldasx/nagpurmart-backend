@@ -28,6 +28,7 @@ use ArchTech\Enums\Values;
  * @method static CATEGORY_SCROLL_ICON()
  * @method static CATEGORY_SCROLL_ACTIVE_ICON()
  * @method static CATEGORY_BACKGROUND_IMAGE()
+ * @method static CATEGORY_TABULAR_HEADER_IMAGE()
  * @method static CATEGORY_BANNER()
  * @method static CATEGORY_IMAGE()
  * @method static BUSINESS_LICENSE()
@@ -71,6 +72,7 @@ enum SpatieMediaCollectionName: string
     case CATEGORY_SCROLL_ICON = 'category_scroll_icon';
     case CATEGORY_SCROLL_ACTIVE_ICON = 'category_scroll_active_icon';
     case CATEGORY_BACKGROUND_IMAGE = 'category_background_image';
+    case CATEGORY_TABULAR_HEADER_IMAGE = 'category_tabular_header_image';
     case CATEGORY_BANNER = 'banner';
     case CATEGORY_IMAGE = 'image';
     case BUSINESS_LICENSE = 'business_license';
