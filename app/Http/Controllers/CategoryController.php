@@ -35,6 +35,8 @@ class CategoryController extends Controller
         'banner' => SpatieMediaCollectionName::CATEGORY_BANNER,
         'icon' => SpatieMediaCollectionName::CATEGORY_ICON,
         'active_icon' => SpatieMediaCollectionName::CATEGORY_ACTIVE_ICON,
+        'scroll_icon' => SpatieMediaCollectionName::CATEGORY_SCROLL_ICON,
+        'scroll_active_icon' => SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON,
         'background_image' => SpatieMediaCollectionName::CATEGORY_BACKGROUND_IMAGE,
     ];
 
@@ -376,6 +378,8 @@ class CategoryController extends Controller
             $category->clearMediaCollection('banner');
             $category->clearMediaCollection('icon');
             $category->clearMediaCollection('active_icon');
+            $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ICON());
+            $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON());
             $category->clearMediaCollection('background_image');
             $category->children()->update(['parent_id' => null]);
             DB::commit();

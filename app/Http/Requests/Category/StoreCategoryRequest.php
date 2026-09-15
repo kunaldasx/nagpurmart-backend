@@ -34,6 +34,8 @@ class StoreCategoryRequest extends FormRequest
             'banner' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'icon' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg',
             'active_icon' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg',
+            'scroll_icon' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg',
+            'scroll_active_icon' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg',
             'background_type' => ['nullable', new Enum(CategoryBackgroundTypeEnum::class)],
             'background_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'background_image' => 'required_if:background_type,image|image|mimes:jpeg,png,jpg,webp|max:2048',

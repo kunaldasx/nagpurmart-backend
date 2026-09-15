@@ -9,6 +9,10 @@ document.addEventListener("show.bs.modal", function (event) {
         const bannerUpload = document.querySelector("#banner-upload");
         const iconUpload = document.querySelector("#icon-upload");
         const activeIconUpload = document.querySelector("#active-icon-upload");
+        const scrollIconUpload = document.querySelector("#scroll-icon-upload");
+        const scrollActiveIconUpload = document.querySelector(
+            "#scroll-active-icon-upload",
+        );
         const backgroundImageUpload = document.querySelector(
             "#background-image-upload",
         );
@@ -33,6 +37,10 @@ document.addEventListener("show.bs.modal", function (event) {
             if (iconPond) iconPond.removeFiles();
             const activeIconPond = FilePond.find(activeIconUpload);
             if (activeIconPond) activeIconPond.removeFiles();
+            const scrollIconPond = FilePond.find(scrollIconUpload);
+            if (scrollIconPond) scrollIconPond.removeFiles();
+            const scrollActiveIconPond = FilePond.find(scrollActiveIconUpload);
+            if (scrollActiveIconPond) scrollActiveIconPond.removeFiles();
             const backgroundImagePond = FilePond.find(backgroundImageUpload);
             if (backgroundImagePond) backgroundImagePond.removeFiles();
         }
@@ -148,6 +156,22 @@ document.addEventListener("show.bs.modal", function (event) {
                                 FilePond.find(activeIconUpload);
                             if (activeIconPond) {
                                 activeIconPond.addFile(data.active_icon);
+                            }
+                        }
+                        if (data.scroll_icon && scrollIconUpload) {
+                            const scrollIconPond =
+                                FilePond.find(scrollIconUpload);
+                            if (scrollIconPond)
+                                scrollIconPond.addFile(data.scroll_icon);
+                        }
+                        if (data.scroll_active_icon && scrollActiveIconUpload) {
+                            const scrollActiveIconPond = FilePond.find(
+                                scrollActiveIconUpload,
+                            );
+                            if (scrollActiveIconPond) {
+                                scrollActiveIconPond.addFile(
+                                    data.scroll_active_icon,
+                                );
                             }
                         }
                         if (

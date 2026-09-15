@@ -25,6 +25,8 @@ use ArchTech\Enums\Values;
  * @method static FEATURED_SECTION_BG_MOBILE()
  * @method static CATEGORY_ICON()
  * @method static CATEGORY_ACTIVE_ICON()
+ * @method static CATEGORY_SCROLL_ICON()
+ * @method static CATEGORY_SCROLL_ACTIVE_ICON()
  * @method static CATEGORY_BACKGROUND_IMAGE()
  * @method static CATEGORY_BANNER()
  * @method static CATEGORY_IMAGE()
@@ -65,6 +67,8 @@ enum SpatieMediaCollectionName: string
     case FEATURED_SECTION_BG_MOBILE = 'featured_section_bg_mobile';
     case CATEGORY_ICON = 'category_icon';
     case CATEGORY_ACTIVE_ICON = 'category_active_icon';
+    case CATEGORY_SCROLL_ICON = 'category_scroll_icon';
+    case CATEGORY_SCROLL_ACTIVE_ICON = 'category_scroll_active_icon';
     case CATEGORY_BACKGROUND_IMAGE = 'category_background_image';
     case CATEGORY_BANNER = 'banner';
     case CATEGORY_IMAGE = 'image';

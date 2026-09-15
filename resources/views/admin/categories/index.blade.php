@@ -249,6 +249,18 @@
                             </div>
 
                             <div class="mb-3">
+                                <label class="form-label">{{ __('labels.scroll_icon') }}</label>
+                                <input type="file" class="form-control" id="scroll-icon-upload" name="scroll_icon"
+                                       data-image-url=""/>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('labels.scroll_active_icon') }}</label>
+                                <input type="file" class="form-control" id="scroll-active-icon-upload"
+                                       name="scroll_active_icon" data-image-url=""/>
+                            </div>
+
+                            <div class="mb-3">
                                 <label class="form-label">{{ __('labels.background_type') }}</label>
                                 <select class="form-select" name="background_type" id="background-type-select">
                                     <option value="">{{ __('labels.select_background_type') }}</option>

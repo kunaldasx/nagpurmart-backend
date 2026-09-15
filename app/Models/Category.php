@@ -24,7 +24,7 @@ class Category extends Model implements HasMedia
 {
     use SoftDeletes, InteractsWithMedia;
 
-    protected $appends = ['image', 'banner', 'icon', 'active_icon', 'background_image'];
+    protected $appends = ['image', 'banner', 'icon', 'active_icon', 'scroll_icon', 'scroll_active_icon', 'background_image'];
 
     protected $fillable = [
         'uuid',
@@ -92,6 +92,16 @@ class Category extends Model implements HasMedia
         return $this->getFirstMediaUrl(SpatieMediaCollectionName::CATEGORY_ACTIVE_ICON());
     }
 
+    public function getScrollIconAttribute(): ?string
+    {
+        return $this->getFirstMediaUrl(SpatieMediaCollectionName::CATEGORY_SCROLL_ICON());
+    }
+
+    public function getScrollActiveIconAttribute(): ?string
+    {
+        return $this->getFirstMediaUrl(SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON());
+    }
+
     public function getBackgroundImageAttribute(): ?string
     {
         return $this->getFirstMediaUrl(SpatieMediaCollectionName::CATEGORY_BACKGROUND_IMAGE());
@@ -143,6 +153,8 @@ class Category extends Model implements HasMedia
         $this->addMediaCollection('banner')->singleFile();
         $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_ICON())->singleFile();
         $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_ACTIVE_ICON())->singleFile();
+        $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ICON())->singleFile();
+        $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON())->singleFile();
         $this->addMediaCollection(SpatieMediaCollectionName::CATEGORY_BACKGROUND_IMAGE())->singleFile();
     }
 
@@ -160,6 +172,8 @@ class Category extends Model implements HasMedia
             $category->clearMediaCollection('banner');
             $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_ICON());
             $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_ACTIVE_ICON());
+            $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ICON());
+            $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_SCROLL_ACTIVE_ICON());
             $category->clearMediaCollection(SpatieMediaCollectionName::CATEGORY_BACKGROUND_IMAGE());
         });
     }

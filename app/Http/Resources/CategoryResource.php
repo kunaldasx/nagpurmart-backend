@@ -19,6 +19,8 @@ class CategoryResource extends JsonResource
             'banner' => $this->banner ?? '',
             'icon' => $this->icon ?? '',
             'active_icon' => $this->active_icon ?? '',
+            'scroll_icon' => $this->scroll_icon ?? '',
+            'scroll_active_icon' => $this->scroll_active_icon ?? '',
             'background_type' => $this->background_type?->value ?? null,
             'background_color' => $this->background_color ?? '',
             'background_image' => $this->background_image ?? '',
