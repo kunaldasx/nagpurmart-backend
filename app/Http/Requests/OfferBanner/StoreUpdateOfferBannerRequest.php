@@ -24,11 +24,13 @@ class StoreUpdateOfferBannerRequest extends FormRequest
             'scope_id' => ['required_if:scope_type,category', 'nullable', 'exists:categories,id'],
             'visibility_status' => ['required', 'in:published,draft'],
             'display_order' => ['nullable', 'integer', 'min:0'],
+            'metadata' => ['nullable', 'json'],
             'offer_items' => ['nullable', 'array'],
             'offer_items.*.title' => ['nullable', 'string', 'max:255'],
             'offer_items.*.subtitle' => ['nullable', 'string', 'max:255'],
             'offer_items.*.item_type' => ['nullable', 'in:product,category'],
             'offer_items.*.item_id' => ['nullable', 'integer'],
+            'offer_items.*.metadata' => ['nullable', 'json'],
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ];
     }

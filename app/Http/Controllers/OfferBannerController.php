@@ -70,14 +70,17 @@ class OfferBannerController extends Controller
         if (empty($validated['visibility_status'])) $validated['visibility_status'] = 'draft';
         if (empty($validated['scope_type'])) $validated['scope_type'] = 'global';
         if ($validated['scope_type'] === 'global') $validated['scope_id'] = null;
+        $validated['metadata'] = $this->decodeMetadata($validated['metadata'] ?? null);
+        $offerItems = $validated['offer_items'] ?? [];
+        unset($validated['offer_items']);
 
         DB::beginTransaction();
         try {
             $banner = OfferBanner::create($validated);
 
             // Items
-            if (!empty($validated['offer_items']) && is_array($validated['offer_items'])) {
-                foreach ($validated['offer_items'] as $item) {
+            if (!empty($offerItems) && is_array($offerItems)) {
+                foreach ($offerItems as $item) {
                     $title = trim($item['title'] ?? '');
                     $itemId = $item['item_id'] ?? null;
                     if (empty($title) && empty($itemId)) continue; // skip empty rows
@@ -86,6 +89,7 @@ class OfferBannerController extends Controller
                         'subtitle' => trim($item['subtitle'] ?? '') ?: null,
                         'item_type' => $item['item_type'] ?? null,
                         'item_id' => $itemId ?: null,
+                        'metadata' => $this->decodeMetadata($item['metadata'] ?? null),
                     ]);
                 }
             }
@@ -130,6 +134,9 @@ class OfferBannerController extends Controller
         if (empty($validated['visibility_status'])) $validated['visibility_status'] = 'draft';
         if (empty($validated['scope_type'])) $validated['scope_type'] = 'global';
         if ($validated['scope_type'] === 'global') $validated['scope_id'] = null;
+        $validated['metadata'] = $this->decodeMetadata($validated['metadata'] ?? null);
+        $offerItems = $validated['offer_items'] ?? [];
+        unset($validated['offer_items']);
 
         DB::beginTransaction();
         try {
@@ -137,8 +144,8 @@ class OfferBannerController extends Controller
 
             // Replace items
             $banner->items()->delete();
-            if (!empty($validated['offer_items']) && is_array($validated['offer_items'])) {
-                foreach ($validated['offer_items'] as $item) {
+            if (!empty($offerItems) && is_array($offerItems)) {
+                foreach ($offerItems as $item) {
                     $title = trim($item['title'] ?? '');
                     $itemId = $item['item_id'] ?? null;
                     if (empty($title) && empty($itemId)) continue; // skip empty rows
@@ -147,6 +154,7 @@ class OfferBannerController extends Controller
                         'subtitle' => trim($item['subtitle'] ?? '') ?: null,
                         'item_type' => $item['item_type'] ?? null,
                         'item_id' => $itemId ?: null,
+                        'metadata' => $this->decodeMetadata($item['metadata'] ?? null),
                     ]);
                 }
             }
@@ -176,6 +184,11 @@ class OfferBannerController extends Controller
         $banner->clearMediaCollection('offer_banner_images');
         $banner->delete();
         return response()->json(['success' => true, 'message' => __('labels.offer_banner_deleted_successfully')]);
+    }
+
+    private function decodeMetadata(?string $metadata): ?array
+    {
+        return $metadata ? json_decode($metadata, true, 512, JSON_THROW_ON_ERROR) : null;
     }
 
     public function getOfferBanners(Request $request): JsonResponse

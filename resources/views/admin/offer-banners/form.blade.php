@@ -28,6 +28,7 @@
                                 Configure where the offer banner appears and add the products or categories to display.
                             </div>
                         </div>
+
                     </div>
 
                     <div class="card-body">
@@ -362,6 +363,14 @@
                                     </div>
                                 @endif
                             </div>
+                        </div>
+
+                        <div class="mt-5 pt-4 border-top">
+                            <div class="mb-4">
+                                <h4 class="mb-1">Template Metadata</h4>
+                                <p class="text-secondary mb-0">Optional JSON configuration for template-specific content such as the bank-card footer.</p>
+                            </div>
+                            <textarea class="form-control font-monospace" name="metadata" rows="5" placeholder='{"footer":{"title":"SELECT BANK CARD OFFERS: UP TO 10% DISCOUNTS"}}'>{{ old('metadata', isset($banner) && $banner->metadata ? json_encode($banner->metadata, JSON_PRETTY_PRINT) : '') }}</textarea>
                         </div>
 
                         {{-- Banner Settings --}}

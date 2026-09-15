@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 648 648" role="img" aria-labelledby="title desc">
+  <title id="title">Save Big Weekend offer banner template</title>
+  <desc id="desc">Blue promotional layout with a Save Big Weekend headline, eight category cards, and a bank card offer footer.</desc>
+  <rect width="648" height="648" fill="#1248ed"/>
+  <rect x="0" y="562" width="648" height="86" fill="#071f62"/>
+  <text x="324" y="116" text-anchor="middle" font-family="Arial, sans-serif" font-size="52" font-weight="900" fill="#fff" stroke="#050505" stroke-width="8" paint-order="stroke">SAVE BIG WEEKEND</text>
+  <text x="324" y="155" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#fff">EPIC SALE LIVE</text>
+  <g font-family="Arial, sans-serif" text-anchor="middle">
+    <g fill="#fff">
+      <rect x="32" y="188" width="134" height="154" rx="18"/><rect x="182" y="188" width="134" height="154" rx="18"/><rect x="332" y="188" width="134" height="154" rx="18"/><rect x="482" y="188" width="134" height="154" rx="18"/>
+      <rect x="32" y="366" width="134" height="154" rx="18"/><rect x="182" y="366" width="134" height="154" rx="18"/><rect x="332" y="366" width="134" height="154" rx="18"/><rect x="482" y="366" width="134" height="154" rx="18"/>
+    </g>
+    <g fill="#111" font-size="13"><text x="99" y="216">Up to</text><text x="249" y="216">Up to</text><text x="399" y="216">Up to</text><text x="549" y="216">Up to</text><text x="99" y="394">Up to</text><text x="249" y="394">Up to</text><text x="399" y="394">Up to</text><text x="549" y="394">Up to</text></g>
+    <g fill="#ccff00" font-size="16" font-weight="800"><text x="132" y="216">90% OFF</text><text x="282" y="216">90% OFF</text><text x="432" y="216">90% OFF</text><text x="582" y="216">90% OFF</text><text x="132" y="394">90% OFF</text><text x="282" y="394">90% OFF</text><text x="432" y="394">90% OFF</text><text x="582" y="394">90% OFF</text></g>
+    <g fill="#202a36" font-size="18" font-weight="700"><text x="99" y="253">Category</text><text x="249" y="253">Category</text><text x="399" y="253">Category</text><text x="549" y="253">Category</text><text x="99" y="431">Category</text><text x="249" y="431">Category</text><text x="399" y="431">Category</text><text x="549" y="431">Category</text></g>
+    <text x="324" y="612" fill="#fff" font-size="18" font-weight="700">SELECT BANK CARD OFFERS: UP TO 10% DISCOUNTS</text>
+  </g>
+</svg>
