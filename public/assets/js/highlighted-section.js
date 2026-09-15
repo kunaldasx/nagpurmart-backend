@@ -133,12 +133,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 ).checked = Boolean(data.is_bgimage);
                 const backgroundImagesInput =
                     form.elements["background_images[]"];
-                const backgroundImagesPond = FilePond.find(
-                    backgroundImagesInput,
-                );
+                let backgroundImagesPond = FilePond.find(backgroundImagesInput);
+                if (!backgroundImagesPond && backgroundImagesInput) {
+                    backgroundImagesPond = FilePond.create(
+                        backgroundImagesInput,
+                        {
+                            allowImagePreview: true,
+                            credits: false,
+                            storeAsFile: true,
+                            acceptedFileTypes: ["image/*"],
+                            maxFiles: 10,
+                        },
+                    );
+                }
                 backgroundImagesPond?.removeFiles();
                 (data.background_images || []).forEach((url) =>
-                    backgroundImagesPond?.addFile(url, { type: "remote" }),
+                    backgroundImagesPond?.addFile({
+                        source: url,
+                        options: { type: "remote" },
+                    }),
                 );
                 const scopeSelect = document.getElementById(
                     "highlighted-scope-category",
