@@ -3,25 +3,29 @@
 namespace App\Models;
 
 use App\Enums\HighlightedSection\HighlightedSectionTemplateEnum;
+use App\Enums\SpatieMediaCollectionName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class HighlightedSection extends Model
+class HighlightedSection extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
         'title', 'slug', 'subtitle', 'template', 'scope_type', 'scope_id',
-        'background_color', 'font_color', 'sort_order', 'status',
+        'background_color', 'font_color', 'sort_order', 'status', 'is_bgimage',
     ];
 
     protected $casts = [
         'template' => HighlightedSectionTemplateEnum::class,
         'scope_id' => 'integer',
         'sort_order' => 'integer',
+        'is_bgimage' => 'boolean',
     ];
 
     public function setTitleAttribute($value): void
@@ -33,6 +37,18 @@ class HighlightedSection extends Model
     public function items(): HasMany
     {
         return $this->hasMany(HighlightedSectionItem::class)->orderBy('sort_order');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
+    }
+
+    public function getBackgroundImagesAttribute(): array
+    {
+        return $this->getMedia(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES())
+            ->map(fn ($media) => $media->getFullUrl())
+            ->toArray();
     }
 
     public function scopeCategory(): BelongsTo

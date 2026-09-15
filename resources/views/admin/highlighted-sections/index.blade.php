@@ -33,7 +33,7 @@
         <div class="modal fade" id="highlighted-section-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-xl"><div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title">Add highlighted section</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <form class="form-submit" method="POST" action="{{ route('admin.highlighted-sections.store') }}">
+                <form class="form-submit" method="POST" action="{{ route('admin.highlighted-sections.store') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
                         <div class="row">
@@ -49,6 +49,8 @@
                             <div class="col-md-3 mb-3"><label class="form-label">Font color</label><input type="color" class="form-control form-control-color w-100" name="font_color" value="#000000"></div>
                             <div class="col-md-3 mb-3"><label class="form-label">Sort order</label><input type="number" class="form-control" name="sort_order" min="0" value="0"></div>
                             <div class="col-md-3 mb-3 d-flex align-items-end"><label class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" name="status" value="active" checked><span class="form-check-label">Active</span></label></div>
+                            <div class="col-12 mb-3"><label class="form-check form-switch"><input type="hidden" name="is_bgimage" value="0"><input class="form-check-input" type="checkbox" name="is_bgimage" value="1"><span class="form-check-label">Use background images</span></label></div>
+                            <div class="col-12 mb-3"><label class="form-label">Background images</label><input type="file" name="background_images[]" multiple class="form-control filepond" accept="image/*" data-max-files="10" data-images="[]"></div>
                         </div>
                         <hr><div class="d-flex justify-content-between align-items-center mb-2"><h4 class="mb-0">Items</h4><button type="button" class="btn btn-outline-primary btn-sm" id="add-highlighted-item">Add item</button></div>
                         <div id="highlighted-items"></div>

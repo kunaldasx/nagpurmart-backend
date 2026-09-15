@@ -40,6 +40,7 @@ use ArchTech\Enums\Values;
  * @method static ORDER_ITEM_ATTACHMENTS()
  * @method static SWATCHE_IMAGE()
  * @method static HIGHLIGHTED_SECTION_ITEM_IMAGE()
+ * @method static HIGHLIGHTED_SECTION_BACKGROUND_IMAGES()
  * @method static GIFT_SECTION_ICON()
  */
 enum SpatieMediaCollectionName: string
@@ -86,5 +87,6 @@ enum SpatieMediaCollectionName: string
 
     case SWATCHE_IMAGE = 'swatche_image';
     case HIGHLIGHTED_SECTION_ITEM_IMAGE = 'highlighted_section_item_image';
+    case HIGHLIGHTED_SECTION_BACKGROUND_IMAGES = 'highlighted_section_background_images';
     case GIFT_SECTION_ICON = 'gift_section_icon';
 }

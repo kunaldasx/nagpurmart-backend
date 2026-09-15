@@ -119,11 +119,19 @@ class HighlightedSectionController extends Controller
         $validated['scope_type'] ??= HighlightedSectionScopeEnum::GLOBAL();
         if ($validated['scope_type'] === HighlightedSectionScopeEnum::GLOBAL()) $validated['scope_id'] = null;
         $items = $validated['items'];
+        $backgroundImages = $validated['background_images'] ?? [];
         unset($validated['items']);
-        DB::transaction(function () use (&$section, $validated, $items) {
+        unset($validated['background_images']);
+        DB::transaction(function () use (&$section, $validated, $items, $backgroundImages) {
             $section = $section ?: new HighlightedSection();
             $section->fill($validated);
             $section->save();
+            if ($backgroundImages) {
+                $section->clearMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
+                foreach ($backgroundImages as $image) {
+                    $section->addMedia($image)->toMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
+                }
+            }
             $existingItems = $section->items()->get()->keyBy('id');
             $keptItemIds = [];
             foreach ($items as $index => $item) {

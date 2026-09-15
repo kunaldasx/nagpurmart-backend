@@ -161,6 +161,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const input = document.querySelector(`[name="additional_images[]"]`);
         if (input) {
+            initializeMultipleFilePond(input);
+        }
+
+        const backgroundImagesInput = document.querySelector(
+            `[name="background_images[]"]`,
+        );
+        if (backgroundImagesInput) {
+            initializeMultipleFilePond(backgroundImagesInput);
+        }
+
+        function initializeMultipleFilePond(input) {
             const imagesJson = input.getAttribute("data-images");
             let imageUrls = [];
             if (
@@ -175,8 +186,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 allowImagePreview: true,
                 credits: false,
                 storeAsFile: true,
-                maxFileSize: "2MB",
+                maxFileSize: input.getAttribute("data-max-file-size") || "4MB",
                 acceptedFileTypes: ["image/*"],
+                maxFiles: Number(input.getAttribute("data-max-files")) || null,
                 files: imageUrls.map((url) => ({
                     source: url,
                     options: {

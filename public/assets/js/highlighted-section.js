@@ -99,6 +99,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = event.relatedTarget?.dataset.id;
         if (!id) {
             modal.querySelector("form").reset();
+            FilePond.find(
+                modal.querySelector('[name="background_images[]"]'),
+            )?.removeFiles();
             modal.querySelector("form").action =
                 `${base_url}/${panel}/highlighted-sections`;
             scopeCategory.tomselect?.clear();
@@ -125,6 +128,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (field) field.value = data[name] ?? "";
                 });
                 form.elements.status.checked = data.status === "active";
+                form.querySelector(
+                    'input[type="checkbox"][name="is_bgimage"]',
+                ).checked = Boolean(data.is_bgimage);
+                const backgroundImagesInput =
+                    form.elements["background_images[]"];
+                const backgroundImagesPond = FilePond.find(
+                    backgroundImagesInput,
+                );
+                backgroundImagesPond?.removeFiles();
+                (data.background_images || []).forEach((url) =>
+                    backgroundImagesPond?.addFile(url, { type: "remote" }),
+                );
                 const scopeSelect = document.getElementById(
                     "highlighted-scope-category",
                 );
