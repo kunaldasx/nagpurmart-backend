@@ -6,7 +6,7 @@ use App\Enums\Category\CategoryBackgroundTypeEnum;
 use App\Interfaces\SettingInterface;
 use App\Traits\SettingTrait;
 use Illuminate\Validation\Rules\Enum;
-use phpDocumentor\Reflection\Types\Nullable;
+use Illuminate\Validation\Rule;
 
 class HomeGeneralSettingType implements SettingInterface
 {

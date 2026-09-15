@@ -10,50 +10,56 @@ document.addEventListener("DOMContentLoaded", () => {
         const serviceAccountUrl = serviceAccountInput
             ? serviceAccountInput.getAttribute("data-service-url")
             : "";
-        FilePond.create(serviceAccountInput, {
-            allowImagePreview: false, // Disable image preview for non-image files
-            credits: false,
-            storeAsFile: true,
-            acceptedFileTypes: ["application/json", "text/plain"], // Adjust based on expected file types
-            files: serviceAccountUrl
-                ? [
-                      {
-                          source: serviceAccountUrl,
-                          options: {
-                              type: "remote",
+        if (serviceAccountInput) {
+            FilePond.create(serviceAccountInput, {
+                allowImagePreview: false, // Disable image preview for non-image files
+                credits: false,
+                storeAsFile: true,
+                acceptedFileTypes: ["application/json", "text/plain"], // Adjust based on expected file types
+                files: serviceAccountUrl
+                    ? [
+                          {
+                              source: serviceAccountUrl,
+                              options: {
+                                  type: "remote",
+                              },
                           },
-                      },
-                  ]
-                : [],
-        });
+                      ]
+                    : [],
+            });
+        }
 
         const systemUpdateInput = document.querySelector('[name="package"]');
 
-        FilePond.create(systemUpdateInput, {
-            allowImagePreview: false, // Disable image preview for non-image files
-            credits: false,
-            storeAsFile: true,
-            acceptedFileTypes: [
-                "application/zip",
-                "application/x-zip-compressed",
-                "multipart/x-zip",
-            ],
-            maxFileSize: "100MB",
-            files: [],
-        });
+        if (systemUpdateInput) {
+            FilePond.create(systemUpdateInput, {
+                allowImagePreview: false, // Disable image preview for non-image files
+                credits: false,
+                storeAsFile: true,
+                acceptedFileTypes: [
+                    "application/zip",
+                    "application/x-zip-compressed",
+                    "multipart/x-zip",
+                ],
+                maxFileSize: "100MB",
+                files: [],
+            });
+        }
         const imagesZip = document.querySelector('[name="images-zip"]');
-        FilePond.create(imagesZip, {
-            allowImagePreview: false, // Disable image preview for non-image files
-            credits: false,
-            storeAsFile: true,
-            acceptedFileTypes: [
-                "application/zip",
-                "application/x-zip-compressed",
-                "multipart/x-zip",
-            ],
-            maxFileSize: "200MB",
-            files: [],
-        });
+        if (imagesZip) {
+            FilePond.create(imagesZip, {
+                allowImagePreview: false, // Disable image preview for non-image files
+                credits: false,
+                storeAsFile: true,
+                acceptedFileTypes: [
+                    "application/zip",
+                    "application/x-zip-compressed",
+                    "multipart/x-zip",
+                ],
+                maxFileSize: "200MB",
+                files: [],
+            });
+        }
 
         function initializeFilePond(
             inputName,
