@@ -42,6 +42,7 @@ class StoreCategoryRequest extends FormRequest
             'font_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'status' => ['nullable', new Enum(CategoryStatusEnum::class)],
             'requires_approval' => 'boolean',
+            'is_tabular' => 'boolean',
             'commission' => 'nullable|numeric|min:0|max:100',
             'meta_title' => 'nullable|string|max:255',
             'meta_keywords' => 'nullable|string|max:255',
@@ -58,6 +59,7 @@ class StoreCategoryRequest extends FormRequest
         $this->merge([
             'status' => $this->status ?? CategoryStatusEnum::INACTIVE->value,
             'requires_approval' => $this->requires_approval ?? false,
+            'is_tabular' => $this->is_tabular ?? false,
         ]);
     }
 }

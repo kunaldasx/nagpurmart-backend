@@ -64,6 +64,7 @@ class CategoryController extends Controller
             ['data' => 'commission', 'name' => 'commission', 'title' => __('labels.commission')],
             ['data' => 'status', 'name' => 'status', 'title' => __('labels.status')],
             ['data' => 'requires_approval', 'name' => 'requires_approval', 'title' => __('labels.requires_approval')],
+            ['data' => 'is_tabular', 'name' => 'is_tabular', 'title' => __('labels.is_tabular')],
             ['data' => 'created_at', 'name' => 'created_at', 'title' => __('labels.created_at')],
             ['data' => 'action', 'name' => 'action', 'title' => __('labels.action'), 'orderable' => false, 'searchable' => false],
         ];
@@ -232,6 +233,9 @@ class CategoryController extends Controller
             if (empty($request->requires_approval)) {
                 $validated['requires_approval'] = false;
             }
+            if (empty($request->is_tabular)) {
+                $validated['is_tabular'] = false;
+            }
 
             $category = Category::create($validated);
 
@@ -311,6 +315,9 @@ class CategoryController extends Controller
             }
             if (empty($request->requires_approval)) {
                 $validated['requires_approval'] = false;
+            }
+            if (empty($request->is_tabular)) {
+                $validated['is_tabular'] = false;
             }
 
             // Handle background type logic
@@ -527,6 +534,7 @@ class CategoryController extends Controller
                     'image' => view('partials.image', ['image' => (!empty($category->image) ? $category->image : asset('assets/images/category-placeholder.png')), 'title' => $category->title])->render(),
                     'status' => view('partials.status', ['status' => $category->status ?? ""])->render(),
                     'requires_approval' => '<span class="badge text-uppercase ' . ($category->requires_approval == 1 ? "bg-info-lt" : "bg-warning-lt") . '">' . ($category->requires_approval == 1 ? __('labels.required') : __('labels.not_required')) . '</span>',
+                    'is_tabular' => '<span class="badge text-uppercase ' . ($category->is_tabular ? "bg-info-lt" : "bg-warning-lt") . '">' . ($category->is_tabular ? __('labels.yes') : __('labels.no')) . '</span>',
                     'created_at' => $category->created_at->format('Y-m-d'),
                     'parent' => $category->parent ? $category->parent->title : 'N/A',
                     'commission' => (max($category->commission, 0)) . '%',
@@ -635,7 +643,7 @@ class CategoryController extends Controller
             }, $headers);
 
             $expected = [
-                'title', 'parent_id', 'parent_title', 'description', 'status', 'requires_approval', 'commission', 'background_type', 'background_color', 'font_color', 'meta_title', 'meta_keywords', 'meta_description'
+                'title', 'parent_id', 'parent_title', 'description', 'status', 'requires_approval', 'is_tabular', 'commission', 'background_type', 'background_color', 'font_color', 'meta_title', 'meta_keywords', 'meta_description'
             ];
 
             // Ensure required header exists
@@ -688,6 +696,7 @@ class CategoryController extends Controller
 
                     // Boolean requires_approval
                     $requiresApproval = filter_var($data['requires_approval'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                    $isTabular = filter_var($data['is_tabular'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
                     // Commission numeric 0-100
                     $commission = null;
@@ -713,6 +722,7 @@ class CategoryController extends Controller
                         'description' => $data['description'] ?? null,
                         'status' => $status,
                         'requires_approval' => $requiresApproval,
+                        'is_tabular' => $isTabular,
                         'commission' => $commission,
                         'background_type' => $backgroundType,
                         'background_color' => $backgroundColor,
@@ -765,8 +775,8 @@ class CategoryController extends Controller
             'Content-Disposition' => 'attachment; filename="category_bulk_template.csv"',
         ];
 
-        $columns = ['title','parent_id','parent_title','description','status','requires_approval','commission','background_type','background_color','font_color'];
-        $sample = ['Fruits','','','Fresh fruits','active','false','5','color','#FFFFFF','#000000'];
+        $columns = ['title','parent_id','parent_title','description','status','requires_approval','is_tabular','commission','background_type','background_color','font_color'];
+        $sample = ['Fruits','','','Fresh fruits','active','false','false','5','color','#FFFFFF','#000000'];
 
         $callback = function () use ($columns, $sample) {
             $output = fopen('php://output', 'w');

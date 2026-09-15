@@ -330,6 +330,14 @@
                                                for="approval-switch">{{ __('labels.requires_approval') }}</label>
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3 form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_tabular"
+                                               id="tabular-switch" value="1">
+                                        <label class="form-check-label"
+                                               for="tabular-switch">{{ __('labels.is_tabular') }}</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

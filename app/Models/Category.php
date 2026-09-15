@@ -34,6 +34,7 @@ class Category extends Model implements HasMedia
         'description',
         'status',
         'requires_approval',
+        'is_tabular',
         'commission',
         'sort_order',
         'is_home_category',
@@ -45,6 +46,7 @@ class Category extends Model implements HasMedia
 
     protected $casts = [
         'requires_approval' => 'boolean',
+        'is_tabular' => 'boolean',
         'is_home_category' => 'boolean',
         'commission' => 'decimal:2',
         'background_type' => CategoryBackgroundTypeEnum::class,

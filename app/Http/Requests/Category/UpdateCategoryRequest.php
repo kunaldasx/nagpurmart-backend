@@ -43,6 +43,7 @@ class UpdateCategoryRequest extends FormRequest
             'background_image' => 'required_if:background_type,image|image|mimes:jpeg,png,jpg,webp|max:2048',
             'status' => ['nullable', new Enum(CategoryStatusEnum::class)],
             'requires_approval' => 'boolean',
+            'is_tabular' => 'boolean',
             'commission' => 'nullable|numeric|min:0|max:100',
             'meta_title' => 'nullable|string|max:255',
             'meta_keywords' => 'nullable|string|max:255',
@@ -59,6 +60,7 @@ class UpdateCategoryRequest extends FormRequest
         $this->merge([
             'status' => $this->status ?? CategoryStatusEnum::INACTIVE->value,
             'requires_approval' => $this->requires_approval ?? false,
+            'is_tabular' => $this->is_tabular ?? false,
         ]);
     }
 }

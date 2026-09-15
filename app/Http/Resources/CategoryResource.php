@@ -31,6 +31,7 @@ class CategoryResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status,
             'requires_approval' => $this->requires_approval,
+            'is_tabular' => (bool) $this->is_tabular,
             'metadata' => $this->metadata,
             'subcategory_count' => $this->children_count ?? 0,
             'product_count' => $this->products_count ?? 0,

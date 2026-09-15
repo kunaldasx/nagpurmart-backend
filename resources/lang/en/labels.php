@@ -401,6 +401,7 @@ return [
     'parent_category' => 'Parent Category',
     'banner' => 'Banner',
     'requires_approval' => 'Requires Approval',
+    'is_tabular' => 'Is Tabular',
     'create_new_category' => 'Create new Category',
     'commission' => 'Commission',
     'commission_placeholder' => 'Enter commission percentage',

@@ -62,6 +62,8 @@ document.addEventListener("show.bs.modal", function (event) {
                     form.querySelector(
                         'input[name="requires_approval"]',
                     ).checked = !!data.requires_approval;
+                    form.querySelector('input[name="is_tabular"]').checked =
+                        !!data.is_tabular;
                     form.querySelector('input[name="commission"]').value =
                         data.commission || 0;
 
@@ -220,6 +222,7 @@ document.addEventListener("show.bs.modal", function (event) {
                 toggleBackgroundFields("");
             }
             form.querySelector('input[name="background_color"]').value = "";
+            form.querySelector('input[name="is_tabular"]').checked = false;
 
             // Set action for create
             form.querySelector('input[id="category-id"]').value = "";
