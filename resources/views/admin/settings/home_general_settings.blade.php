@@ -127,24 +127,36 @@
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">{{ __('labels.scroll_icon') }}</label>
-                                            <input type="file" class="form-control" name="scroll_icon"
+                                              <input type="file" class="form-control" id="scroll-icon-upload" name="scroll_icon"
                                                    data-image-url="{{$settings['scroll_icon'] ?? ''}}"/>
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">{{ __('labels.scroll_active_icon') }}</label>
-                                            <input type="file" class="form-control" name="scroll_active_icon"
+                                              <input type="file" class="form-control" id="scroll-active-icon-upload" name="scroll_active_icon"
                                                    data-image-url="{{$settings['scroll_active_icon'] ?? ''}}"/>
                                         </div>
-                                        <div class="mb-3">
+                                             <div class="mb-3" id="scroll-background-color-field"
+                                               style="{{ isset($settings['backgroundType']) && $settings['backgroundType'] === 'color' ? 'display: block;' : 'display: none;' }}">
                                             <label class="form-label">{{ __('labels.scroll_background') }}</label>
-                                            <input type="file" class="form-control" name="scroll_background"
-                                                   data-image-url="{{$settings['scroll_background'] ?? ''}}"/>
+                                              <input type="color" class="form-control form-control-color w-100"
+                                                  name="scroll_background"
+                                                  value="{{ isset($settings['scroll_background']) && preg_match('/^#[0-9A-Fa-f]{6}$/', $settings['scroll_background']) ? $settings['scroll_background'] : '#ffffff' }}"
+                                                  {{ isset($settings['backgroundType']) && $settings['backgroundType'] === 'color' ? '' : 'disabled' }}/>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">{{ __('labels.scroll_font') }}</label>
-                                            <input type="file" class="form-control" name="scroll_font"
-                                                   data-image-url="{{$settings['scroll_font'] ?? ''}}"/>
+                                             <div class="mb-3" id="scroll-background-image-field"
+                                               style="{{ isset($settings['backgroundType']) && $settings['backgroundType'] === 'image' ? 'display: block;' : 'display: none;' }}">
+                                                <label class="form-label">{{ __('labels.scroll_background') }}</label>
+                                              <input type="file" class="form-control" id="scroll-background-upload"
+                                                  name="scroll_background"
+                                                  data-image-url="{{ isset($settings['scroll_background']) && !preg_match('/^#[0-9A-Fa-f]{6}$/', $settings['scroll_background']) ? $settings['scroll_background'] : '' }}"
+                                                  {{ isset($settings['backgroundType']) && $settings['backgroundType'] === 'image' ? '' : 'disabled' }}/>
                                         </div>
+                                             <div class="mb-3">
+                                              <label class="form-label">{{ __('labels.scroll_font') }}</label>
+                                              <input type="color" class="form-control form-control-color w-100"
+                                                  name="scroll_font"
+                                                  value="{{ $settings['scroll_font'] ?? '#000000' }}"/>
+                                             </div>
                                         <div class="mb-3" id="background-color-field"
                                              style="{{ isset($settings['backgroundType']) && $settings['backgroundType'] === 'color' ? 'display: block;' : 'display: none;' }}">
                                             <label class="form-label">{{ __('labels.background_color') }}</label>

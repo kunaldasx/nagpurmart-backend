@@ -14,6 +14,9 @@ class HomeGeneralSettingResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $scrollBackground = $this->value['scroll_background'] ?? '';
+        $scrollBackgroundIsColor = is_string($scrollBackground)
+            && preg_match('/^#[0-9A-Fa-f]{6}$/', $scrollBackground);
 
         return [
             'variable' => $this->variable,
@@ -28,8 +31,10 @@ class HomeGeneralSettingResource extends JsonResource
                 'fontColor' => $this->value['fontColor'] ?? '#000000',
                 'scroll_icon' => !empty($this->value['scroll_icon']) ? url('storage/' . $this->value['scroll_icon']) : '',
                 'scroll_active_icon' => !empty($this->value['scroll_active_icon']) ? url('storage/' . $this->value['scroll_active_icon']) : '',
-                'scroll_background' => !empty($this->value['scroll_background']) ? url('storage/' . $this->value['scroll_background']) : '',
-                'scroll_font' => !empty($this->value['scroll_font']) ? url('storage/' . $this->value['scroll_font']) : '',
+                'scroll_background' => $scrollBackgroundIsColor
+                    ? $scrollBackground
+                    : (!empty($scrollBackground) ? url('storage/' . $scrollBackground) : ''),
+                'scroll_font' => $this->value['scroll_font'] ?? '#000000',
             ]
         ];
     }
