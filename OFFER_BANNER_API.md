@@ -14,7 +14,7 @@ scope_id=<category_id>
 position=top|carousel
 ```
 
-The new design uses template code `T_SAVE_BIG_WEEKEND`. Configure eight category items for the eight cards. The frontend should render the footer from `metadata.footer` and use each resolved category image for the card artwork.
+The new design uses template code `T_9` and is named `Save Big Weekend`. Configure eight category items for the eight cards. The frontend should render the footer from `metadata.footer` and use each resolved category image for the card artwork.
 
 Example response:
 
@@ -25,11 +25,11 @@ Example response:
         {
             "id": 12,
             "title": "Save Big Weekend",
-            "template_code": "T_SAVE_BIG_WEEKEND",
+            "template_code": "T_9",
             "template": {
-                "code": "T_SAVE_BIG_WEEKEND",
+                "code": "T_9",
                 "name": "Save Big Weekend",
-                "preview_url": "https://admin.example.com/assets/templates/T_SAVE_BIG_WEEKEND.svg"
+                "preview_url": "https://admin.example.com/assets/templates/T_9.svg"
             },
             "background_color": "#1248ed",
             "font_color": "#ffffff",
@@ -76,7 +76,7 @@ Required fields:
 
 ```text
 title
-template_code=T_SAVE_BIG_WEEKEND
+template_code=T_9
 background_color
 font_color
 position=top|carousel

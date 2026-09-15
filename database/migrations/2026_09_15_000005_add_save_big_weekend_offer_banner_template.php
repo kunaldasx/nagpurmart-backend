@@ -14,10 +14,10 @@ return new class extends Migration
         }
 
         DB::table('offer_banner_templates')->updateOrInsert(
-            ['code' => 'T_SAVE_BIG_WEEKEND'],
+            ['code' => 'T_9'],
             [
                 'name' => 'Save Big Weekend',
-                'preview_path' => 'assets/templates/T_SAVE_BIG_WEEKEND.svg',
+                'preview_path' => 'assets/templates/T_9.svg',
                 'is_active' => true,
                 'display_order' => 9,
                 'updated_at' => now(),
@@ -28,6 +28,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('offer_banner_templates')->where('code', 'T_SAVE_BIG_WEEKEND')->delete();
+        DB::table('offer_banner_templates')->where('code', 'T_9')->delete();
     }
 };
