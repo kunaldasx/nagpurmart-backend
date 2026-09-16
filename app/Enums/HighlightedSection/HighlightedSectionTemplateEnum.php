@@ -16,4 +16,5 @@ enum HighlightedSectionTemplateEnum: string
     case RAIN_READY = 'rain_ready';
     case SPOTLIGHT = 'spotlight';
     case DEALS = 'deals';
+    case IMAGE_PRODUCTS = 'image_products';
 }

@@ -6,14 +6,14 @@
 
 All filters are optional and are combined together when supplied:
 
-| Parameter                     | Description                                                                                              |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `scope_type`                  | `global` or `category`                                                                                   |
-| `category_id`                 | Category scope ID; automatically limits results to category-scoped sections when `scope_type` is omitted |
-| `scope_category_slug`         | Category slug; returns matching category sections and global sections                                    |
-| `template` or `template_code` | `trusted_brands`, `warm_and_cozy`, `curated_picks`, `rain_ready`, `spotlight`, or `deals`                |
-| `slug`                        | Exact highlighted section slug                                                                           |
-| `per_page`                    | Optional pagination size, from 1 to 50                                                                   |
+| Parameter                     | Description                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `scope_type`                  | `global` or `category`                                                                                      |
+| `category_id`                 | Category scope ID; automatically limits results to category-scoped sections when `scope_type` is omitted    |
+| `scope_category_slug`         | Category slug; returns matching category sections and global sections                                       |
+| `template` or `template_code` | `trusted_brands`, `warm_and_cozy`, `curated_picks`, `rain_ready`, `spotlight`, `deals`, or `image_products` |
+| `slug`                        | Exact highlighted section slug                                                                              |
+| `per_page`                    | Optional pagination size, from 1 to 50                                                                      |
 
 Example:
 
