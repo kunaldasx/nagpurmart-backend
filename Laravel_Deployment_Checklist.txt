@@ -15,6 +15,19 @@ php artisan migrate --force
 GEMINI_MODEL=gemini-3.5-flash
 GEMINI_TIMEOUT=120
 
+**Upload size settings (images are validated by Laravel at 10 MB):**
+
+The deployed document root must include `public/.user.ini`, which sets PHP's
+transport limits to `upload_max_filesize=20M` and `post_max_size=25M`.
+In the Nginx `server` block for this application, set:
+
+client_max_body_size 25M;
+
+Verify the active limits and Nginx configuration on the VPS:
+
+php -i | grep -E 'upload_max_filesize|post_max_size|max_file_uploads'
+sudo nginx -T | grep client_max_body_size
+
 **Clear and rebuild Laravel caches:**
 php artisan config:clear
 php artisan route:clear
