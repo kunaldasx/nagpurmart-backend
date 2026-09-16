@@ -629,6 +629,14 @@ document.addEventListener("click", function (event) {
         `/${panel}/offer-banners/`,
         "You are about to delete this Offer Banner.",
     );
+
+    // Delete delivery slot
+    handleDelete(
+        event,
+        ".delete-delivery-time-slot",
+        `/${panel}/delivery-slots/`,
+        "You are about to delete this Delivery Slot.",
+    );
 });
 document.addEventListener("show.bs.modal", function (event) {
     if (event.target.id === "tax-rate-modal") {
