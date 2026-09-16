@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BannerApiController;
 use App\Http\Controllers\Api\BrandApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\DeliveryZoneApiController;
+use App\Http\Controllers\Api\DeliveryTimeSlotApiController;
 use App\Http\Controllers\Api\FaqApiController;
 use App\Http\Controllers\Api\FeaturedSectionApiController;
 use App\Http\Controllers\Api\HighlightedSectionApiController;
@@ -271,6 +272,8 @@ Route::prefix('highlighted-sections')->name('highlighted-sections.')->group(func
 });
 
 Route::get('popular-searches', [PopularSearchApiController::class, 'index'])->name('popular-searches.index');
+
+Route::get('delivery-slots', [DeliveryTimeSlotApiController::class, 'index'])->name('delivery-slots.index');
 
 Route::get('payment/variables', [PaymentController::class, 'paymentVariables']);
 

@@ -52,6 +52,8 @@ class OrderResource extends JsonResource
             'is_rush_order' => $this->is_rush_order,
             'estimated_delivery_time' => $this->estimated_delivery_time,
             'delivery_time_slot_id' => $this->delivery_time_slot_id,
+            'delivery_date' => $this->delivery_date?->format('Y-m-d'),
+            'delivery_time_slot' => new \App\Http\Resources\DeliveryTimeSlotResource($this->whenLoaded('deliveryTimeSlot')),
             'delivery_boy_id' => $this->delivery_boy_id,
             'delivery_boy_name' => $this->deliveryBoy?->full_name ?? "",
             'delivery_boy_phone' => (float)($this->deliveryBoy?->user?->mobile ?? 0),

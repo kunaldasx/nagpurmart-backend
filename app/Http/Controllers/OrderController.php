@@ -185,6 +185,11 @@ class OrderController extends Controller
         $variantTitle = $sellerOrderItem->product->type === ProductTypeEnum::SIMPLE() ? "" : ($sellerOrderItem->variant->title ?? "");
         $storeName = $sellerOrderItem->orderItem->store ? $sellerOrderItem->orderItem->store->name : 'N/A';
         $orderNote = !empty($sellerOrderItem->sellerOrder->order->order_note) ? "<textarea class='form-control' rows='1' readonly disabled>order note:- {$sellerOrderItem->sellerOrder->order->order_note}</textarea>" : null;
+        $order = $sellerOrderItem->sellerOrder->order;
+        $deliverySlot = $order->deliveryTimeSlot;
+        $deliverySlotText = $deliverySlot
+            ? '<p class="m-0">Delivery slot: ' . e(($order->delivery_date?->format('Y-m-d') ?? '') . ' ' . $deliverySlot->start_time . ' - ' . $deliverySlot->end_time) . '</p>'
+            : '';
         return [
             'id' => $sellerOrderItem->order_item_id,
             'order_date' =>
@@ -201,6 +206,7 @@ class OrderController extends Controller
                         <p class='m-0'>" . __('labels.buyer_name') . ": " . e($sellerOrderItem->sellerOrder->order->shipping_name) . "</p>
                         <p class='m-0'>" . __('labels.payment_method') . ": " . e($sellerOrderItem->sellerOrder->order->payment_method) . "</p>
                         <p class='m-0'>Purchase Type: " . e(ucfirst($sellerOrderItem->sellerOrder->order->order_mode ?? 'regular')) . "</p>
+                        " . $deliverySlotText . "
                         <p class='m-0'>" . __('labels.is_rush_order') . ": " . ($sellerOrderItem->sellerOrder->order->is_rush_order ? 'Yes' : 'No') . "</p>
                         <p class='m-0'>" . __('labels.order_status') . ": " . Str::ucfirst(Str::replace("_", " ", $sellerOrderItem->sellerOrder->order->status)) . "</p>"
                         . $orderNote .
@@ -279,11 +285,11 @@ class OrderController extends Controller
                 abort(404, __('labels.seller_not_found'));
             }
             $order = SellerOrder::where('id', $id)
-                ->with(['order', 'items.product', 'items.variant', 'items.orderItem', 'order.items.store'])
+                ->with(['order', 'order.deliveryTimeSlot.store', 'items.product', 'items.variant', 'items.orderItem', 'order.items.store'])
                 ->where('seller_id', $seller->id)
                 ->firstOrFail();
         } else {
-            $order = Order::with(['items', 'items.product', 'items.variant', 'items.store', 'promoLine'])
+            $order = Order::with(['items', 'items.product', 'items.variant', 'items.store', 'promoLine', 'deliveryTimeSlot.store'])
                 ->findOrFail($id);
         }
         $this->authorize('viewAny', $order);

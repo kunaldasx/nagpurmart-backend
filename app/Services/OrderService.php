@@ -23,6 +23,7 @@ use App\Models\Address;
 use App\Models\Cart;
 use App\Models\DeliveryBoyAssignment;
 use App\Models\DeliveryBoyCashTransaction;
+use App\Models\DeliveryTimeSlot;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderItemReturn;
@@ -411,7 +412,7 @@ class OrderService
         $postPayment = $this->paymentService->postPaymentInitialtion(order: $order, redirectUrl: $data['redirect_url'] ?? null);
 
         // Load order relationships for response
-        $order->load(['items.product', 'items.variant', 'items.store', 'user', 'sellerOrders.seller.user']);
+        $order->load(['items.product', 'items.variant', 'items.store', 'user', 'sellerOrders.seller.user', 'deliveryTimeSlot.store']);
         $order->payment_response = $postPayment['data'] ?? null;
         $cart->items()->delete();
         event(new OrderPlaced($order));
@@ -490,6 +491,26 @@ class OrderService
         // Generate unique order number for customer-facing usage
         $orderNumber = $this->generateUniqueOrderNumber();
 
+        $deliverySlot = null;
+        if ($orderMode === 'wholesale') {
+            $deliverySlot = DeliveryTimeSlot::query()
+                ->whereKey($data['delivery_time_slot_id'] ?? 0)
+                ->where('is_active', true)
+                ->lockForUpdate()
+                ->first();
+            $deliveryDate = Carbon::parse($data['delivery_date'] ?? '');
+            if (!$deliverySlot || strtolower($deliveryDate->format('l')) !== strtolower($deliverySlot->day_of_week)) {
+                throw new Exception('The selected delivery slot is not available for the selected date.');
+            }
+            $bookedOrders = Order::where('delivery_time_slot_id', $deliverySlot->id)
+                ->whereDate('delivery_date', $deliveryDate)
+                ->whereNotIn('status', ['cancelled', 'failed'])
+                ->count();
+            if ($bookedOrders >= $deliverySlot->max_orders) {
+                throw new Exception('The selected delivery slot is full.');
+            }
+        }
+
         // Create order
         $order = Order::create([
             'uuid' => Str::uuid()->toString(),
@@ -506,7 +527,8 @@ class OrderService
             'fulfillment_type' => 'hyperlocal',
             'is_rush_order' => (bool)$data['rush_delivery'] ?? false,
             'estimated_delivery_time' => $paymentSummary['estimated_delivery_time'] ?? null,
-            'delivery_time_slot_id' => $data['delivery_time_slot_id'] ?? null,
+            'delivery_time_slot_id' => $deliverySlot?->id,
+            'delivery_date' => $deliverySlot ? $data['delivery_date'] : null,
             'delivery_zone_id' => $data['zone_id'] ?? null,
             'delivery_boy_id' => null, // Will be assigned later
             'wallet_balance' => $paymentSummary['wallet_amount_used'] ?? 0,

@@ -33,6 +33,7 @@ class Order extends Model
         'is_rush_order',
         'estimated_delivery_time',
         'delivery_time_slot_id',
+        'delivery_date',
         'delivery_boy_id',
         'delivery_zone_id',
         'wallet_balance',
@@ -79,6 +80,7 @@ class Order extends Model
 
     protected $casts = [
 //        'status' => OrderStatusEnum::class,
+        'delivery_date' => 'date:Y-m-d',
     ];
 
     public function user(): BelongsTo

@@ -16,6 +16,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DeliveryBoyController;
 use App\Http\Controllers\DeliveryZoneController;
+use App\Http\Controllers\DeliveryTimeSlotController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeaturedSectionController;
 use App\Http\Controllers\GiftSectionController;
@@ -335,6 +336,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{id}', [HighlightedSectionController::class, 'show'])->name('show');
             Route::post('/{id}', [HighlightedSectionController::class, 'update'])->name('update');
             Route::delete('/{id}', [HighlightedSectionController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('delivery-slots')->name('delivery-slots.')->group(function () {
+            Route::get('/', [DeliveryTimeSlotController::class, 'index'])->name('index');
+            Route::post('/', [DeliveryTimeSlotController::class, 'store'])->name('store');
+            Route::get('/datatable', [DeliveryTimeSlotController::class, 'datatable'])->name('datatable');
+            Route::get('/{id}', [DeliveryTimeSlotController::class, 'show'])->name('show');
+            Route::post('/{id}', [DeliveryTimeSlotController::class, 'update'])->name('update');
+            Route::delete('/{id}', [DeliveryTimeSlotController::class, 'destroy'])->name('destroy');
         });
 
         // Gift Section Routes

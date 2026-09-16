@@ -265,6 +265,13 @@ return [
             'active' => 'highlighted_section',
             'permission' => 'highlighted_section.view',
         ],
+        'delivery_slots' => [
+            'icon' => 'ti-clock',
+            'route' => 'admin.delivery-slots.index',
+            'title' => 'labels.delivery_slots',
+            'active' => 'delivery_slots',
+            'permission' => 'delivery_slot.view',
+        ],
         'gift_section' => [
             'icon' => 'ti-gift',
             'route' => 'admin.gift-section.index',

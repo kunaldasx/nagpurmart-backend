@@ -79,6 +79,12 @@
                                         <div class="datagrid-title">Purchase Type</div>
                                         <div class="datagrid-content text-capitalize">{{ $order['order_mode'] ?? 'regular' }}</div>
                                     </div>
+                                    @if(!empty($order['delivery_time_slot']))
+                                        <div class="datagrid-item">
+                                            <div class="datagrid-title">Delivery Slot</div>
+                                            <div class="datagrid-content">{{ $order['delivery_date'] ?? '' }} {{ $order['delivery_time_slot']['start_time'] }} - {{ $order['delivery_time_slot']['end_time'] }}</div>
+                                        </div>
+                                    @endif
                                     <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.final_total') }}</div>
                                         <div

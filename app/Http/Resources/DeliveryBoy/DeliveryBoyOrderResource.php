@@ -28,6 +28,8 @@ class DeliveryBoyOrderResource extends JsonResource
             'fulfillment_type' => $this->fulfillment_type,
             'estimated_delivery_time' => $this->estimated_delivery_time,
             'delivery_time_slot_id' => $this->delivery_time_slot_id,
+            'delivery_date' => $this->delivery_date?->format('Y-m-d'),
+            'delivery_time_slot' => new \App\Http\Resources\DeliveryTimeSlotResource($this->whenLoaded('deliveryTimeSlot')),
             'delivery_boy_id' => $this->delivery_boy_id,
             'delivery_charge' => $this->delivery_charge,
             'order_note' => $this->order_note,

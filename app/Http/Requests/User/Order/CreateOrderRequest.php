@@ -4,7 +4,9 @@ namespace App\Http\Requests\User\Order;
 
 use App\Enums\Payment\PaymentTypeEnum;
 use App\Models\Cart;
+use App\Models\Order;
 use App\Models\Product;
+use App\Models\DeliveryTimeSlot;
 use App\Services\CartService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -30,6 +32,8 @@ class CreateOrderRequest extends FormRequest
         $rules = [
             'payment_type' => ['required', Rule::in(PaymentTypeEnum::values())],
             'order_mode' => ['nullable', Rule::in(['regular', 'wholesale'])],
+            'delivery_time_slot_id' => ['nullable', 'integer', 'exists:delivery_time_slots,id'],
+            'delivery_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:today'],
             'promo_code' => ['nullable', 'string', 'max:50'],
             'gift_card' => ['nullable', 'string', 'max:50'],
             'address_id' => ['required', 'numeric', 'exists:addresses,id'],
@@ -55,6 +59,11 @@ class CreateOrderRequest extends FormRequest
             $rules['razorpay_signature'] = ['required', 'string'];
         }
 
+        if ($this->input('order_mode') === 'wholesale') {
+            $rules['delivery_time_slot_id'][] = 'required';
+            $rules['delivery_date'][] = 'required';
+        }
+
         return $rules;
     }
 
@@ -64,6 +73,26 @@ class CreateOrderRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            if ($this->input('order_mode') !== 'wholesale' || !$this->filled('delivery_time_slot_id') || !$this->filled('delivery_date')) {
+                return;
+            }
+
+            $slot = DeliveryTimeSlot::whereKey($this->integer('delivery_time_slot_id'))
+                ->where('is_active', true)
+                ->first();
+            $date = $this->date('delivery_date');
+            if (!$slot || strtolower($date->format('l')) !== strtolower($slot->day_of_week)) {
+                $validator->errors()->add('delivery_time_slot_id', 'The selected delivery slot is not available for the selected date.');
+                return;
+            }
+
+            if (Order::where('delivery_time_slot_id', $slot->id)
+                ->whereDate('delivery_date', $date)
+                ->whereNotIn('status', ['cancelled', 'failed'])
+                ->count() >= $slot->max_orders) {
+                $validator->errors()->add('delivery_time_slot_id', 'The selected delivery slot is full.');
+            }
+
             $user = $this->user();
             if (!$user) {
                 return; // Authorization handled elsewhere

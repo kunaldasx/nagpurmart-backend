@@ -1838,6 +1838,7 @@ return [
     'cash_collection_history' => 'Cash Collection History',
     'featured_section' => 'Manage Featured Section',
     'highlighted_sections' => 'Highlighted Sections',
+    'delivery_slots' => 'Delivery Slots',
     'sort_featured_section' => 'Sort Featured Section',
 
     // Delivery Partner Menu Labels
