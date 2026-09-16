@@ -23,6 +23,8 @@ class StoreHighlightedSectionRequest extends FormRequest
             'scope_id' => 'required_if:scope_type,category|nullable|exists:categories,id',
             'background_color' => 'nullable|string|max:30',
             'font_color' => 'nullable|string|max:30',
+            'button_color' => 'nullable|string|max:30',
+            'button_text_color' => 'nullable|string|max:30',
             'sort_order' => 'nullable|integer|min:0',
             'status' => ['nullable', new Enum(ActiveInactiveStatusEnum::class)],
             'is_bgimage' => 'nullable|boolean',

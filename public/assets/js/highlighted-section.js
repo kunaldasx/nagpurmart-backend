@@ -122,6 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     "scope_type",
                     "background_color",
                     "font_color",
+                    "button_color",
+                    "button_text_color",
                     "sort_order",
                 ].forEach((name) => {
                     const field = form.elements[name];

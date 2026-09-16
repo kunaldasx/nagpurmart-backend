@@ -46,6 +46,8 @@ Response:
                 },
                 "background_color": "#1259b5",
                 "font_color": "#ffffff",
+                "button_color": "#ffffff",
+                "button_text_color": "#1259b5",
                 "sort_order": 1,
                 "status": "active",
                 "is_bgimage": true,
@@ -82,6 +84,8 @@ Response:
 `GET /api/highlighted-sections/{slug}`
 
 This returns the same section object directly in `data`, rather than the paginated list wrapper.
+
+The section object includes `button_color` and `button_text_color` as nullable color strings. Use them for the button background and button label text respectively.
 
 ## Supporting metadata
 
