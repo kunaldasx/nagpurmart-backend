@@ -2,14 +2,19 @@
 
 @section('title', __('labels.delivery_slots'))
 @section('header_data')
-    @php($page_title = __('labels.delivery_slots'))
+    @php
+        $page_title = __('labels.delivery_slots');
+        $isSuperAdmin = auth()->user()?->hasRole(\App\Enums\DefaultSystemRolesEnum::SUPER_ADMIN());
+        $canCreateDeliverySlot = $isSuperAdmin || auth()->user()?->can('delivery_slot.create');
+        $canEditDeliverySlot = $isSuperAdmin || auth()->user()?->can('delivery_slot.edit');
+    @endphp
 @endsection
 
 @section('admin-content')
     <div class="row"><div class="col-12"><div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">{{ __('labels.delivery_slots') }}</h3>
-            @if(auth()->user()->can('delivery_slot.create'))
+            @if($canCreateDeliverySlot)
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#delivery-slot-modal">Add delivery slot</button>
             @endif
         </div>
@@ -18,7 +23,7 @@
         </div>
     </div></div></div>
 
-    @if(auth()->user()->can('delivery_slot.create') || auth()->user()->can('delivery_slot.edit'))
+    @if($canCreateDeliverySlot || $canEditDeliverySlot)
         <div class="modal fade" id="delivery-slot-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog"><div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title">Add delivery slot</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
