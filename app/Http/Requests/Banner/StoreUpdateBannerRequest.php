@@ -47,7 +47,7 @@ class StoreUpdateBannerRequest extends FormRequest
             'visibility_status' => ['required', new Enum(BannerVisibilityStatusEnum::class)],
             'display_order' => 'nullable|integer|min:0',
             'metadata' => 'nullable|array',
-            'banner_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'banner_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ];
     }
 }

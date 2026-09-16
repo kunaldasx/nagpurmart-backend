@@ -250,13 +250,13 @@ class DeliveryBoyAuthApiController extends Controller
                 'address' => 'sometimes|string',
                 'driver_license_number' => 'nullable|string|max:255',
                 'vehicle_type' => 'nullable|string|max:255',
-                'driver_license.*' => 'nullable|image|max:2048',
-                'vehicle_registration.*' => 'nullable|image|max:2048',
+                'driver_license.*' => 'nullable|image|max:10240',
+                'vehicle_registration.*' => 'nullable|image|max:10240',
                 'profile_image' => [
                     'nullable',
                     'image',
                     'mimes:jpeg,png,jpg,webp',
-                    'max:2048', // 2MB
+                    'max:10240', // 10MB
                 ],
             ]);
 

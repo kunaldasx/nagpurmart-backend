@@ -36,7 +36,7 @@ class UpdateBrandRequest extends FormRequest
             ],
             'title' => 'required|string|max:255|unique:brands,title,' . $this->route('id'),
             'description' => 'required|string',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'status' => 'nullable|string|in:active,inactive',
             'meta_title' => 'nullable|string|max:255',
             'meta_keywords' => 'nullable|string|max:255',

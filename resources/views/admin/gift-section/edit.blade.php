@@ -51,7 +51,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">{{ __('labels.icon_image') }}</label>
                                 <input type="file" id="icon-image-input" class="form-control @error('icon_image') is-invalid @enderror" name="icon_image" accept="image/*">
-                                <small class="text-muted">{{ __('messages.supported_formats') }}: JPEG, PNG, JPG, GIF, WebP, SVG ({{ __('labels.max_size') }}: 2MB)</small>
+                                <small class="text-muted">{{ __('messages.supported_formats') }}: JPEG, PNG, JPG, GIF, WebP, SVG ({{ __('labels.max_size') }}: 10MB)</small>
                                 @error('icon_image')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                             </div>
                         </div>
@@ -114,9 +114,9 @@
                 return;
             }
 
-            // Validate file size (2MB)
-            if (file.size > 2 * 1024 * 1024) {
-                alert('File size too large. Maximum size is 2MB.');
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size too large. Maximum size is 10MB.');
                 iconImageInput.value = '';
                 imagePreviewContainer.style.display = 'none';
                 return;

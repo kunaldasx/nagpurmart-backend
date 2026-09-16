@@ -12,6 +12,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         FilePond.registerPlugin(FilePondPluginImagePreview);
+        FilePond.registerPlugin(FilePondPluginFileValidateSize);
         const input = document.querySelector('[name="{{ $name }}"]');
         if (input) {
             let imageUrl = input.getAttribute('data-image-url');
@@ -19,6 +20,7 @@
                 allowImagePreview: true,
                 instantUpload: false,
                 acceptedFileTypes: ['image/*'],
+            maxFileSize: input.getAttribute('data-max-file-size') || '10MB',
                 credits: false,
                 storeAsFile: true,
                 files: imageUrl ? [{

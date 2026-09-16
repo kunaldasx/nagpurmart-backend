@@ -574,7 +574,7 @@
                                                     <x-filepond_image name="pwaLogo192x192"
                                                                       imageUrl="{{ $settings['pwaLogo192x192'] ?? '' }}"
                                                                       data-accepted-file-types="image/png,image/jpeg,image/webp"
-                                                                      data-max-file-size="2MB"
+                                                                      data-max-file-size="10MB"
                                                                       data-image-crop-aspect-ratio="1:1"
                                                                       data-image-resize-target-width="192"
                                                                       data-image-resize-target-height="192"/>
@@ -587,7 +587,7 @@
                                                     <x-filepond_image name="pwaLogo512x512"
                                                                       imageUrl="{{ $settings['pwaLogo512x512'] ?? '' }}"
                                                                       data-accepted-file-types="image/png,image/jpeg,image/webp"
-                                                                      data-max-file-size="2MB"
+                                                                      data-max-file-size="10MB"
                                                                       data-image-crop-aspect-ratio="1:1"
                                                                       data-image-resize-target-width="512"
                                                                       data-image-resize-target-height="512"/>
@@ -600,7 +600,7 @@
                                                     <x-filepond_image name="pwaLogo144x144"
                                                                       imageUrl="{{ $settings['pwaLogo144x144'] ?? '' }}"
                                                                       data-accepted-file-types="image/png,image/jpeg,image/webp"
-                                                                      data-max-file-size="2MB"
+                                                                      data-max-file-size="10MB"
                                                                       data-image-crop-aspect-ratio="1:1"
                                                                       data-image-resize-target-width="144"
                                                                       data-image-resize-target-height="144"/>

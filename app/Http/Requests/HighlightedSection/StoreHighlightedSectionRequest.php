@@ -29,7 +29,7 @@ class StoreHighlightedSectionRequest extends FormRequest
             'status' => ['nullable', new Enum(ActiveInactiveStatusEnum::class)],
             'is_bgimage' => 'nullable|boolean',
             'background_images' => 'nullable|array|max:10',
-            'background_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:4096',
+            'background_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:10240',
             'items' => 'required|array|min:1',
             'items.*.id' => 'nullable|integer|exists:highlighted_section_items,id',
             'items.*.item_type' => ['required', new Enum(HighlightedSectionItemTypeEnum::class)],
@@ -37,7 +37,7 @@ class StoreHighlightedSectionRequest extends FormRequest
             'items.*.title' => 'required|string|max:255',
             'items.*.subtitle' => 'nullable|string|max:1000',
             'items.*.sort_order' => 'nullable|integer|min:0',
-            'items.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
+            'items.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:10240',
         ];
     }
 }

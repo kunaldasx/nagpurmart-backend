@@ -17,7 +17,7 @@ class StoreUpdateOfferBannerTemplateRequest extends FormRequest
         return [
             'code' => ['required', 'string', 'max:50', 'regex:/^T_[A-Z0-9_]+$/', Rule::unique('offer_banner_templates', 'code')->ignore($this->route('id'))],
             'name' => ['required', 'string', 'max:255'],
-            'preview_image' => [$this->isMethod('POST') ? 'required' : 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:4096'],
+            'preview_image' => [$this->isMethod('POST') ? 'required' : 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
             'display_order' => ['nullable', 'integer', 'min:0'],
         ];

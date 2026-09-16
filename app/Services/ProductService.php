@@ -947,14 +947,14 @@ class ProductService
         if (!in_array($ext, $allowed, true)) return false;
         $size = @filesize($path);
         if ($size === false) return false;
-        return $size <= 2 * 1024 * 1024; // 2 MB
+        return $size <= 10 * 1024 * 1024; // 10 MB
     }
 
     public function setMainImageFromPath(Product $product, string $path): void
     {
         if (!$this->isValidLocalImage($path)) {
             $imageName = basename($path);
-            throw new \InvalidArgumentException("Main image '{$imageName}' must be jpg, jpeg, png or webp and not exceed 2MB.");
+            throw new \InvalidArgumentException("Main image '{$imageName}' must be jpg, jpeg, png or webp and not exceed 10MB.");
         }
         // Replace existing main image
         $product->clearMediaCollection(SpatieMediaCollectionName::PRODUCT_MAIN_IMAGE());
@@ -982,7 +982,7 @@ class ProductService
     {
         if (!$this->isValidLocalImage($path)) {
             $imageName = basename($path);
-            throw new \InvalidArgumentException("Variant image '{$imageName}' must be jpg, jpeg, png or webp and not exceed 2MB.");
+            throw new \InvalidArgumentException("Variant image '{$imageName}' must be jpg, jpeg, png or webp and not exceed 10MB.");
         }
         $variant->clearMediaCollection(SpatieMediaCollectionName::VARIANT_IMAGE());
         // Preserve original so other variants/products can still access the same file path if necessary

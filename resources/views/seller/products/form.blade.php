@@ -783,7 +783,7 @@
                         allowImagePreview: true,
                         credits: false,
                         storeAsFile: true,
-                        maxFileSize: '2MB',
+                        maxFileSize: '10MB',
                         acceptedFileTypes: ['image/*'],
                         files: imageUrl ? [{ source: imageUrl, options: { type: 'remote' } }] : []
                     });

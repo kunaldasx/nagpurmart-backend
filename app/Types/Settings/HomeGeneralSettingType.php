@@ -37,7 +37,7 @@ class HomeGeneralSettingType implements SettingInterface
             'searchLabels' => ['nullable', 'array'],
             'backgroundType' => ['nullable', new Enum(CategoryBackgroundTypeEnum::class)],
             'backgroundColor' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'backgroundImage' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'backgroundImage' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'icon'       => 'nullable|mimes:jpeg,png,jpg,webp,svg',
             'activeIcon' => 'nullable|mimes:jpeg,png,jpg,webp,svg',
             'scroll_icon' => 'nullable|mimes:jpeg,png,jpg,webp,svg',
@@ -46,7 +46,7 @@ class HomeGeneralSettingType implements SettingInterface
                 'nullable',
                 Rule::when(
                     request()->hasFile('scroll_background'),
-                    ['file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+                    ['file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
                     ['string', 'regex:/^#[0-9A-Fa-f]{6}$/']
                 ),
             ],

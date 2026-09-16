@@ -42,10 +42,10 @@ class StoreSellerRequest extends FormRequest
             'country' => 'required|string|max:255',
             'latitude' => 'nullable|string|max:255',
             'longitude' => 'nullable|string|max:255',
-            'business_license' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'articles_of_incorporation' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'national_identity_card' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'authorized_signature' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'business_license' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'articles_of_incorporation' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'national_identity_card' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'authorized_signature' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
         ];
         if (!Route::is('seller-api.register')) {
             $rules['verification_status'] = ['required', new Enum(SellerVerificationStatusEnum::class)];

@@ -1447,7 +1447,7 @@ return [
     'update_your_profile_information' => 'Actualizar Su Información de Perfil',
     'profile_image' => 'Imagen de Perfil',
     'update_profile' => 'Actualizar Perfil',
-    'profile_image_hint' => 'Formatos soportados: JPEG, PNG, JPG, WEBP. Tamaño máximo: 2MB.',
+    'profile_image_hint' => 'Formatos soportados: JPEG, PNG, JPG, WEBP. Tamaño máximo: 10MB.',
     'email_cannot_be_changed' => 'La dirección de email no se puede cambiar',
     'mobile_cannot_be_changed' => 'El número de móvil no se puede cambiar',
     'logout' => 'Cerrar Sesión',

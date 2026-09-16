@@ -32,7 +32,7 @@ class UpdateProfileRequest extends FormRequest
                 'nullable',
                 'image',
                 'mimes:jpeg,png,jpg,webp',
-                'max:2048', // 2MB
+                'max:10240', // 10MB
             ],
         ];
     }

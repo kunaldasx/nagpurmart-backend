@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 allowImagePreview: true,
                 credits: false,
                 storeAsFile: true,
-                maxFileSize: input.getAttribute("data-max-file-size") || "4MB",
+                maxFileSize: input.getAttribute("data-max-file-size") || "10MB",
                 acceptedFileTypes: ["image/*"],
                 maxFiles: Number(input.getAttribute("data-max-files")) || null,
                 files: imageUrls.map((url) => ({

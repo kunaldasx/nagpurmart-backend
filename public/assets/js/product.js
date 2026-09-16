@@ -814,7 +814,7 @@ function renderVariants() {
     // Initialize FilePond for all variant image inputs
     document.querySelectorAll(".variant-image-input").forEach((input) => {
         const inputName = input.getAttribute("name");
-        initializeFilePond(inputName, ["image/*"], "2MB");
+        initializeFilePond(inputName, ["image/*"], "10MB");
     });
 }
 

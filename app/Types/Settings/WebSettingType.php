@@ -120,9 +120,9 @@ class WebSettingType implements SettingInterface
             'aboutUs' => 'nullable|string',
             'pwaName' => 'required|string|max:255',
             'pwaDescription' => 'required|string|max:500',
-            'pwaLogo192x192' => 'nullable|image|mimes:png,jpeg,webp|max:2048',
-            'pwaLogo512x512' => 'nullable|image|mimes:png,jpeg,webp|max:2048',
-            'pwaLogo144x144' => 'nullable|image|mimes:png,jpeg,webp|max:2048',
+            'pwaLogo192x192' => 'nullable|image|mimes:png,jpeg,webp|max:10240',
+            'pwaLogo512x512' => 'nullable|image|mimes:png,jpeg,webp|max:10240',
+            'pwaLogo144x144' => 'nullable|image|mimes:png,jpeg,webp|max:10240',
         ];
     }
 }

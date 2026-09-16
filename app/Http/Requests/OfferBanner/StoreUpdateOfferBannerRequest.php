@@ -31,7 +31,7 @@ class StoreUpdateOfferBannerRequest extends FormRequest
             'offer_items.*.item_type' => ['nullable', 'in:product,category'],
             'offer_items.*.item_id' => ['nullable', 'integer'],
             'offer_items.*.metadata' => ['nullable', 'json'],
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ];
     }
 }

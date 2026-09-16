@@ -177,7 +177,7 @@ return [
     'cart_amount_required' => 'Cart amount is required for promo code validation.',
     'delivery_charge_required' => 'Delivery charge is required for promo code validation.',
     // Business Document Upload Notes
-    'business_license_note' => 'Upload a clear copy of your business license. Accepted formats: JPEG, PNG, PDF. Max size: 2MB.',
+    'business_license_note' => 'Upload a clear copy of your business license. Accepted formats: JPEG, PNG, PDF. Max size: 10MB.',
     'articles_of_incorporation_note' => 'Provide your company\'s articles of incorporation or certificate of incorporation. File must be clear and readable.',
     'national_identity_card_note' => 'Upload a government-issued photo ID (passport, driver\'s license, or national ID card). Both front and back sides if applicable.',
     'authorized_signature_note' => 'Upload a document with authorized signature samples or signature authorization letter from your company.',

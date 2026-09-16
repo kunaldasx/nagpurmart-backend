@@ -32,8 +32,8 @@ class RegisterDeliveryBoyRequest extends FormRequest
             'driver_license_number' => 'required|string|max:255',
             'vehicle_type' => ['required', new Enum(DeliveryBoyVehicleTypeEnum::class)],
             'delivery_zone_id' => 'required|exists:delivery_zones,id',
-            'driver_license.*' => 'required|image|max:2048',
-            'vehicle_registration.*' => 'required|image|max:2048',
+            'driver_license.*' => 'required|image|max:10240',
+            'vehicle_registration.*' => 'required|image|max:10240',
             'country' => 'nullable|string|max:255',
             'iso_2' => 'nullable|string|max:2'
         ];

@@ -1545,7 +1545,7 @@ return [
     'update_your_profile_information' => 'Update Your Profile Information',
     'profile_image' => 'Profile Image',
     'update_profile' => 'Update Profile',
-    'profile_image_hint' => 'Supported formats: JPEG, PNG, JPG, WEBP. Maximum size: 2MB.',
+    'profile_image_hint' => 'Supported formats: JPEG, PNG, JPG, WEBP. Maximum size: 10MB.',
     'email_cannot_be_changed' => 'Email address cannot be changed',
     'mobile_cannot_be_changed' => 'Mobile Number cannot be changed',
     'logout' => 'Logout',

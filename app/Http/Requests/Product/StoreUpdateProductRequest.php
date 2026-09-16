@@ -49,9 +49,9 @@ class StoreUpdateProductRequest extends FormRequest
             'guarantee_period' => 'nullable|string',
             'made_in' => 'nullable|string',
             'hsn_code' => 'nullable|string',
-            // Image validations: limit size (2 MB) and restrict to common extensions
-            'main_image' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
-            'additional_images.*' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
+            // Image validations: limit size (10 MB) and restrict to common extensions
+            'main_image' => 'required|file|mimes:jpg,jpeg,png,webp|max:10240',
+            'additional_images.*' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:10240',
             'product_video' => 'nullable|file|mimes:mp4,mov,avi|max:20480',
             'tags' => 'nullable|array',
             'tags.*' => 'nullable|string',
@@ -69,7 +69,7 @@ class StoreUpdateProductRequest extends FormRequest
             'custom_sections.*.fields.*.title' => 'required_without:custom_sections.*.fields.*.id|string|max:255',
             'custom_sections.*.fields.*.description' => 'nullable|string',
             'custom_sections.*.fields.*.sort_order' => 'nullable|integer|min:0',
-            'custom_sections.*.fields.*.image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
+            'custom_sections.*.fields.*.image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:10240',
             // Inclusive tax flag
             'is_inclusive_tax' => 'nullable|boolean',
             'pricing' => 'required|json',
@@ -291,8 +291,8 @@ class StoreUpdateProductRequest extends FormRequest
                 $validator->errors()->add('variants_json', $variant['title'] . ' variant image must be a file of type: jpg, jpeg, png, webp');
                 return true;
             }
-            if ($variantImage->getSize() > 2 * 1024 * 1024) { // 2MB in bytes
-                $validator->errors()->add('variants_json', $variant['title'] . ' variant image may not be greater than 2MB');
+            if ($variantImage->getSize() > 10 * 1024 * 1024) { // 10MB in bytes
+                $validator->errors()->add('variants_json', $variant['title'] . ' variant image may not be greater than 10MB');
                 return true;
             }
         }

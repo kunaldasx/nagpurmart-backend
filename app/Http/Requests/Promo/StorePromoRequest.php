@@ -40,6 +40,9 @@ class StorePromoRequest extends FormRequest
                 }
 
                 if ($value instanceof UploadedFile) {
+                    if ($value->getSize() > 10 * 1024 * 1024) {
+                        $fail('The banner image may not be greater than 10MB.');
+                    }
                     return;
                 }
 

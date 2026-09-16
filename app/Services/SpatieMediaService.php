@@ -74,7 +74,7 @@ class SpatieMediaService
 
         // Validate extension and remote size/content-type for images
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-        $maxBytes = 2 * 1024 * 1024; // 2 MB
+        $maxBytes = 10 * 1024 * 1024; // 10 MB
 
         if ($extension && !in_array($extension, $allowedExtensions, true)) {
             throw new \InvalidArgumentException('Invalid image extension. Allowed: jpg, jpeg, png, webp');
@@ -112,7 +112,7 @@ class SpatieMediaService
                     // For multiple header values, keep the last
                     $length = is_array($lengthHeader) ? (int) end($lengthHeader) : (int) $lengthHeader;
                     if ($length > $maxBytes) {
-                        throw new \InvalidArgumentException('Image exceeds maximum allowed size of 2 MB');
+                        throw new \InvalidArgumentException('Image exceeds maximum allowed size of 10 MB');
                     }
                 }
             }
