@@ -82,6 +82,7 @@ class OrderController extends Controller
         $status = $request->get('status');
         $paymentType = $request->get('payment_type');
         $dateRange = $request->get('range');
+        $orderMode = $request->get('order_mode');
 
         $orderColumnIndex = $request->get('order')[0]['column'] ?? 0;
         $orderDirection = $request->get('order')[0]['dir'] ?? 'desc';
@@ -111,6 +112,12 @@ class OrderController extends Controller
             });
             $query->whereHas('orderItem', function ($q) {
                 $q->where('status', '!=', OrderItemStatusEnum::PENDING());
+            });
+        }
+
+        if (in_array($orderMode, ['regular', 'wholesale'], true)) {
+            $query->whereHas('sellerOrder.order', function ($q) use ($orderMode) {
+                $q->where('order_mode', $orderMode);
             });
         }
         $totalRecords = $query->count();
@@ -178,6 +185,68 @@ class OrderController extends Controller
             'recordsFiltered' => $filteredRecords,
             'data' => $data
         ]);
+    }
+
+    /**
+     * Return regular orders waiting for the seller's decision.
+     */
+    public function getPendingRegularOrders(): JsonResponse
+    {
+        if ($this->getPanel() !== 'seller') {
+            return response()->json(['data' => []]);
+        }
+
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), []);
+        }
+
+        $items = SellerOrderItem::with([
+            'sellerOrder.order.deliveryTimeSlot',
+            'orderItem',
+            'product',
+            'variant',
+        ])->whereHas('sellerOrder', function ($query) use ($seller) {
+            $query->where('seller_id', $seller->id)
+                ->whereHas('order', fn ($order) => $order->where('order_mode', 'regular'));
+        })->whereHas('orderItem', function ($query) {
+            $query->where('status', OrderItemStatusEnum::AWAITING_STORE_RESPONSE());
+        })->orderBy('created_at')->get();
+
+        $orders = $items->groupBy('seller_order_id')->values()->map(function ($orderItems) {
+            $first = $orderItems->first();
+            $order = $first->sellerOrder->order;
+
+            return [
+                'seller_order_id' => $first->seller_order_id,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'created_at' => $order->created_at?->toISOString(),
+                'customer' => [
+                    'name' => $order->shipping_name,
+                    'phone' => $order->shipping_phone,
+                    'address' => collect([
+                        $order->shipping_address_1,
+                        $order->shipping_address_2,
+                        $order->shipping_landmark,
+                        $order->shipping_city,
+                        $order->shipping_state,
+                        $order->shipping_zip,
+                    ])->filter()->implode(', '),
+                ],
+                'payment_method' => $order->payment_method,
+                'total' => $first->sellerOrder->total_price,
+                'items' => $orderItems->map(fn ($item) => [
+                    'order_item_id' => $item->order_item_id,
+                    'product' => $item->product?->title,
+                    'variant' => $item->variant?->title,
+                    'quantity' => $item->orderItem->quantity,
+                    'subtotal' => $item->orderItem->subtotal,
+                ])->values(),
+            ];
+        })->values();
+
+        return response()->json(['data' => $orders]);
     }
 
     private function getOrderReturnData($sellerOrderItem): array

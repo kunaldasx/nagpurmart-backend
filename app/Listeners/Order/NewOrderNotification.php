@@ -66,6 +66,7 @@ class NewOrderNotification
                 'data'  => [
                     'order_slug' => $event->order->slug,
                     'order_id'   => $event->order->id,
+                    'order_mode' => $event->order->order_mode ?? 'regular',
                     'status'     => $event->order->status,
                     'type'       => NotificationTypeEnum::ORDER(),
                 ],

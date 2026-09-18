@@ -1,6 +1,7 @@
 $(document).ready(function () {
     const table = $("#orders-table").DataTable();
     let currentOrderId = null;
+    let orderMode = "regular";
 
     const updateOrderCount = () => {
         if (table.page.info() !== undefined) {
@@ -15,6 +16,15 @@ $(document).ready(function () {
     };
 
     // Reload table when filters change
+    $(".order-mode-tab").on("click", function () {
+        orderMode = $(this).data("order-mode");
+        $(".order-mode-tab")
+            .removeClass("btn-primary")
+            .addClass("btn-outline-primary");
+        $(this).removeClass("btn-outline-primary").addClass("btn-primary");
+        table.ajax.reload(updateOrderCount, false);
+    });
+
     $("#rangeFilter, #statusFilter, #paymentFilter").on("change", function () {
         table.ajax.reload(updateOrderCount, false);
     });
@@ -32,7 +42,133 @@ $(document).ready(function () {
         data.range = $("#rangeFilter").val();
         data.status = $("#statusFilter").val();
         data.payment_type = $("#paymentFilter").val();
+        data.order_mode = orderMode;
     });
+
+    if ($("#newRegularOrderModal").length) {
+        const modal = bootstrap.Modal.getOrCreateInstance(
+            document.getElementById("newRegularOrderModal"),
+        );
+        let pendingOrders = [];
+        let activeOrder = null;
+        let timerHandle = null;
+        let startedAt = 0;
+
+        const escapeHtml = (value) =>
+            $("<div>")
+                .text(value || "")
+                .html();
+        const playAlert = () => {
+            try {
+                const context = new (
+                    window.AudioContext || window.webkitAudioContext
+                )();
+                const oscillator = context.createOscillator();
+                const gain = context.createGain();
+                oscillator.frequency.value = 880;
+                gain.gain.value = 0.08;
+                oscillator.connect(gain);
+                gain.connect(context.destination);
+                oscillator.start();
+                oscillator.stop(context.currentTime + 0.25);
+            } catch (error) {
+                // Browser audio may require a prior user gesture.
+            }
+        };
+        const showNextOrder = () => {
+            if (activeOrder || pendingOrders.length === 0) return;
+            activeOrder = pendingOrders.shift();
+            startedAt = Date.now();
+            $("#new-order-error").addClass("d-none").text("");
+            $("#new-order-summary").html(
+                `<p class="mb-1 fw-bold">Order #${escapeHtml(activeOrder.order_number || activeOrder.order_id)}</p>` +
+                    `<p class="mb-1">${escapeHtml(activeOrder.customer.name)} · <a href="tel:${escapeHtml(activeOrder.customer.phone)}">${escapeHtml(activeOrder.customer.phone)}</a></p>` +
+                    `<p class="mb-1">${escapeHtml(activeOrder.customer.address)}</p>` +
+                    `<p class="mb-0">${escapeHtml(activeOrder.payment_method)} · Total: ${escapeHtml(activeOrder.total)}</p>`,
+            );
+            $("#new-order-items").html(
+                activeOrder.items
+                    .map(
+                        (item) =>
+                            `<div class="d-flex justify-content-between border-top py-2"><span>${escapeHtml(item.product)}${item.variant ? ` (${escapeHtml(item.variant)})` : ""} × ${item.quantity}</span><span>${escapeHtml(item.subtotal)}</span></div>`,
+                    )
+                    .join(""),
+            );
+            timerHandle = window.setInterval(() => {
+                const seconds = Math.floor((Date.now() - startedAt) / 1000);
+                $("#new-order-timer").text(
+                    `Waiting ${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`,
+                );
+            }, 1000);
+            modal.show();
+            playAlert();
+        };
+        const finishOrder = () => {
+            window.clearInterval(timerHandle);
+            activeOrder = null;
+            modal.hide();
+            table.ajax.reload(updateOrderCount, false);
+            showNextOrder();
+        };
+        const decideOrder = (status) => {
+            if (!activeOrder) return;
+            $("#new-order-accept, #new-order-reject").prop("disabled", true);
+            const items = [...activeOrder.items];
+            const processNext = () => {
+                if (items.length === 0) {
+                    finishOrder();
+                    return;
+                }
+                const item = items.shift();
+                axios
+                    .post(`/seller/orders/${item.order_item_id}/${status}`)
+                    .then((response) => {
+                        if (response.data && response.data.success === false) {
+                            throw new Error(
+                                response.data.message ||
+                                    "Order decision failed.",
+                            );
+                        }
+                        activeOrder.items = activeOrder.items.filter(
+                            (activeItem) =>
+                                activeItem.order_item_id !== item.order_item_id,
+                        );
+                        processNext();
+                    })
+                    .catch((error) => {
+                        $("#new-order-error")
+                            .removeClass("d-none")
+                            .text(
+                                error.message ||
+                                    "Order decision failed. Please try again.",
+                            );
+                        $("#new-order-accept, #new-order-reject").prop(
+                            "disabled",
+                            false,
+                        );
+                    });
+            };
+            processNext();
+        };
+        const pollOrders = () =>
+            axios.get("/seller/orders/pending-regular").then((response) => {
+                const orders = response.data.data || [];
+                const known = new Set([
+                    ...(activeOrder ? [activeOrder.seller_order_id] : []),
+                    ...pendingOrders.map((order) => order.seller_order_id),
+                ]);
+                orders.forEach((order) => {
+                    if (!known.has(order.seller_order_id))
+                        pendingOrders.push(order);
+                });
+                showNextOrder();
+            });
+
+        $("#new-order-accept").on("click", () => decideOrder("accept"));
+        $("#new-order-reject").on("click", () => decideOrder("reject"));
+        pollOrders();
+        window.setInterval(pollOrders, 5000);
+    }
 
     // Capture order ID when accept/reject/preparing buttons are clicked
     $("#acceptModel, #rejectModel, #preparingModel").on(

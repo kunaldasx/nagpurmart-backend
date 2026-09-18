@@ -60,6 +60,7 @@ class SellerOrderApiController extends Controller
         $status = $request->input('status');
         $paymentType = $request->input('payment_type');
         $dateRange = $request->input('range');
+        $orderMode = $request->input('order_mode');
         $sortBy = in_array($request->input('sort_by'), ['id', 'order_id', 'price', 'status', 'created_at']) ? $request->input('sort_by') : 'id';
         $sortDir = strtolower($request->input('sort_dir')) === 'asc' ? 'asc' : 'desc';
 
@@ -84,6 +85,10 @@ class SellerOrderApiController extends Controller
                     $qq->where('store_id', $storeId);
                 });
             });
+
+        if (in_array($orderMode, ['regular', 'wholesale'], true)) {
+            $query->whereHas('sellerOrder.order', fn ($q) => $q->where('order_mode', $orderMode));
+        }
 
         if (!empty($status)) {
             $query->whereHas('orderItem', fn($q) => $q->where('status', $status));
@@ -140,6 +145,63 @@ class SellerOrderApiController extends Controller
         ];
 
         return ApiResponseType::sendJsonResponse(true, __('labels.orders_fetched_successfully') ?? 'Orders fetched successfully', $response);
+    }
+
+    /**
+     * Compact queue for regular orders awaiting a seller decision.
+     */
+    public function pendingRegular(): JsonResponse
+    {
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        $items = SellerOrderItem::with(['sellerOrder.order', 'orderItem', 'product', 'variant'])
+            ->whereHas('sellerOrder', function ($query) use ($seller) {
+                $query->where('seller_id', $seller->id)
+                    ->whereHas('order', fn ($order) => $order->where('order_mode', 'regular'));
+            })
+            ->whereHas('orderItem', fn ($query) => $query->where('status', OrderItemStatusEnum::AWAITING_STORE_RESPONSE()))
+            ->orderBy('created_at')
+            ->get();
+
+        $orders = $items->groupBy('seller_order_id')->values()->map(function ($orderItems) {
+            $first = $orderItems->first();
+            $order = $first->sellerOrder->order;
+
+            return [
+                'seller_order_id' => $first->seller_order_id,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'created_at' => $order->created_at?->toISOString(),
+                'customer' => [
+                    'name' => $order->shipping_name,
+                    'phone' => $order->shipping_phone,
+                    'address' => collect([
+                        $order->shipping_address_1,
+                        $order->shipping_address_2,
+                        $order->shipping_landmark,
+                        $order->shipping_city,
+                        $order->shipping_state,
+                        $order->shipping_zip,
+                    ])->filter()->implode(', '),
+                ],
+                'payment_method' => $order->payment_method,
+                'total' => $first->sellerOrder->total_price,
+                'items' => $orderItems->map(fn ($item) => [
+                    'order_item_id' => $item->order_item_id,
+                    'product' => $item->product?->title,
+                    'variant' => $item->variant?->title,
+                    'quantity' => (int) $item->orderItem->quantity,
+                    'subtotal' => $item->orderItem->subtotal,
+                ])->values(),
+            ];
+        })->values();
+
+        return ApiResponseType::sendJsonResponse(true, 'Pending regular orders fetched successfully', [
+            'orders' => $orders,
+        ]);
     }
 
     /**

@@ -108,6 +108,7 @@ Route::middleware(['auth:sanctum',
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [SellerOrderApiController::class, 'index'])->name('index');
         Route::get('/enums', [SellerOrderApiController::class, 'enums'])->name('enums');
+        Route::get('/pending-regular', [SellerOrderApiController::class, 'pendingRegular'])->name('pending-regular');
         Route::get('/{id}', [SellerOrderApiController::class, 'show'])->name('show');
         Route::post('/{id}/{status}', [SellerOrderApiController::class, 'updateStatus'])->name('update_status');
     });

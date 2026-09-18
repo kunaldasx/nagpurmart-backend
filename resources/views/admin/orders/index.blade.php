@@ -28,6 +28,12 @@
                             <div class="card-actions">
                                 <div class="row g-2">
                                     <div class="col-auto">
+                                        <div class="btn-group" role="group" aria-label="Order type">
+                                            <button type="button" class="btn btn-primary order-mode-tab" data-order-mode="regular">Regular</button>
+                                            <button type="button" class="btn btn-outline-primary order-mode-tab" data-order-mode="wholesale">Wholesale</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
                                         <select class="form-select text-capitalize" id="paymentFilter">
                                             <option value="">{{ __('labels.payment_type') }}</option>
                                             @foreach(PaymentTypeEnum::values() as $value)

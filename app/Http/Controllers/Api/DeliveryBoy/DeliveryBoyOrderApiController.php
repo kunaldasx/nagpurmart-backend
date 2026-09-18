@@ -45,11 +45,13 @@ class DeliveryBoyOrderApiController extends Controller
 
             // Get page size from request or use default
             $perPage = $request->input('per_page', 10);
+            $orderMode = $request->input('order_mode');
 
             // Get orders that are in the delivery boy's zone and are available for delivery
             $orders = Order::where('delivery_zone_id', $deliveryBoy->delivery_zone_id)
                 ->whereNull('delivery_boy_id')
                 ->where('status', OrderStatusEnum::READY_FOR_PICKUP())
+                ->when(in_array($orderMode, ['regular', 'wholesale'], true), fn ($query) => $query->where('order_mode', $orderMode))
                 ->withDeliveryBoyEarnings() // Use the scope to load relationships for earnings calculation
                 ->with([
                     'items' => function ($query) {
@@ -235,6 +237,7 @@ class DeliveryBoyOrderApiController extends Controller
 
             // Get status filter from request if provided
             $status = $request->input('status');
+            $orderMode = $request->input('order_mode');
 
             // Validate status if provided
             if ($status && !in_array($status, DeliveryBoyAssignmentStatusEnum::values())) {
@@ -253,6 +256,7 @@ class DeliveryBoyOrderApiController extends Controller
                     $query->where('status', $status);
                 }
             })
+                ->when(in_array($orderMode, ['regular', 'wholesale'], true), fn ($query) => $query->where('order_mode', $orderMode))
                 ->withDeliveryBoyEarnings()
                 ->with([
                     'deliveryBoyAssignments' => function ($query) use ($deliveryBoy) {
