@@ -907,7 +907,7 @@ class OrderService
         try {
             $order = Order::where('user_id', $user->id)
                 ->where('slug', $orderSlug)
-                ->with(['items.product', 'items.variant', 'items.store', 'sellerFeedbacks', 'sellerOrders', 'items.returns', 'promoLine'])
+                ->with(['deliveryBoy.user', 'items.product', 'items.variant', 'items.store', 'sellerFeedbacks', 'sellerOrders', 'items.returns', 'promoLine'])
                 ->first();
 
             if (!$order) {
@@ -2090,7 +2090,7 @@ class OrderService
             // Find the order with the given ID and user
             $order = Order::where('slug', $orderSlug)
                 ->where('user_id', $user->id)
-                ->with(['items.product', 'items.variant', 'items.store', 'deliveryBoy'])
+                ->with(['items.product', 'items.variant', 'items.store', 'deliveryBoy.user'])
                 ->first();
 
             if (!$order) {

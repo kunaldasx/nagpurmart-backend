@@ -161,6 +161,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', [OrderApiController::class, 'getUserOrders']);
             Route::post('/', [OrderApiController::class, 'createOrder']);
             Route::get('/{orderSlug}', [OrderApiController::class, 'getOrder']);
+            Route::get('/{orderSlug}/delivery-boy', [OrderApiController::class, 'getOrderDeliveryBoy']);
             Route::get('/{orderSlug}/delivery-boy-location', [OrderApiController::class, 'getOrderDeliveryBoyLocation']);
             Route::post('/items/{orderItemId}/cancel', [OrderApiController::class, 'cancelOrderItem']);
             Route::post('/items/{orderItemId}/return', [OrderApiController::class, 'returnOrderItem']);

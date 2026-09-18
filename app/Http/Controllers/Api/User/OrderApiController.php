@@ -169,6 +169,40 @@ class OrderApiController extends Controller
     }
 
     /**
+     * Get the delivery boy assigned to an order.
+     */
+    public function getOrderDeliveryBoy(string $orderSlug): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                __('labels.user_not_authenticated'),
+                []
+            );
+        }
+
+        $result = $this->orderService->getOrder($user, $orderSlug);
+
+        if (!$result['success']) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                $result['message'],
+                $result['data']
+            );
+        }
+
+        $order = $result['data'];
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            __('messages.order_retrieved_successfully'),
+            ['delivery_boy' => (new OrderResource($order))->toArray(request())['delivery_boy']]
+        );
+    }
+
+    /**
      * Cancel an order item
      *
      * Cancels a specific order item if it meets the cancellation criteria.
