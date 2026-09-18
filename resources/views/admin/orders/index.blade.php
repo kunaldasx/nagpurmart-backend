@@ -29,8 +29,8 @@
                                 <div class="row g-2">
                                     <div class="col-auto">
                                         <div class="btn-group" role="group" aria-label="Order type">
-                                            <button type="button" class="btn btn-primary order-mode-tab" data-order-mode="regular">Regular</button>
-                                            <button type="button" class="btn btn-outline-primary order-mode-tab" data-order-mode="wholesale">Wholesale</button>
+                                            <button type="button" class="btn btn-primary order-mode-tab" data-order-mode="regular" data-pending-url="{{ route('admin.orders.pending-regular') }}">Regular <span class="badge bg-white text-primary ms-1" id="regular-order-count">0</span></button>
+                                            <button type="button" class="btn btn-outline-primary order-mode-tab" data-order-mode="wholesale">Wholesale <span class="badge bg-primary text-white ms-1" id="wholesale-order-count">0</span></button>
                                         </div>
                                     </div>
                                     <div class="col-auto">

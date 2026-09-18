@@ -2,6 +2,7 @@ $(document).ready(function () {
     const table = $("#orders-table").DataTable();
     let currentOrderId = null;
     let orderMode = "regular";
+    const pendingOrdersUrl = $(".order-mode-tab").first().data("pending-url");
 
     const updateOrderCount = () => {
         if (table.page.info() !== undefined) {
@@ -46,9 +47,7 @@ $(document).ready(function () {
     });
 
     if ($("#newRegularOrderModal").length) {
-        const modal = bootstrap.Modal.getOrCreateInstance(
-            document.getElementById("newRegularOrderModal"),
-        );
+        const modal = $("#newRegularOrderModal");
         let pendingOrders = [];
         let activeOrder = null;
         let timerHandle = null;
@@ -100,13 +99,13 @@ $(document).ready(function () {
                     `Waiting ${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`,
                 );
             }, 1000);
-            modal.show();
+            modal.modal("show");
             playAlert();
         };
         const finishOrder = () => {
             window.clearInterval(timerHandle);
             activeOrder = null;
-            modal.hide();
+            modal.modal("hide");
             table.ajax.reload(updateOrderCount, false);
             showNextOrder();
         };
@@ -150,24 +149,56 @@ $(document).ready(function () {
             };
             processNext();
         };
-        const pollOrders = () =>
-            axios.get("/seller/orders/pending-regular").then((response) => {
-                const orders = response.data.data || [];
-                const known = new Set([
-                    ...(activeOrder ? [activeOrder.seller_order_id] : []),
-                    ...pendingOrders.map((order) => order.seller_order_id),
-                ]);
-                orders.forEach((order) => {
-                    if (!known.has(order.seller_order_id))
-                        pendingOrders.push(order);
+        const pollOrderMode = (mode) =>
+            axios
+                .get(`${pendingOrdersUrl}?order_mode=${mode}`)
+                .then((response) => {
+                    const orders = response.data.data || [];
+                    $(`#${mode}-order-count`).text(
+                        response.data.count ?? orders.length,
+                    );
+                    if (mode !== "regular") return;
+                    const known = new Set([
+                        ...(activeOrder ? [activeOrder.seller_order_id] : []),
+                        ...pendingOrders.map((order) => order.seller_order_id),
+                    ]);
+                    orders.forEach((order) => {
+                        if (!known.has(order.seller_order_id))
+                            pendingOrders.push(order);
+                    });
+                    showNextOrder();
                 });
-                showNextOrder();
-            });
+        const pollOrders = () => {
+            pollOrderMode("regular").catch((error) =>
+                console.error("Regular order polling failed:", error),
+            );
+            pollOrderMode("wholesale").catch((error) =>
+                console.error("Wholesale order polling failed:", error),
+            );
+        };
 
         $("#new-order-accept").on("click", () => decideOrder("accept"));
         $("#new-order-reject").on("click", () => decideOrder("reject"));
         pollOrders();
         window.setInterval(pollOrders, 5000);
+    } else if (pendingOrdersUrl) {
+        const refreshOrderCounts = () => {
+            ["regular", "wholesale"].forEach((mode) => {
+                axios
+                    .get(`${pendingOrdersUrl}?order_mode=${mode}`)
+                    .then((response) => {
+                        const orders = response.data.data || [];
+                        $(`#${mode}-order-count`).text(
+                            response.data.count ?? orders.length,
+                        );
+                    })
+                    .catch((error) =>
+                        console.error(`${mode} order count failed:`, error),
+                    );
+            });
+        };
+        refreshOrderCounts();
+        window.setInterval(refreshOrderCounts, 5000);
     }
 
     // Capture order ID when accept/reject/preparing buttons are clicked

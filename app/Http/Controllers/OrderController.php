@@ -190,15 +190,15 @@ class OrderController extends Controller
     /**
      * Return regular orders waiting for the seller's decision.
      */
-    public function getPendingRegularOrders(): JsonResponse
+    public function getPendingRegularOrders(Request $request): JsonResponse
     {
-        if ($this->getPanel() !== 'seller') {
+        if (!in_array($this->getPanel(), ['seller', 'admin'], true)) {
             return response()->json(['data' => []]);
         }
 
-        $seller = auth()->user()?->seller();
-        if (!$seller) {
-            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), []);
+        $orderMode = $request->input('order_mode', 'regular');
+        if (!in_array($orderMode, ['regular', 'wholesale'], true)) {
+            $orderMode = 'regular';
         }
 
         $items = SellerOrderItem::with([
@@ -206,12 +206,19 @@ class OrderController extends Controller
             'orderItem',
             'product',
             'variant',
-        ])->whereHas('sellerOrder', function ($query) use ($seller) {
-            $query->where('seller_id', $seller->id)
-                ->whereHas('order', fn ($order) => $order->where('order_mode', 'regular'));
+        ])->whereHas('sellerOrder', function ($query) use ($orderMode) {
+            $query->whereHas('order', fn ($order) => $order->where('order_mode', $orderMode));
         })->whereHas('orderItem', function ($query) {
             $query->where('status', OrderItemStatusEnum::AWAITING_STORE_RESPONSE());
         })->orderBy('created_at')->get();
+
+        if ($this->getPanel() === 'seller') {
+            $seller = auth()->user()?->seller();
+            if (!$seller) {
+                return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), []);
+            }
+            $items = $items->filter(fn ($item) => $item->sellerOrder->seller_id === $seller->id)->values();
+        }
 
         $orders = $items->groupBy('seller_order_id')->values()->map(function ($orderItems) {
             $first = $orderItems->first();
@@ -246,7 +253,7 @@ class OrderController extends Controller
             ];
         })->values();
 
-        return response()->json(['data' => $orders]);
+        return response()->json(['data' => $orders, 'count' => $orders->count(), 'order_mode' => $orderMode]);
     }
 
     private function getOrderReturnData($sellerOrderItem): array
