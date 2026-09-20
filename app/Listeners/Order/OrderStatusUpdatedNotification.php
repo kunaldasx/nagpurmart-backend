@@ -8,6 +8,7 @@ use App\Enums\Order\OrderStatusEnum;
 use App\Events\Order\OrderStatusUpdated;
 use App\Notifications\OrderStatusUpdated as StatusUpdateNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class OrderStatusUpdatedNotification
@@ -30,16 +31,19 @@ class OrderStatusUpdatedNotification
         // Send notification to customer
         // Ready-for-pickup has its own OrderObserver notification. Sending the
         // generic item update here as well creates duplicate customer alerts.
-        $isFirstSellerAcceptance = $event->newStatus === OrderItemStatusEnum::ACCEPTED()
-            && in_array($event->oldOrderStatus, [
-                OrderStatusEnum::AWAITING_STORE_RESPONSE(),
-                OrderStatusEnum::PENDING(),
-            ], true);
         $isOtherCustomerUpdate = $event->newStatus !== OrderItemStatusEnum::ACCEPTED()
             && $event->newStatus !== OrderItemStatusEnum::PREPARING()
             && $event->orderStatus !== OrderStatusEnum::READY_FOR_PICKUP();
+        $isReadyForPickup = $event->orderStatus === OrderStatusEnum::READY_FOR_PICKUP()
+            || $event->orderItem->order->status === OrderStatusEnum::READY_FOR_PICKUP();
+        $shouldSendCustomerNotification = $isOtherCustomerUpdate;
 
-        if ($customer && ($isFirstSellerAcceptance || $isOtherCustomerUpdate)) {
+        if ($customer && $isReadyForPickup) {
+            $readyNotificationKey = 'customer-order-ready-for-pickup:' . $event->orderItem->order_id;
+            $shouldSendCustomerNotification = Cache::add($readyNotificationKey, true, now()->addDay());
+        }
+
+        if ($customer && $shouldSendCustomerNotification) {
             $this->sendNotification(user: $customer, event: $event, sendTo: "customer");
         }
 
