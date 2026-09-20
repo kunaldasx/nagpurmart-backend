@@ -18,10 +18,6 @@ class NewOrderNotification
      */
     public function handle(OrderPlaced $event): void
     {
-        $customer = $event->order->user;
-        if ($customer) {
-            $this->sendNotification(user: $customer, event: $event, sendTo: "customer");
-        }
         foreach ($event->order['sellerOrders'] ?? [] as $sellerOrder) {
             $seller = $sellerOrder->seller->user;
             $this->sendNotification(user: $seller, event: $event, sendTo: "seller");

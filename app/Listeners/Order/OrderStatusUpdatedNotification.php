@@ -28,23 +28,21 @@ class OrderStatusUpdatedNotification
 
         $seller = $event->orderItem->store->seller->user ?? null;
 
-        // Send notification to customer
-        // Ready-for-pickup has its own OrderObserver notification. Sending the
-        // generic item update here as well creates duplicate customer alerts.
-        $isOtherCustomerUpdate = $event->newStatus !== OrderItemStatusEnum::ACCEPTED()
-            && $event->newStatus !== OrderItemStatusEnum::PREPARING()
-            && $event->orderStatus !== OrderStatusEnum::READY_FOR_PICKUP();
-        $isReadyForPickup = $event->orderStatus === OrderStatusEnum::READY_FOR_PICKUP()
-            || $event->orderItem->order->status === OrderStatusEnum::READY_FOR_PICKUP();
-        $shouldSendCustomerNotification = $isOtherCustomerUpdate;
+        // Notify only when the aggregate order moves to one of the two seller
+        // decision milestones. Item-level preparing events are not customer alerts.
+        $milestoneStatuses = [
+            OrderStatusEnum::PARTIALLY_ACCEPTED(),
+            OrderStatusEnum::READY_FOR_PICKUP(),
+        ];
+        $isMilestoneTransition = $event->newStatus === OrderItemStatusEnum::ACCEPTED()
+            && $event->oldOrderStatus !== $event->orderStatus
+            && in_array($event->orderStatus, $milestoneStatuses, true);
 
-        if ($customer && $isReadyForPickup) {
-            $readyNotificationKey = 'customer-order-ready-for-pickup:' . $event->orderItem->order_id;
-            $shouldSendCustomerNotification = Cache::add($readyNotificationKey, true, now()->addDay());
-        }
-
-        if ($customer && $shouldSendCustomerNotification) {
-            $this->sendNotification(user: $customer, event: $event, sendTo: "customer");
+        if ($customer && $isMilestoneTransition) {
+            $milestoneKey = 'customer-order-status:' . $event->orderItem->order_id . ':' . $event->orderStatus;
+            if (Cache::add($milestoneKey, true, now()->addDay())) {
+                $this->sendNotification(user: $customer, event: $event, sendTo: "customer");
+            }
         }
 
         // Send notification to the seller
