@@ -40,6 +40,43 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.querySelector('[name="powered_by_image"]'),
         1,
     );
+    const backgroundPreviews = document.getElementById(
+        "highlighted-background-previews",
+    );
+    const heroPreview = document.getElementById("highlighted-hero-preview");
+    const poweredByPreview = document.getElementById(
+        "highlighted-powered-by-preview",
+    );
+
+    const clearPreviews = () => {
+        if (backgroundPreviews) backgroundPreviews.innerHTML = "";
+        [heroPreview, poweredByPreview].forEach((preview) => {
+            if (!preview) return;
+            preview.removeAttribute("src");
+            preview.style.display = "none";
+        });
+    };
+
+    const renderPreviews = (data) => {
+        clearPreviews();
+        [...new Set(data.background_images || [])].forEach((url) => {
+            const preview = document.createElement("img");
+            preview.src = url;
+            preview.alt = "Background image preview";
+            preview.className = "rounded border";
+            preview.style.cssText =
+                "width:120px;height:80px;object-fit:contain";
+            backgroundPreviews?.appendChild(preview);
+        });
+        [
+            [heroPreview, data.hero_image],
+            [poweredByPreview, data.powered_by_image],
+        ].forEach(([preview, url]) => {
+            if (!preview || !url) return;
+            preview.src = url;
+            preview.style.display = "block";
+        });
+    };
 
     const endpoint = (type) => {
         if (type === "product") return `${base_url}/${panel}/products/search`;
@@ -142,6 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
             backgroundImagesPond?.removeFiles();
             heroImagePond?.removeFiles();
             poweredByImagePond?.removeFiles();
+            clearPreviews();
             modal.querySelector("form").action =
                 `${base_url}/${panel}/highlighted-sections`;
             scopeCategory.tomselect?.clear();
@@ -155,6 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(async ({ data }) => {
                 const form = modal.querySelector("form");
                 form.action = `${base_url}/${panel}/highlighted-sections/${id}`;
+                renderPreviews(data);
                 [
                     "title",
                     "subtitle",
@@ -178,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     'input[type="checkbox"][name="is_bgimage"]',
                 ).checked = Boolean(data.is_bgimage);
                 backgroundImagesPond?.removeFiles();
-                for (const url of data.background_images || []) {
+                for (const url of [...new Set(data.background_images || [])]) {
                     try {
                         await addExistingFile(backgroundImagesPond, url);
                     } catch (error) {
