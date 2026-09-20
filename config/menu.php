@@ -258,6 +258,13 @@ return [
                 ],
             ],
         ],
+        'cart_recommendations' => [
+            'icon' => 'ti-shopping-cart-plus',
+            'route' => 'admin.cart-recommendations.index',
+            'title' => 'Cart Recommendations',
+            'active' => 'cart-recommendations',
+            'permission' => 'featured_section.view',
+        ],
         'highlighted_section' => [
             'icon' => 'ti-layout-grid',
             'route' => 'admin.highlighted-sections.index',

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\DeliveryZoneApiController;
 use App\Http\Controllers\Api\DeliveryTimeSlotApiController;
 use App\Http\Controllers\Api\FaqApiController;
 use App\Http\Controllers\Api\FeaturedSectionApiController;
+use App\Http\Controllers\Api\CartRecommendationApiController;
 use App\Http\Controllers\Api\HighlightedSectionApiController;
 use App\Http\Controllers\Api\PopularSearchApiController;
 use App\Http\Controllers\Api\PaymentController;
@@ -264,6 +265,9 @@ Route::prefix('featured-sections')->name('featured-sections.')->group(function (
     Route::get('/{slug}', [FeaturedSectionApiController::class, 'show'])->name('show');
     Route::get('/{slug}/products', [FeaturedSectionApiController::class, 'products'])->name('products');
 });
+
+Route::get('cart/recommendations', [CartRecommendationApiController::class, 'index'])
+    ->name('cart.recommendations');
 
 Route::prefix('highlighted-sections')->name('highlighted-sections.')->group(function () {
     Route::get('/', [HighlightedSectionApiController::class, 'index'])->name('index');

@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CartRecommendationSectionController;
 use App\Http\Controllers\DeliveryBoyController;
 use App\Http\Controllers\DeliveryZoneController;
 use App\Http\Controllers\DeliveryTimeSlotController;
@@ -326,6 +327,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{id}', [FeaturedSectionController::class, 'show'])->name('show');
             Route::post('/{id}', [FeaturedSectionController::class, 'update'])->name('update');
             Route::delete('/{id}', [FeaturedSectionController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('cart-recommendations')->name('cart-recommendations.')->group(function () {
+            Route::get('/', [CartRecommendationSectionController::class, 'index'])->name('index');
+            Route::post('/', [CartRecommendationSectionController::class, 'store'])->name('store');
+            Route::put('/{section}', [CartRecommendationSectionController::class, 'update'])->name('update');
+            Route::delete('/{section}', [CartRecommendationSectionController::class, 'destroy'])->name('destroy');
         });
 
         Route::prefix('highlighted-sections')->name('highlighted-sections.')->group(function () {
