@@ -102,6 +102,11 @@ document.addEventListener("DOMContentLoaded", () => {
             FilePond.find(
                 modal.querySelector('[name="background_images[]"]'),
             )?.removeFiles();
+            modal
+                .querySelectorAll(
+                    '[name="hero_image"], [name="powered_by_image"]',
+                )
+                .forEach((input) => FilePond.find(input)?.removeFiles());
             modal.querySelector("form").action =
                 `${base_url}/${panel}/highlighted-sections`;
             scopeCategory.tomselect?.clear();
@@ -159,6 +164,25 @@ document.addEventListener("DOMContentLoaded", () => {
                         options: { type: "remote" },
                     }),
                 );
+                [
+                    ["hero_image", data.hero_image],
+                    ["powered_by_image", data.powered_by_image],
+                ].forEach(([name, url]) => {
+                    const input = form.elements[name];
+                    if (!input || !url) return;
+                    let pond = FilePond.find(input);
+                    if (!pond) {
+                        pond = FilePond.create(input, {
+                            allowImagePreview: true,
+                            credits: false,
+                            storeAsFile: true,
+                            acceptedFileTypes: ["image/*"],
+                            maxFiles: 1,
+                        });
+                    }
+                    pond.removeFiles();
+                    pond.addFile({ source: url, options: { type: "remote" } });
+                });
                 const scopeSelect = document.getElementById(
                     "highlighted-scope-category",
                 );

@@ -57,6 +57,8 @@
                             <div class="col-md-3 mb-3 d-flex align-items-end"><label class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" name="status" value="active" checked><span class="form-check-label">Active</span></label></div>
                             <div class="col-12 mb-3"><label class="form-check form-switch"><input type="hidden" name="is_bgimage" value="0"><input class="form-check-input" type="checkbox" name="is_bgimage" value="1"><span class="form-check-label">Use background images</span></label></div>
                             <div class="col-12 mb-3"><label class="form-label">Background images</label><input type="file" name="background_images[]" multiple class="form-control filepond" accept="image/*" data-max-files="10" data-images="[]"></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">Hero image</label><input type="file" name="hero_image" class="form-control filepond" accept="image/*"></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">Powered by image</label><input type="file" name="powered_by_image" class="form-control filepond" accept="image/*"></div>
                         </div>
                         <hr><div class="d-flex justify-content-between align-items-center mb-2"><h4 class="mb-0">Items</h4><button type="button" class="btn btn-outline-primary btn-sm" id="add-highlighted-item">Add item</button></div>
                         <div id="highlighted-items"></div>

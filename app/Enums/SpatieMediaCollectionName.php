@@ -90,5 +90,7 @@ enum SpatieMediaCollectionName: string
     case SWATCHE_IMAGE = 'swatche_image';
     case HIGHLIGHTED_SECTION_ITEM_IMAGE = 'highlighted_section_item_image';
     case HIGHLIGHTED_SECTION_BACKGROUND_IMAGES = 'highlighted_section_background_images';
+    case HIGHLIGHTED_SECTION_HERO_IMAGE = 'highlighted_section_hero_image';
+    case HIGHLIGHTED_SECTION_POWERED_BY_IMAGE = 'highlighted_section_powered_by_image';
     case GIFT_SECTION_ICON = 'gift_section_icon';
 }

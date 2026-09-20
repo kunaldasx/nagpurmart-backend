@@ -120,9 +120,13 @@ class HighlightedSectionController extends Controller
         if ($validated['scope_type'] === HighlightedSectionScopeEnum::GLOBAL()) $validated['scope_id'] = null;
         $items = $validated['items'];
         $backgroundImages = $validated['background_images'] ?? [];
+        $heroImage = $validated['hero_image'] ?? null;
+        $poweredByImage = $validated['powered_by_image'] ?? null;
         unset($validated['items']);
         unset($validated['background_images']);
-        DB::transaction(function () use (&$section, $validated, $items, $backgroundImages) {
+        unset($validated['hero_image']);
+        unset($validated['powered_by_image']);
+        DB::transaction(function () use (&$section, $validated, $items, $backgroundImages, $heroImage, $poweredByImage) {
             $section = $section ?: new HighlightedSection();
             $section->fill($validated);
             $section->save();
@@ -130,6 +134,15 @@ class HighlightedSectionController extends Controller
                 $section->clearMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
                 foreach ($backgroundImages as $image) {
                     $section->addMedia($image)->toMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
+                }
+            }
+            foreach ([
+                [$heroImage, SpatieMediaCollectionName::HIGHLIGHTED_SECTION_HERO_IMAGE()],
+                [$poweredByImage, SpatieMediaCollectionName::HIGHLIGHTED_SECTION_POWERED_BY_IMAGE()],
+            ] as [$image, $collection]) {
+                if ($image) {
+                    $section->clearMediaCollection($collection);
+                    $section->addMedia($image)->toMediaCollection($collection);
                 }
             }
             $existingItems = $section->items()->get()->keyBy('id');

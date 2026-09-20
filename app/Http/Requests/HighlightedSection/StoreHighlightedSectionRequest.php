@@ -34,6 +34,8 @@ class StoreHighlightedSectionRequest extends FormRequest
             'is_bgimage' => 'nullable|boolean',
             'background_images' => 'nullable|array|max:10',
             'background_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:10240',
+            'hero_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:10240',
+            'powered_by_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:10240',
             'items' => 'required|array|min:1',
             'items.*.id' => 'nullable|integer|exists:highlighted_section_items,id',
             'items.*.item_type' => ['required', new Enum(HighlightedSectionItemTypeEnum::class)],

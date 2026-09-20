@@ -29,6 +29,13 @@ class HighlightedSection extends Model implements HasMedia
         'is_bgimage' => 'boolean',
     ];
 
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
+        $this->addMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_HERO_IMAGE())->singleFile();
+        $this->addMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_POWERED_BY_IMAGE())->singleFile();
+    }
+
     public function setTitleAttribute($value): void
     {
         $this->attributes['title'] = $value;
@@ -40,16 +47,21 @@ class HighlightedSection extends Model implements HasMedia
         return $this->hasMany(HighlightedSectionItem::class)->orderBy('sort_order');
     }
 
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
-    }
-
     public function getBackgroundImagesAttribute(): array
     {
         return $this->getMedia(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES())
             ->map(fn ($media) => $media->getFullUrl())
             ->toArray();
+    }
+
+    public function getHeroImageAttribute(): string
+    {
+        return $this->getFirstMediaUrl(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_HERO_IMAGE());
+    }
+
+    public function getPoweredByImageAttribute(): string
+    {
+        return $this->getFirstMediaUrl(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_POWERED_BY_IMAGE());
     }
 
     public function scopeCategory(): BelongsTo
