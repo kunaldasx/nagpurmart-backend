@@ -42,6 +42,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
+    const addExistingFile = async (pond, url) => {
+        if (!pond || !url) return;
+        const response = await fetch(url, { credentials: "same-origin" });
+        if (!response.ok)
+            throw new Error(`Unable to load image: ${response.status}`);
+        const blob = await response.blob();
+        const filename = decodeURIComponent(
+            new URL(url, window.location.href).pathname.split("/").pop() ||
+                "image",
+        );
+        await pond.addFile(new File([blob], filename, { type: blob.type }));
+    };
+
     const addItem = (data) => {
         const itemIndex = index++;
         const row = document.createElement("div");
@@ -117,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         fetch(`${base_url}/${panel}/highlighted-sections/${id}`)
             .then((response) => response.json())
-            .then(({ data }) => {
+            .then(async ({ data }) => {
                 const form = modal.querySelector("form");
                 form.action = `${base_url}/${panel}/highlighted-sections/${id}`;
                 [
@@ -158,12 +171,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
                 backgroundImagesPond?.removeFiles();
-                (data.background_images || []).forEach((url) =>
-                    backgroundImagesPond?.addFile({
-                        source: url,
-                        options: { type: "remote" },
-                    }),
-                );
+                for (const url of data.background_images || []) {
+                    try {
+                        await addExistingFile(backgroundImagesPond, url);
+                    } catch (error) {
+                        console.error(
+                            "Unable to load highlighted background image",
+                            error,
+                        );
+                    }
+                }
                 [
                     ["hero_image", data.hero_image],
                     ["powered_by_image", data.powered_by_image],
@@ -181,7 +198,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         });
                     }
                     pond.removeFiles();
-                    pond.addFile({ source: url, options: { type: "remote" } });
+                    addExistingFile(pond, url).catch((error) =>
+                        console.error(
+                            `Unable to load highlighted ${name}`,
+                            error,
+                        ),
+                    );
                 });
                 const scopeSelect = document.getElementById(
                     "highlighted-scope-category",
