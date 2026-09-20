@@ -181,7 +181,7 @@ class DeliveryZoneApiController extends Controller
     /**
      * Estimate delivery time for a given store and user coordinates.
      *
-     * Formula used: 5 minutes fixed preparation + 3 minutes per km (rounded up by km).
+    * Formula used: 5 minutes fixed preparation + configured additional delay + 3 minutes per km (rounded up by km).
      * Returns time only if the store can deliver to the provided coordinates.
      */
     #[QueryParameter('latitude', description: 'Latitude coordinate of the customer.', type: 'float', example: 23.11684540)]
@@ -261,7 +261,14 @@ class DeliveryZoneApiController extends Controller
         }
 
         if (!$selectedStore || !$selectedStore->latitude || !$selectedStore->longitude) {
-            return ApiResponseType::sendJsonResponse(success: true, message: __('labels.delivery_not_available'), data: ['is_deliverable' => false, 'coordinates' => ['latitude' => $latitude, 'longitude' => $longitude]]);
+            $pausedZone = DeliveryZoneService::getPausedZoneAtPoint($latitude, $longitude);
+            return ApiResponseType::sendJsonResponse(success: true, message: __('labels.delivery_not_available'), data: [
+                'is_deliverable' => false,
+                'delivery_paused' => (bool) $pausedZone,
+                'delivery_pause_until' => $pausedZone?->delivery_paused_until?->toISOString(),
+                'delivery_pause_comment' => $pausedZone?->delivery_pause_comment,
+                'coordinates' => ['latitude' => $latitude, 'longitude' => $longitude],
+            ]);
         }
 
         // Check delivery availability (defensive)
@@ -278,6 +285,10 @@ class DeliveryZoneApiController extends Controller
         ];
 
         if (!$canDeliver) {
+            $pausedZone = DeliveryZoneService::getPausedZoneAtPoint($latitude, $longitude);
+            $response['delivery_paused'] = (bool) $pausedZone;
+            $response['delivery_pause_until'] = $pausedZone?->delivery_paused_until?->toISOString();
+            $response['delivery_pause_comment'] = $pausedZone?->delivery_pause_comment;
             return ApiResponseType::sendJsonResponse(success: true, message: __('labels.delivery_not_available'), data: $response);
         }
 
@@ -285,10 +296,24 @@ class DeliveryZoneApiController extends Controller
         $distance = DeliveryZoneService::calculateDistance((float)$selectedStore->latitude, (float)$selectedStore->longitude, $latitude, $longitude);
 
         $distanceMinutes = $distance > 0 ? ((int) ceil($distance) * 3) : 0;
-        $estimatedTotalMinutes = DeliveryZoneService::calculateExpectedDeliveryMinutes($distance);
+        $zoneInfo = DeliveryZoneService::getZonesAtPoint($latitude, $longitude);
+        $additionalDelay = (int) ($zoneInfo['delay'] ?? 0);
+        $estimatedTotalMinutes = DeliveryZoneService::calculateExpectedDeliveryMinutes($distance, $additionalDelay);
 
         $response['distance_km'] = round($distance, 2);
         $response['distance_minutes'] = $distanceMinutes;
+        $response['base_prep_time_minutes'] = 5;
+        $response['delay'] = $additionalDelay;
+        $response['comment'] = $zoneInfo['comment'] ?? null;
+        $response['delivery_paused'] = false;
+        $response['delivery_pause_until'] = null;
+        $response['delivery_pause_comment'] = null;
+        $response['calculation'] = [
+            'base_prep_time_minutes' => 5,
+            'additional_delay_minutes' => $additionalDelay,
+            'distance_minutes' => $distanceMinutes,
+            'estimated_time_minutes' => (int) $estimatedTotalMinutes,
+        ];
         $response['estimated_time_minutes'] = (int)$estimatedTotalMinutes;
 
         return ApiResponseType::sendJsonResponse(success: true, message: __('labels.estimated_delivery_time'), data: $response);

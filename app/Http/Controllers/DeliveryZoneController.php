@@ -54,6 +54,8 @@ class DeliveryZoneController extends Controller
             ['data' => 'radius_km', 'name' => 'radius_km', 'title' => __('labels.radius_km')],
             ['data' => 'delivery_time_per_km', 'name' => 'delivery_time_per_km', 'title' => __('labels.delivery_time_per_km')],
             ['data' => 'buffer_time', 'name' => 'buffer_time', 'title' => __('labels.buffer_time')],
+            ['data' => 'delay', 'name' => 'delay', 'title' => 'Additional delay'],
+            ['data' => 'delivery_pause', 'name' => 'delivery_pause', 'title' => 'Delivery status'],
             ['data' => 'status', 'name' => 'status', 'title' => __('labels.status')],
             ['data' => 'created_at', 'name' => 'created_at', 'title' => __('labels.created_at')],
             ['data' => 'action', 'name' => 'action', 'title' => __('labels.action'), 'orderable' => false, 'searchable' => false],
@@ -109,6 +111,8 @@ class DeliveryZoneController extends Controller
                     'radius_km' => $deliveryZone->radius_km . ' km',
                     'delivery_time_per_km' => $deliveryZone->delivery_time_per_km . " " . __('labels.minutes'),
                     'buffer_time' => $deliveryZone->buffer_time . " " . __('labels.minutes'),
+                    'delay' => $deliveryZone->delay . " " . __('labels.minutes'),
+                    'delivery_pause' => DeliveryZoneService::isDeliveryPaused($deliveryZone) ? 'Paused' : 'Available',
                     'status' => view('partials.status', ['status' => $deliveryZone->status ?? ""])->render(),
                     'created_at' => $deliveryZone->created_at->format('Y-m-d'),
                     'action' => view('partials.actions', [

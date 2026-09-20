@@ -91,6 +91,8 @@ This returns the same section object directly in `data`, rather than the paginat
 
 The section object includes `button_color`, `button_text_color`, `badge_color`, `badge_text_color`, `deal_badge_color`, and `deal_price_color` as nullable color strings. Use the first pair for the button background and label text, the second pair for regular badge background and label text, and the final pair for deal badge background and deal price text. These fields are returned for every template; the frontend can use the fields required by the selected `template`.
 
+Sections are returned in ascending `sort_order`, with `id` used as the tie-breaker. Items inside each section are also returned in ascending `sort_order`. Set the section-level `sort_order` to control the display order of sections; set `items[index][sort_order]` to control item order. If an item sort order is omitted, its request array index is used.
+
 ## Supporting metadata
 
 - `GET /api/highlighted-sections/templates` returns `{ "code": "...", "name": "..." }` entries.

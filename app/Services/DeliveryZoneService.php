@@ -11,6 +11,7 @@ use App\Http\Resources\StoreResource;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\DeliveryZone;
+use Carbon\Carbon;
 use App\Models\Store;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -110,7 +111,7 @@ class DeliveryZoneService
         $zones = DeliveryZone::where('status', ActiveInactiveStatusEnum::ACTIVE())
             ->get()
             ->filter(function ($zone) use ($latitude, $longitude) {
-                return self::containsPoint($zone, $latitude, $longitude);
+                return self::containsPoint($zone, $latitude, $longitude) && !self::isDeliveryPaused($zone);
             });
 
         // Get the first zone if any exists
@@ -131,7 +132,24 @@ class DeliveryZoneService
             'distance_based_delivery_charges' => $zone ? $zone->distance_based_delivery_charges : 0,
             'per_store_drop_off_fee' => $zone ? $zone->per_store_drop_off_fee : 0,
             'buffer_time' => $zone ? $zone->buffer_time : 0,
+            'delay' => $zone ? $zone->delay : 0,
+            'comment' => $zone ? $zone->comment : null,
+            'delivery_paused' => false,
+            'delivery_paused_until' => null,
+            'delivery_pause_comment' => null,
         ];
+    }
+
+    public static function isDeliveryPaused(DeliveryZone $zone): bool
+    {
+        return (bool) $zone->delivery_paused
+            && (!$zone->delivery_paused_until || Carbon::now()->lt($zone->delivery_paused_until));
+    }
+    public static function getPausedZoneAtPoint(float $latitude, float $longitude): ?DeliveryZone
+    {
+        return DeliveryZone::where('status', ActiveInactiveStatusEnum::ACTIVE())
+            ->get()
+            ->first(fn (DeliveryZone $zone) => self::containsPoint($zone, $latitude, $longitude) && self::isDeliveryPaused($zone));
     }
 
     /**
@@ -213,15 +231,11 @@ class DeliveryZoneService
      * Formula: 5 minutes fixed preparation + 3 minutes per km rounded up to the next km bucket
      * (0-1km => 3 mins, 1.1-2km => 6 mins, etc.).
      */
-    public static function calculateExpectedDeliveryMinutes(float $distanceKm): int
+    public static function calculateExpectedDeliveryMinutes(float $distanceKm, int $additionalDelay = 0): int
     {
-        if ($distanceKm <= 0) {
-            return 5;
-        }
+        $distanceBucketMinutes = $distanceKm > 0 ? (int) ceil($distanceKm) * 3 : 0;
 
-        $distanceBucketMinutes = (int) ceil($distanceKm) * 3;
-
-        return 5 + $distanceBucketMinutes;
+        return 5 + max(0, $additionalDelay) + $distanceBucketMinutes;
     }
 
     /**
@@ -494,7 +508,9 @@ class DeliveryZoneService
 
         // Check if user location is within any delivery zone (polygon or radius)
         foreach ($deliveryZones as $zone) {
-            if (self::containsPoint($zone, $userLat, $userLng)) {
+            if ($zone->status === ActiveInactiveStatusEnum::ACTIVE()
+                && !self::isDeliveryPaused($zone)
+                && self::containsPoint($zone, $userLat, $userLng)) {
                 return true;
             }
         }

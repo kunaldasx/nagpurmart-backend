@@ -169,6 +169,50 @@
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="delivery-delay" class="form-label">Additional delivery delay</label>
+                                        <div class="input-group mb-2">
+                                            <input type="number" class="form-control" name="delay"
+                                                   id="delivery-delay"
+                                                   placeholder="e.g. 10"
+                                                   value="{{$deliveryZone->delay ?? 0}}" min="0" step="1">
+                                            <span class="input-group-text"> {{__('labels.minutes')}} </span>
+                                        </div>
+                                        <small class="form-hint">Added to the 5-minute preparation time and distance estimate.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="delivery-delay-comment" class="form-label">Delay comment</label>
+                                        <textarea class="form-control" name="comment" id="delivery-delay-comment" rows="2" maxlength="1000" placeholder="e.g. Heavy rain">{{$deliveryZone->comment ?? ''}}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border rounded p-3 mb-3">
+                                <div class="form-check form-switch mb-3">
+                                    <input type="hidden" name="delivery_paused" value="0">
+                                    <input class="form-check-input" type="checkbox" id="delivery-paused"
+                                           name="delivery_paused" value="1" {{ !empty($deliveryZone) && $deliveryZone->delivery_paused ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="delivery-paused">Temporarily stop deliveries in this zone</label>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="delivery-paused-until" class="form-label">Resume deliveries at (optional)</label>
+                                        <input type="datetime-local" class="form-control" name="delivery_paused_until"
+                                               id="delivery-paused-until"
+                                               value="{{ !empty($deliveryZone?->delivery_paused_until) ? $deliveryZone->delivery_paused_until->format('Y-m-d\\TH:i') : '' }}">
+                                        <small class="form-hint">Leave empty to keep deliveries paused until an admin turns this off.</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="delivery-pause-comment" class="form-label">Pause reason</label>
+                                        <textarea class="form-control" name="delivery_pause_comment" id="delivery-pause-comment" rows="2" maxlength="1000" placeholder="e.g. Severe rain or temporary operational issue">{{ $deliveryZone->delivery_pause_comment ?? '' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mb-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="rush-delivery-enabled"
