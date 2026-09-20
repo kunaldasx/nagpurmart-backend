@@ -97,6 +97,33 @@
     </div>
 @endsection
 
+@push('styles')
+<style>
+    #recommendation-products {
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+    #recommendation-products .form-check {
+        padding-left: 0.75rem;
+        cursor: pointer;
+    }
+
+    #recommendation-products .recommendation-product {
+        flex: 0 0 auto;
+        margin-left: 0;
+    }
+
+    #recommendation-products img {
+        flex: 0 0 auto;
+    }
+
+    #recommendation-products .form-check-label {
+        min-width: 0;
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 $(function () {
