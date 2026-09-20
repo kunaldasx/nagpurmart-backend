@@ -11,6 +11,18 @@ composer install --no-dev --optimize-autoloader
 **Run database migrations**:
 php artisan migrate --force
 
+**Publish uploaded media files**:
+
+The admin image edit forms and API media URLs use the public disk at
+`/storage/...`. Create the symbolic link on every deployment (or after a fresh
+server setup):
+
+php artisan storage:link
+
+Verify that `public/storage` exists and that an uploaded image URL such as
+`https://admin.nagpurmart.in/storage/...` does not return 404. Also ensure
+`APP_URL=https://admin.nagpurmart.in` is set before clearing the config cache.
+
 **Set Gemini model if needed**:
 GEMINI_MODEL=gemini-3.5-flash
 GEMINI_TIMEOUT=120
