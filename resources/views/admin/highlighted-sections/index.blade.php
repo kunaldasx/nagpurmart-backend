@@ -59,6 +59,9 @@
                             <div class="col-12 mb-3"><label class="form-label">Background images</label><input type="file" name="background_images[]" multiple class="form-control filepond" accept="image/*" data-max-files="10" data-images="[]"></div>
                             <div class="col-md-6 mb-3"><label class="form-label">Hero image</label><input type="file" name="hero_image" class="form-control filepond" accept="image/*"></div>
                             <div class="col-md-6 mb-3"><label class="form-label">Powered by image</label><input type="file" name="powered_by_image" class="form-control filepond" accept="image/*"></div>
+                            <input type="hidden" name="remove_background_images" value="0">
+                            <input type="hidden" name="remove_hero_image" value="0">
+                            <input type="hidden" name="remove_powered_by_image" value="0">
                         </div>
                         <hr><div class="d-flex justify-content-between align-items-center mb-2"><h4 class="mb-0">Items</h4><button type="button" class="btn btn-outline-primary btn-sm" id="add-highlighted-item">Add item</button></div>
                         <div id="highlighted-items"></div>

@@ -47,6 +47,28 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.querySelector('[name="powered_by_image"]'),
         1,
     );
+    let existingMedia = {
+        background: false,
+        hero: false,
+        poweredBy: false,
+    };
+    const form = modal.querySelector("form");
+    form.addEventListener("submit", () => {
+        form.elements.remove_background_images.value =
+            existingMedia.background &&
+            (backgroundImagesPond?.getFiles().length || 0) === 0
+                ? "1"
+                : "0";
+        form.elements.remove_hero_image.value =
+            existingMedia.hero && (heroImagePond?.getFiles().length || 0) === 0
+                ? "1"
+                : "0";
+        form.elements.remove_powered_by_image.value =
+            existingMedia.poweredBy &&
+            (poweredByImagePond?.getFiles().length || 0) === 0
+                ? "1"
+                : "0";
+    });
 
     const endpoint = (type) => {
         if (type === "product") return `${base_url}/${panel}/products/search`;
@@ -145,6 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.addEventListener("show.bs.modal", (event) => {
         const id = event.relatedTarget?.dataset.id;
         if (!id) {
+            existingMedia = {
+                background: false,
+                hero: false,
+                poweredBy: false,
+            };
             modal.querySelector("form").reset();
             backgroundImagesPond?.removeFiles();
             heroImagePond?.removeFiles();
@@ -160,7 +187,11 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch(`${base_url}/${panel}/highlighted-sections/${id}`)
             .then((response) => response.json())
             .then(async ({ data }) => {
-                const form = modal.querySelector("form");
+                existingMedia = {
+                    background: (data.background_images || []).length > 0,
+                    hero: Boolean(data.hero_image),
+                    poweredBy: Boolean(data.powered_by_image),
+                };
                 form.action = `${base_url}/${panel}/highlighted-sections/${id}`;
                 [
                     "title",

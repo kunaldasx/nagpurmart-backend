@@ -122,15 +122,19 @@ class HighlightedSectionController extends Controller
         $backgroundImages = $validated['background_images'] ?? [];
         $heroImage = $validated['hero_image'] ?? null;
         $poweredByImage = $validated['powered_by_image'] ?? null;
+        $removeBackgroundImages = (bool) ($validated['remove_background_images'] ?? false);
+        $removeHeroImage = (bool) ($validated['remove_hero_image'] ?? false);
+        $removePoweredByImage = (bool) ($validated['remove_powered_by_image'] ?? false);
         unset($validated['items']);
         unset($validated['background_images']);
         unset($validated['hero_image']);
         unset($validated['powered_by_image']);
-        DB::transaction(function () use (&$section, $validated, $items, $backgroundImages, $heroImage, $poweredByImage) {
+        unset($validated['remove_background_images'], $validated['remove_hero_image'], $validated['remove_powered_by_image']);
+        DB::transaction(function () use (&$section, $validated, $items, $backgroundImages, $heroImage, $poweredByImage, $removeBackgroundImages, $removeHeroImage, $removePoweredByImage) {
             $section = $section ?: new HighlightedSection();
             $section->fill($validated);
             $section->save();
-            if ($backgroundImages) {
+            if ($removeBackgroundImages || $backgroundImages) {
                 $section->clearMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
                 foreach ($backgroundImages as $image) {
                     $section->addMedia($image)->toMediaCollection(SpatieMediaCollectionName::HIGHLIGHTED_SECTION_BACKGROUND_IMAGES());
@@ -140,8 +144,13 @@ class HighlightedSectionController extends Controller
                 [$heroImage, SpatieMediaCollectionName::HIGHLIGHTED_SECTION_HERO_IMAGE()],
                 [$poweredByImage, SpatieMediaCollectionName::HIGHLIGHTED_SECTION_POWERED_BY_IMAGE()],
             ] as [$image, $collection]) {
-                if ($image) {
+                $removeImage = $collection === SpatieMediaCollectionName::HIGHLIGHTED_SECTION_HERO_IMAGE()
+                    ? $removeHeroImage
+                    : $removePoweredByImage;
+                if ($removeImage || $image) {
                     $section->clearMediaCollection($collection);
+                }
+                if ($image) {
                     $section->addMedia($image)->toMediaCollection($collection);
                 }
             }
