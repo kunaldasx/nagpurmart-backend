@@ -7,6 +7,7 @@ $(document).ready(function () {
     const timerText = $("#new-order-timer");
     let pendingOrders = [];
     let activeOrder = null;
+    const handledOrderIds = new Set();
     let timerHandle = null;
     let startedAt = 0;
     const timerDuration = 60;
@@ -66,9 +67,10 @@ $(document).ready(function () {
     };
     const finishOrder = () => {
         window.clearInterval(timerHandle);
+        if (activeOrder) handledOrderIds.add(activeOrder.seller_order_id);
         activeOrder = null;
+        modal.one("hidden.bs.modal", showNextOrder);
         modal.modal("hide");
-        showNextOrder();
     };
     const decideOrder = () => {
         if (!activeOrder) return;
@@ -126,7 +128,10 @@ $(document).ready(function () {
                 ...pendingOrders.map((order) => order.seller_order_id),
             ]);
             orders.forEach((order) => {
-                if (!known.has(order.seller_order_id))
+                if (
+                    !known.has(order.seller_order_id) &&
+                    !handledOrderIds.has(order.seller_order_id)
+                )
                     pendingOrders.push(order);
             });
             showNextOrder();

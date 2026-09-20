@@ -28,7 +28,18 @@ class OrderStatusUpdatedNotification
         $seller = $event->orderItem->store->seller->user ?? null;
 
         // Send notification to customer
-        if ($customer) {
+        // Ready-for-pickup has its own OrderObserver notification. Sending the
+        // generic item update here as well creates duplicate customer alerts.
+        $isFirstSellerAcceptance = $event->newStatus === OrderItemStatusEnum::ACCEPTED()
+            && in_array($event->oldOrderStatus, [
+                OrderStatusEnum::AWAITING_STORE_RESPONSE(),
+                OrderStatusEnum::PENDING(),
+            ], true);
+        $isOtherCustomerUpdate = $event->newStatus !== OrderItemStatusEnum::ACCEPTED()
+            && $event->newStatus !== OrderItemStatusEnum::PREPARING()
+            && $event->orderStatus !== OrderStatusEnum::READY_FOR_PICKUP();
+
+        if ($customer && ($isFirstSellerAcceptance || $isOtherCustomerUpdate)) {
             $this->sendNotification(user: $customer, event: $event, sendTo: "customer");
         }
 
