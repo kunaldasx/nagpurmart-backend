@@ -19,6 +19,7 @@ class HighlightedSection extends Model implements HasMedia
     protected $fillable = [
         'title', 'slug', 'subtitle', 'template', 'scope_type', 'scope_id',
         'background_color', 'font_color', 'button_color', 'button_text_color', 'sort_order', 'status', 'is_bgimage',
+        'badge_color', 'badge_text_color', 'deal_badge_color', 'deal_price_color',
     ];
 
     protected $casts = [

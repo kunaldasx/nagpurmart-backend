@@ -17,4 +17,5 @@ enum HighlightedSectionTemplateEnum: string
     case SPOTLIGHT = 'spotlight';
     case DEALS = 'deals';
     case IMAGE_PRODUCTS = 'image_products';
+    case HOT_SIPS_AND_SNACK = 'hot_sips_and_snack';
 }

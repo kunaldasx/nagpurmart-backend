@@ -177,6 +177,15 @@ $(document).ready(function () {
             );
         };
 
+        window.addEventListener("nagpurmart:notification", (event) => {
+            const data = event.detail?.data?.data || event.detail?.data || {};
+            if (!data.order_mode || data.order_mode === "regular") {
+                pollOrderMode("regular").catch((error) =>
+                    console.error("Regular order polling failed:", error),
+                );
+            }
+        });
+
         $("#new-order-accept").on("click", () => decideOrder("accept"));
         $("#new-order-reject").on("click", () => decideOrder("reject"));
         pollOrders();

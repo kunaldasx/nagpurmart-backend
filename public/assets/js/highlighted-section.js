@@ -124,6 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     "font_color",
                     "button_color",
                     "button_text_color",
+                    "badge_color",
+                    "badge_text_color",
+                    "deal_badge_color",
+                    "deal_price_color",
                     "sort_order",
                 ].forEach((name) => {
                     const field = form.elements[name];
