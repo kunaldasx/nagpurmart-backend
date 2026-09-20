@@ -84,7 +84,6 @@ class OrderService
     {
         try {
             DB::beginTransaction();
-            $oldOrderStatus = $orderItem->order?->status;
             // Step 1: Validate cart and system settings
             $cartValidation = $this->validateCartAndSettings($user);
             if (!$cartValidation['success']) {
@@ -1099,6 +1098,7 @@ class OrderService
     {
         try {
             DB::beginTransaction();
+            $oldOrderStatus = $orderItem->order?->status;
 
             $returnDeadline = null;
             if ($orderItem->return_eligible && $orderItem->returnable_days > 0) {
