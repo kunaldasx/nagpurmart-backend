@@ -165,13 +165,6 @@ document.addEventListener("DOMContentLoaded", () => {
             initializeMultipleFilePond(input);
         }
 
-        const backgroundImagesInput = document.querySelector(
-            `[name="background_images[]"]`,
-        );
-        if (backgroundImagesInput) {
-            initializeMultipleFilePond(backgroundImagesInput);
-        }
-
         function initializeMultipleFilePond(input) {
             const imagesJson = input.getAttribute("data-images");
             let imageUrls = [];

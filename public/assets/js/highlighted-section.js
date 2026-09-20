@@ -14,6 +14,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const scopeType = document.getElementById("highlighted-scope-type");
     let index = 0;
 
+    const createPond = (input, maxFiles) => {
+        if (!input || typeof FilePond === "undefined") return null;
+        return (
+            FilePond.find(input) ||
+            FilePond.create(input, {
+                allowImagePreview: true,
+                credits: false,
+                storeAsFile: true,
+                acceptedFileTypes: ["image/*"],
+                maxFiles,
+            })
+        );
+    };
+
+    const backgroundImagesPond = createPond(
+        modal.querySelector('[name="background_images[]"]'),
+        10,
+    );
+    const heroImagePond = createPond(
+        modal.querySelector('[name="hero_image"]'),
+        1,
+    );
+    const poweredByImagePond = createPond(
+        modal.querySelector('[name="powered_by_image"]'),
+        1,
+    );
+
     const endpoint = (type) => {
         if (type === "product") return `${base_url}/${panel}/products/search`;
         if (type === "category")
@@ -112,14 +139,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = event.relatedTarget?.dataset.id;
         if (!id) {
             modal.querySelector("form").reset();
-            FilePond.find(
-                modal.querySelector('[name="background_images[]"]'),
-            )?.removeFiles();
-            modal
-                .querySelectorAll(
-                    '[name="hero_image"], [name="powered_by_image"]',
-                )
-                .forEach((input) => FilePond.find(input)?.removeFiles());
+            backgroundImagesPond?.removeFiles();
+            heroImagePond?.removeFiles();
+            poweredByImagePond?.removeFiles();
             modal.querySelector("form").action =
                 `${base_url}/${panel}/highlighted-sections`;
             scopeCategory.tomselect?.clear();
@@ -155,21 +177,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 form.querySelector(
                     'input[type="checkbox"][name="is_bgimage"]',
                 ).checked = Boolean(data.is_bgimage);
-                const backgroundImagesInput =
-                    form.elements["background_images[]"];
-                let backgroundImagesPond = FilePond.find(backgroundImagesInput);
-                if (!backgroundImagesPond && backgroundImagesInput) {
-                    backgroundImagesPond = FilePond.create(
-                        backgroundImagesInput,
-                        {
-                            allowImagePreview: true,
-                            credits: false,
-                            storeAsFile: true,
-                            acceptedFileTypes: ["image/*"],
-                            maxFiles: 10,
-                        },
-                    );
-                }
                 backgroundImagesPond?.removeFiles();
                 for (const url of data.background_images || []) {
                     try {
@@ -185,18 +192,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     ["hero_image", data.hero_image],
                     ["powered_by_image", data.powered_by_image],
                 ].forEach(([name, url]) => {
-                    const input = form.elements[name];
-                    if (!input || !url) return;
-                    let pond = FilePond.find(input);
-                    if (!pond) {
-                        pond = FilePond.create(input, {
-                            allowImagePreview: true,
-                            credits: false,
-                            storeAsFile: true,
-                            acceptedFileTypes: ["image/*"],
-                            maxFiles: 1,
-                        });
-                    }
+                    const pond =
+                        name === "hero_image"
+                            ? heroImagePond
+                            : poweredByImagePond;
+                    if (!url || !pond) return;
                     pond.removeFiles();
                     addExistingFile(pond, url).catch((error) =>
                         console.error(
