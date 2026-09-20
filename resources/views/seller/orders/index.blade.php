@@ -84,26 +84,6 @@
     @include('seller.orders.partials.order-preparing-modal')
     @include('seller.orders.partials.order-reject-modal')
 
-    <div class="modal modal-blur fade" id="newRegularOrderModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h3 class="modal-title">New regular order</h3>
-                    <span class="badge bg-white text-primary" id="new-order-timer">Waiting 00:00</span>
-                </div>
-                <div class="modal-body">
-                    <div id="new-order-summary"></div>
-                    <div id="new-order-items" class="mt-3"></div>
-                    <div class="alert alert-danger d-none mt-3 mb-0" id="new-order-error"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" id="new-order-reject">Reject</button>
-                    <button type="button" class="btn btn-success" id="new-order-accept">Accept</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
 @endsection
 
 @push('scripts')

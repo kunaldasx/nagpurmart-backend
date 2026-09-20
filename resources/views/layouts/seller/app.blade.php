@@ -21,6 +21,30 @@
             @yield('seller-content')
         </div>
     </div>
+    <div class="modal modal-blur fade" id="newRegularOrderModal" data-pending-url="{{ route('seller.orders.pending-regular') }}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h3 class="modal-title">New regular order</h3>
+                    <div id="new-order-timer-ring" aria-label="Order waiting time"><span id="new-order-timer">00:00</span></div>
+                </div>
+                <div class="modal-body">
+                    <div id="new-order-summary"></div>
+                    <div id="new-order-items" class="mt-3"></div>
+                    <div class="alert alert-danger d-none mt-3 mb-0" id="new-order-error"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success btn-lg w-100" id="new-order-accept">Accept and prepare order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        #new-order-timer-ring { --timer-progress: 0deg; width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#fff var(--timer-progress), rgba(255,255,255,.3) 0deg); position: relative; }
+        #new-order-timer-ring::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: var(--tblr-primary); }
+        #new-order-timer { position: relative; z-index: 1; color: #fff; font-size: 1.05rem; font-weight: 700; }
+    </style>
+    <script src="{{ hyperAsset('assets/js/seller-order-alert.js') }}" defer></script>
     {{-- Mobile App Deep Link Bootstrap Modal for Seller Panel --}}
     @php
         $sellerScheme = $appSettings['sellerAppScheme'] ?? '';
