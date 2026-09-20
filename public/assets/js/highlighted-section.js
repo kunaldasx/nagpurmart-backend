@@ -53,22 +53,27 @@ document.addEventListener("DOMContentLoaded", () => {
         poweredBy: false,
     };
     const form = modal.querySelector("form");
-    form.addEventListener("submit", () => {
-        form.elements.remove_background_images.value =
-            existingMedia.background &&
-            (backgroundImagesPond?.getFiles().length || 0) === 0
-                ? "1"
-                : "0";
-        form.elements.remove_hero_image.value =
-            existingMedia.hero && (heroImagePond?.getFiles().length || 0) === 0
-                ? "1"
-                : "0";
-        form.elements.remove_powered_by_image.value =
-            existingMedia.poweredBy &&
-            (poweredByImagePond?.getFiles().length || 0) === 0
-                ? "1"
-                : "0";
-    });
+    form.addEventListener(
+        "submit",
+        () => {
+            form.elements.remove_background_images.value =
+                existingMedia.background &&
+                (backgroundImagesPond?.getFiles().length || 0) === 0
+                    ? "1"
+                    : "0";
+            form.elements.remove_hero_image.value =
+                existingMedia.hero &&
+                (heroImagePond?.getFiles().length || 0) === 0
+                    ? "1"
+                    : "0";
+            form.elements.remove_powered_by_image.value =
+                existingMedia.poweredBy &&
+                (poweredByImagePond?.getFiles().length || 0) === 0
+                    ? "1"
+                    : "0";
+        },
+        true,
+    );
 
     const endpoint = (type) => {
         if (type === "product") return `${base_url}/${panel}/products/search`;
