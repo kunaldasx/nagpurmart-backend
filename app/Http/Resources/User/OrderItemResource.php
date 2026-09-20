@@ -22,6 +22,8 @@ class OrderItemResource extends JsonResource
         }
         $sellerId = $this->store?->seller?->id;
         $sellerName = $this->store?->seller?->user?->name;
+        $storeProductVariant = $this->variant?->storeProductVariants
+            ?->firstWhere('store_id', $this->store_id);
 
         $attachments = [];
         try {
@@ -58,6 +60,10 @@ class OrderItemResource extends JsonResource
             'return_deadline' => $this->return_deadline,
             'quantity' => $this->quantity,
             'price' => $this->price,
+            'original_price' => $storeProductVariant?->price,
+            'special_price' => $storeProductVariant?->special_price,
+            'wholesale_price' => $storeProductVariant?->wholesale_price,
+            'original_special_price' => $storeProductVariant?->original_special_price_exclude_tax,
             'subtotal' => $this->subtotal,
             'status' => $this->status,
             'otp' => $this->otp ?? null,

@@ -412,7 +412,7 @@ class OrderService
         $postPayment = $this->paymentService->postPaymentInitialtion(order: $order, redirectUrl: $data['redirect_url'] ?? null);
 
         // Load order relationships for response
-        $order->load(['items.product', 'items.variant', 'items.store', 'user', 'sellerOrders.seller.user', 'deliveryTimeSlot.store']);
+        $order->load(['items.product', 'items.variant.storeProductVariants', 'items.store', 'user', 'sellerOrders.seller.user', 'deliveryTimeSlot.store']);
         $order->payment_response = $postPayment['data'] ?? null;
         $cart->items()->delete();
         event(new OrderPlaced($order));
@@ -907,7 +907,7 @@ class OrderService
         try {
             $order = Order::where('user_id', $user->id)
                 ->where('slug', $orderSlug)
-                ->with(['deliveryBoy.user', 'items.product', 'items.variant', 'items.store', 'sellerFeedbacks', 'sellerOrders', 'items.returns', 'promoLine'])
+                ->with(['deliveryBoy.user', 'items.product', 'items.variant.storeProductVariants', 'items.store', 'sellerFeedbacks', 'sellerOrders', 'items.returns', 'promoLine'])
                 ->first();
 
             if (!$order) {
@@ -948,7 +948,7 @@ class OrderService
                 ->with([
                     'deliveryBoy.user',
                     'items.product',
-                    'items.variant',
+                    'items.variant.storeProductVariants',
                     'items.store',
                     'items.store.seller',
                     'sellerFeedbacks',
