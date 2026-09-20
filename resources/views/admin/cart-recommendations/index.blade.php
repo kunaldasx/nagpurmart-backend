@@ -69,9 +69,26 @@
                         <div class="col-md-4"><label class="form-label">Sort order</label><input class="form-control" type="number" min="0" name="sort_order" id="recommendation-sort" value="0"></div>
                         <div class="col-md-6"><label class="form-label required">Status</label><select class="form-select" name="status" id="recommendation-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
                         <div class="col-md-6 d-flex align-items-end"><label class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_tabular" value="1" id="recommendation-tabular"><span class="form-check-label">Show as tabular section</span></label></div>
-                        <div class="col-12"><label class="form-label required">Products</label><select class="form-select" name="products[]" id="recommendation-products" multiple size="12">
-                            @foreach($products as $product)<option value="{{ $product->id }}">{{ $product->title }} (#{{ $product->id }})</option>@endforeach
-                        </select><div class="form-hint">Use Ctrl/Cmd-click to select multiple products. Selection order is preserved.</div></div>
+                        <div class="col-12">
+                            <label class="form-label required">Products</label>
+                            <div class="border rounded p-2" id="recommendation-products">
+                                <div class="row g-2">
+                                    @foreach($products as $product)
+                                        <div class="col-md-6">
+                                            <label class="form-check border rounded p-2 d-flex align-items-center gap-2 h-100">
+                                                <input class="form-check-input mt-0 recommendation-product" type="checkbox" name="products[]" value="{{ $product->id }}">
+                                                <img src="{{ $product->main_image }}" alt="" width="48" height="48" class="rounded object-fit-cover">
+                                                <span class="form-check-label">
+                                                    <span class="d-block">{{ $product->title }}</span>
+                                                    <small class="text-muted">Product ID: #{{ $product->id }}</small>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div class="form-hint">Check the products you want to recommend.</div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save section</button></div>
@@ -96,16 +113,17 @@ $(function () {
         $('#recommendation-sort').val(button.data('sort'));
         $('#recommendation-status').val(button.data('status'));
         $('#recommendation-tabular').prop('checked', Number(button.data('tabular')) === 1);
-        const selected = button.data('products') || [];
-        $('#recommendation-products option').prop('selected', false);
-        selected.forEach((id) => $('#recommendation-products option[value="' + id + '"]').prop('selected', true));
+        const selected = (button.data('products') || []).map(String);
+        $('#recommendation-products .recommendation-product').each(function () {
+            $(this).prop('checked', selected.includes(String($(this).val())));
+        });
     });
     $('[data-bs-target="#cart-recommendation-modal"]:not(.edit-section)').on('click', function () {
         form.attr('action', '{{ route('admin.cart-recommendations.store') }}');
         form.find('input[name="_method"]').remove();
         modal.find('.modal-title').text('Add cart recommendation section');
         form[0].reset();
-        $('#recommendation-products option').prop('selected', false);
+        $('#recommendation-products .recommendation-product').prop('checked', false);
     });
 });
 </script>
