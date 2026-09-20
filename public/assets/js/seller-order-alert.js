@@ -45,6 +45,7 @@ $(document).ready(function () {
         if (activeOrder || pendingOrders.length === 0) return;
         activeOrder = pendingOrders.shift();
         startedAt = Date.now();
+        $("#new-order-accept").prop("disabled", false);
         $("#new-order-error").addClass("d-none").text("");
         $("#new-order-summary").html(
             `<p class="mb-1 fw-bold">Order #${escapeHtml(activeOrder.order_number || activeOrder.order_id)}</p>` +
