@@ -243,6 +243,7 @@ class OrderController extends Controller
                 ],
                 'payment_method' => $order->payment_method,
                 'total' => $first->sellerOrder->total_price,
+                'delivery' => $order->deliveryTimeSlot ? trim(($order->delivery_date?->format('d M') ?? '') . ' ' . $order->deliveryTimeSlot->start_time . ' - ' . $order->deliveryTimeSlot->end_time) : null,
                 'items' => $orderItems->map(fn ($item) => [
                     'order_item_id' => $item->order_item_id,
                     'product' => $item->product?->title,

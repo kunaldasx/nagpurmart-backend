@@ -16,6 +16,15 @@ $(document).ready(function () {
         $("<div>")
             .text(value || "")
             .html();
+    const formatOrderTime = (value) => {
+        if (!value) return "Just now";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "Just now";
+        return date.toLocaleString([], {
+            dateStyle: "medium",
+            timeStyle: "short",
+        });
+    };
     const playAlert = () => {
         try {
             const context = new (
@@ -48,10 +57,20 @@ $(document).ready(function () {
         $("#new-order-accept").prop("disabled", false);
         $("#new-order-error").addClass("d-none").text("");
         $("#new-order-summary").html(
-            `<p class="mb-1 fw-bold">Order #${escapeHtml(activeOrder.order_number || activeOrder.order_id)}</p>` +
-                `<p class="mb-1">${escapeHtml(activeOrder.customer.name)} · <a href="tel:${escapeHtml(activeOrder.customer.phone)}">${escapeHtml(activeOrder.customer.phone)}</a></p>` +
-                `<p class="mb-1">${escapeHtml(activeOrder.customer.address)}</p>` +
-                `<p class="mb-0">${escapeHtml(activeOrder.payment_method)} · Total: ${escapeHtml(activeOrder.total)}</p>`,
+            `<div class="new-order-summary-card">` +
+                `<div class="order-number">Order #${escapeHtml(activeOrder.order_number || activeOrder.order_id)}</div>` +
+                `<div class="customer-line mt-1">${escapeHtml(activeOrder.customer.name)} · <a href="tel:${escapeHtml(activeOrder.customer.phone)}">${escapeHtml(activeOrder.customer.phone)}</a></div>` +
+                `<div class="mt-2">${escapeHtml(activeOrder.customer.address)}</div>` +
+                `<div class="new-order-meta">` +
+                `<div class="new-order-meta-item"><span class="new-order-meta-label">Ordered</span><span class="new-order-meta-value">${escapeHtml(formatOrderTime(activeOrder.created_at))}</span></div>` +
+                `<div class="new-order-meta-item"><span class="new-order-meta-label">Payment</span><span class="new-order-meta-value">${escapeHtml(activeOrder.payment_method || "Not specified")}</span></div>` +
+                `<div class="new-order-meta-item"><span class="new-order-meta-label">Total</span><span class="new-order-meta-value">${escapeHtml(activeOrder.total)}</span></div>` +
+                `<div class="new-order-meta-item"><span class="new-order-meta-label">Items</span><span class="new-order-meta-value">${activeOrder.items.length} item${activeOrder.items.length === 1 ? "" : "s"}</span></div>` +
+                (activeOrder.delivery
+                    ? `<div class="new-order-meta-item"><span class="new-order-meta-label">Delivery</span><span class="new-order-meta-value">${escapeHtml(activeOrder.delivery)}</span></div>`
+                    : "") +
+                `</div>` +
+                `</div>`,
         );
         $("#new-order-items").html(
             activeOrder.items

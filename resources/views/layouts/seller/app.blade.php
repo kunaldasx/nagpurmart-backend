@@ -24,11 +24,17 @@
     <div class="modal modal-blur fade" id="newRegularOrderModal" data-pending-url="{{ route('seller.orders.pending-regular') }}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h3 class="modal-title">New regular order</h3>
-                    <div id="new-order-timer-ring" aria-label="Order waiting time"><span><small>WAITING</small><strong id="new-order-timer">00:00</strong></span></div>
+                <div class="modal-header new-order-header">
+                    <div>
+                        <span class="new-order-kicker">Incoming order</span>
+                        <h3 class="modal-title">New regular order</h3>
+                        <p class="mb-0">Review the details and start preparing.</p>
+                    </div>
                 </div>
                 <div class="modal-body">
+                    <div class="new-order-pulse text-center">
+                        <div id="new-order-timer-ring" aria-label="Order waiting time"><span><small>WAITING</small><strong id="new-order-timer">00:00</strong><em>response time</em></span></div>
+                    </div>
                     <div id="new-order-summary"></div>
                     <div id="new-order-items" class="mt-3"></div>
                     <div class="alert alert-danger d-none mt-3 mb-0" id="new-order-error"></div>
@@ -40,11 +46,32 @@
         </div>
     </div>
     <style>
-        #new-order-timer-ring { --timer-progress: 0deg; width: 104px; height: 104px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#fff var(--timer-progress), rgba(255,255,255,.3) 0deg); position: relative; }
-        #new-order-timer-ring::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--tblr-primary); }
-        #new-order-timer-ring > span { position: relative; z-index: 1; color: #fff; text-align: center; line-height: 1.1; }
-        #new-order-timer-ring small { display: block; font-size: .62rem; letter-spacing: .08em; }
-        #new-order-timer { display: block; color: #fff; font-size: 1.35rem; font-weight: 700; }
+        #newRegularOrderModal .modal-content { overflow: hidden; border: 0; border-radius: 18px; box-shadow: 0 24px 70px rgba(20, 36, 61, .28); }
+        .new-order-header { align-items: center; padding: 1.4rem 1.5rem 1.25rem; color: #fff; background: linear-gradient(135deg, #126fd1 0%, #0754a8 100%); border: 0; }
+        .new-order-header .modal-title { margin-top: .2rem; font-size: 1.35rem; }
+        .new-order-header p { color: rgba(255,255,255,.78); font-size: .86rem; }
+        .new-order-kicker { display: inline-flex; align-items: center; gap: .4rem; color: #bfe0ff; font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+        .new-order-kicker::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%; background: #62df83; box-shadow: 0 0 0 4px rgba(98,223,131,.18); }
+        .new-order-pulse { margin: -2.9rem auto 1rem; position: relative; z-index: 2; }
+        #new-order-timer-ring { --timer-progress: 0deg; width: 132px; height: 132px; margin: 0 auto; border: 7px solid #fff; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#2fb344 var(--timer-progress), #dce9f6 0deg); position: relative; box-shadow: 0 10px 26px rgba(28, 84, 137, .2); }
+        #new-order-timer-ring::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: #f7fbff; }
+        #new-order-timer-ring > span { position: relative; z-index: 1; color: #16426b; text-align: center; line-height: 1.1; }
+        #new-order-timer-ring small { display: block; color: #6a8297; font-size: .62rem; font-weight: 700; letter-spacing: .1em; }
+        #new-order-timer { display: block; color: #126fd1; font-size: 1.65rem; font-weight: 800; }
+        #new-order-timer-ring em { display: block; margin-top: .25rem; color: #8ca0b2; font-size: .58rem; font-style: normal; }
+        #new-order-summary { color: #536579; }
+        .new-order-summary-card { padding: 1rem; border: 1px solid #e5edf5; border-radius: 12px; background: #f8fbfe; }
+        .new-order-summary-card .order-number { color: #183d63; font-size: 1.05rem; font-weight: 800; }
+        .new-order-summary-card .customer-line { color: #4d6278; }
+        .new-order-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; margin-top: .9rem; }
+        .new-order-meta-item { min-width: 0; padding: .65rem .7rem; border-radius: 9px; background: #fff; }
+        .new-order-meta-label { display: block; color: #8a9bad; font-size: .64rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+        .new-order-meta-value { display: block; overflow: hidden; color: #274b6c; font-size: .78rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        #new-order-items { color: #536579; }
+        #new-order-items > div { gap: 1rem; }
+        #newRegularOrderModal .modal-footer { padding: 1rem 1.5rem 1.35rem; border-top: 1px solid #edf1f5; }
+        #new-order-accept { border: 0; border-radius: 10px; box-shadow: 0 7px 14px rgba(47,179,68,.2); }
+        @media (max-width: 480px) { .new-order-meta { grid-template-columns: repeat(2, 1fr); } .new-order-header { padding-left: 1rem; padding-right: 1rem; } #newRegularOrderModal .modal-body, #newRegularOrderModal .modal-footer { padding-left: 1rem; padding-right: 1rem; } }
     </style>
     <script src="{{ hyperAsset('assets/js/seller-order-alert.js') }}" defer></script>
     {{-- Mobile App Deep Link Bootstrap Modal for Seller Panel --}}
