@@ -68,7 +68,10 @@
         .new-order-meta-label { display: block; color: #8a9bad; font-size: .64rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
         .new-order-meta-value { display: block; color: #274b6c; font-size: .78rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
         #new-order-items { color: #536579; }
-        #new-order-items > div { gap: 1rem; }
+        #new-order-items > div { gap: .8rem; align-items: center; }
+        .new-order-item-image { width: 52px; height: 52px; flex: 0 0 52px; border: 1px solid #e2ebf3; border-radius: 9px; background: #fff; object-fit: cover; }
+        .new-order-item-details { min-width: 0; flex: 1 1 auto; }
+        .new-order-item-price { flex: 0 0 auto; color: #274b6c; font-weight: 700; white-space: nowrap; }
         #newRegularOrderModal .modal-footer { padding: 1rem 1.5rem 1.35rem; border-top: 1px solid #edf1f5; }
         #new-order-accept { border: 0; border-radius: 10px; box-shadow: 0 7px 14px rgba(47,179,68,.2); }
         @media (max-width: 480px) { .new-order-header { padding-left: 1rem; padding-right: 1rem; } #newRegularOrderModal .modal-body, #newRegularOrderModal .modal-footer { padding-left: 1rem; padding-right: 1rem; } }

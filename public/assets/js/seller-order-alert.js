@@ -108,7 +108,11 @@ $(document).ready(function () {
             activeOrder.items
                 .map(
                     (item) =>
-                        `<div class="d-flex justify-content-between border-top py-2"><span>${escapeHtml(item.product)}${item.variant ? ` (${escapeHtml(item.variant)})` : ""} × ${item.quantity}</span><span>${escapeHtml(item.subtotal)}</span></div>`,
+                        `<div class="d-flex justify-content-between border-top py-2">` +
+                        `<img class="new-order-item-image" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.product)}" loading="lazy">` +
+                        `<span class="new-order-item-details">${escapeHtml(item.product)}${item.variant ? ` (${escapeHtml(item.variant)})` : ""} × ${item.quantity}</span>` +
+                        `<span class="new-order-item-price">${escapeHtml(item.subtotal)}</span>` +
+                        `</div>`,
                 )
                 .join(""),
         );

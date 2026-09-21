@@ -248,6 +248,7 @@ class OrderController extends Controller
                     'order_item_id' => $item->order_item_id,
                     'product' => $item->product?->title,
                     'variant' => $item->variant?->title,
+                    'image' => $item->variant?->image ?: $item->product?->main_image,
                     'quantity' => $item->orderItem->quantity,
                     'subtotal' => $item->orderItem->subtotal,
                 ])->values(),
