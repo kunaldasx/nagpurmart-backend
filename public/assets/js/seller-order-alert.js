@@ -11,6 +11,55 @@ $(document).ready(function () {
     let timerHandle = null;
     let startedAt = 0;
     const timerDuration = 60;
+    let alertAudioContext = null;
+    let alertSoundHandle = null;
+    const ringAlert = () => {
+        if (!alertAudioContext) return;
+        const now = alertAudioContext.currentTime;
+        const gain = alertAudioContext.createGain();
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.12, now + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+        gain.connect(alertAudioContext.destination);
+
+        [660, 880].forEach((frequency, index) => {
+            const oscillator = alertAudioContext.createOscillator();
+            oscillator.type = "sine";
+            oscillator.frequency.value = frequency;
+            oscillator.detune.value = index * 4;
+            oscillator.connect(gain);
+            oscillator.start(now + index * 0.08);
+            oscillator.stop(now + 0.72);
+        });
+        window.setTimeout(() => gain.disconnect(), 900);
+    };
+    const startAlertSound = () => {
+        try {
+            if (!alertAudioContext) {
+                alertAudioContext = new (
+                    window.AudioContext || window.webkitAudioContext
+                )();
+            }
+            alertAudioContext
+                .resume()
+                .then(() => {
+                    if (!activeOrder || alertSoundHandle) return;
+                    ringAlert();
+                    alertSoundHandle = window.setInterval(ringAlert, 1800);
+                })
+                .catch((error) => {
+                    console.warn("Order alert sound was blocked:", error);
+                });
+        } catch (error) {
+            console.warn("Order alert sound was blocked:", error);
+        }
+    };
+    const stopAlertSound = () => {
+        if (alertSoundHandle) {
+            window.clearInterval(alertSoundHandle);
+            alertSoundHandle = null;
+        }
+    };
 
     const escapeHtml = (value) =>
         $("<div>")
@@ -24,23 +73,6 @@ $(document).ready(function () {
             dateStyle: "medium",
             timeStyle: "short",
         });
-    };
-    const playAlert = () => {
-        try {
-            const context = new (
-                window.AudioContext || window.webkitAudioContext
-            )();
-            const oscillator = context.createOscillator();
-            const gain = context.createGain();
-            oscillator.frequency.value = 880;
-            gain.gain.value = 0.08;
-            oscillator.connect(gain);
-            gain.connect(context.destination);
-            oscillator.start();
-            oscillator.stop(context.currentTime + 0.25);
-        } catch (error) {
-            console.warn("Order alert sound was blocked:", error);
-        }
     };
     const updateTimer = () => {
         const seconds = Math.floor((Date.now() - startedAt) / 1000);
@@ -83,10 +115,11 @@ $(document).ready(function () {
         updateTimer();
         timerHandle = window.setInterval(updateTimer, 1000);
         modal.modal("show");
-        playAlert();
+        startAlertSound();
     };
     const finishOrder = () => {
         window.clearInterval(timerHandle);
+        stopAlertSound();
         if (activeOrder) handledOrderIds.add(activeOrder.seller_order_id);
         activeOrder = null;
         modal.one("hidden.bs.modal", showNextOrder);
@@ -167,6 +200,7 @@ $(document).ready(function () {
             });
 
     $("#new-order-accept").on("click", decideOrder);
+    modal.on("hidden.bs.modal", stopAlertSound);
     window.addEventListener("nagpurmart:notification", () => {
         pollRegularOrders().catch((error) =>
             console.error("Regular order polling failed:", error),
