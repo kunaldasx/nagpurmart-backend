@@ -63,15 +63,15 @@
         .new-order-summary-card { padding: 1rem; border: 1px solid #e5edf5; border-radius: 12px; background: #f8fbfe; }
         .new-order-summary-card .order-number { color: #183d63; font-size: 1.05rem; font-weight: 800; }
         .new-order-summary-card .customer-line { color: #4d6278; }
-        .new-order-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; margin-top: .9rem; }
+        .new-order-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: .55rem; margin-top: .9rem; }
         .new-order-meta-item { min-width: 0; padding: .65rem .7rem; border-radius: 9px; background: #fff; }
         .new-order-meta-label { display: block; color: #8a9bad; font-size: .64rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-        .new-order-meta-value { display: block; overflow: hidden; color: #274b6c; font-size: .78rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .new-order-meta-value { display: block; color: #274b6c; font-size: .78rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
         #new-order-items { color: #536579; }
         #new-order-items > div { gap: 1rem; }
         #newRegularOrderModal .modal-footer { padding: 1rem 1.5rem 1.35rem; border-top: 1px solid #edf1f5; }
         #new-order-accept { border: 0; border-radius: 10px; box-shadow: 0 7px 14px rgba(47,179,68,.2); }
-        @media (max-width: 480px) { .new-order-meta { grid-template-columns: repeat(2, 1fr); } .new-order-header { padding-left: 1rem; padding-right: 1rem; } #newRegularOrderModal .modal-body, #newRegularOrderModal .modal-footer { padding-left: 1rem; padding-right: 1rem; } }
+        @media (max-width: 480px) { .new-order-header { padding-left: 1rem; padding-right: 1rem; } #newRegularOrderModal .modal-body, #newRegularOrderModal .modal-footer { padding-left: 1rem; padding-right: 1rem; } }
     </style>
     <script src="{{ hyperAsset('assets/js/seller-order-alert.js') }}" defer></script>
     {{-- Mobile App Deep Link Bootstrap Modal for Seller Panel --}}
