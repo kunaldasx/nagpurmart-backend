@@ -31,7 +31,9 @@ class OrderResource extends JsonResource
                 'payment_method' => $this->order->payment_method,
                 'order_mode' => $this->order->order_mode ?? 'regular',
                 'delivery_date' => $this->order->delivery_date?->format('Y-m-d'),
-                'delivery_time_slot' => new DeliveryTimeSlotResource($this->order->deliveryTimeSlot),
+                'delivery_time_slot' => $this->order->deliveryTimeSlot
+                    ? (new DeliveryTimeSlotResource($this->order->deliveryTimeSlot))->toArray($request)
+                    : null,
                 'payment_status' => $this->order->payment_status,
                 'total_price' => $this->total_price,
 
@@ -109,7 +111,9 @@ class OrderResource extends JsonResource
             'payment_method' => $this->payment_method,
             'order_mode' => $this->order_mode ?? 'regular',
             'delivery_date' => $this->delivery_date?->format('Y-m-d'),
-            'delivery_time_slot' => new DeliveryTimeSlotResource($this->deliveryTimeSlot),
+            'delivery_time_slot' => $this->deliveryTimeSlot
+                ? (new DeliveryTimeSlotResource($this->deliveryTimeSlot))->toArray($request)
+                : null,
             'payment_status' => $this->payment_status,
             'promo_code' => $this->promo_code,
             'promo_discount' => $this->promo_discount,
