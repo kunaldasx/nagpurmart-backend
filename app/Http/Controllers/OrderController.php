@@ -246,6 +246,7 @@ class OrderController extends Controller
                 'seller_order_id' => $first->seller_order_id,
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
+                'order_mode' => $order->order_mode,
                 'created_at' => $order->created_at?->toISOString(),
                 'customer' => [
                     'name' => $order->shipping_name,

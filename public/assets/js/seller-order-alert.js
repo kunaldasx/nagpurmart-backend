@@ -95,6 +95,7 @@ $(document).ready(function () {
                 `<div class="mt-2">${escapeHtml(activeOrder.customer.address)}</div>` +
                 `<div class="new-order-meta">` +
                 `<div class="new-order-meta-item"><span class="new-order-meta-label">Ordered</span><span class="new-order-meta-value">${escapeHtml(formatOrderTime(activeOrder.created_at))}</span></div>` +
+                `<div class="new-order-meta-item"><span class="new-order-meta-label">Order type</span><span class="new-order-meta-value">${escapeHtml((activeOrder.order_mode || "regular").replace(/^./, (character) => character.toUpperCase()))}</span></div>` +
                 `<div class="new-order-meta-item"><span class="new-order-meta-label">Payment</span><span class="new-order-meta-value">${escapeHtml(activeOrder.payment_method || "Not specified")}</span></div>` +
                 `<div class="new-order-meta-item"><span class="new-order-meta-label">Total</span><span class="new-order-meta-value">${escapeHtml(activeOrder.total)}</span></div>` +
                 `<div class="new-order-meta-item"><span class="new-order-meta-label">Items</span><span class="new-order-meta-value">${activeOrder.items.length} item${activeOrder.items.length === 1 ? "" : "s"}</span></div>` +
