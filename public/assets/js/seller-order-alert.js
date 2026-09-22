@@ -174,25 +174,38 @@ $(document).ready(function () {
         };
         processNext();
     };
-    const pollRegularOrders = () =>
-        axios.get(`${pendingOrdersUrl}?order_mode=regular`).then((response) => {
-            const orders = response.data.data || [];
-            $("#regular-order-count").text(
-                response.data.count ?? orders.length,
-            );
-            const known = new Set([
-                ...(activeOrder ? [activeOrder.seller_order_id] : []),
-                ...pendingOrders.map((order) => order.seller_order_id),
-            ]);
-            orders.forEach((order) => {
-                if (
-                    !known.has(order.seller_order_id) &&
-                    !handledOrderIds.has(order.seller_order_id)
-                )
-                    pendingOrders.push(order);
+    const pollOrders = (orderMode, popupOnly = false) =>
+        axios
+            .get(
+                `${pendingOrdersUrl}?order_mode=${orderMode}${
+                    popupOnly ? "&popup=1" : ""
+                }`,
+            )
+            .then((response) => {
+                const orders = response.data.data || [];
+                if (!popupOnly) {
+                    $(`#${orderMode}-order-count`).text(
+                        response.data.count ?? orders.length,
+                    );
+                }
+                enqueueOrders(orders);
+                showNextOrder();
             });
-            showNextOrder();
+    const enqueueOrders = (orders) => {
+        const known = new Set([
+            ...(activeOrder ? [activeOrder.seller_order_id] : []),
+            ...pendingOrders.map((order) => order.seller_order_id),
+        ]);
+        orders.forEach((order) => {
+            if (
+                !known.has(order.seller_order_id) &&
+                !handledOrderIds.has(order.seller_order_id)
+            )
+                pendingOrders.push(order);
         });
+    };
+    const pollRegularOrders = () => pollOrders("regular");
+    const pollWholesaleOrders = () => pollOrders("wholesale", true);
     const pollWholesaleCount = () =>
         axios
             .get(`${pendingOrdersUrl}?order_mode=wholesale`)
@@ -209,6 +222,9 @@ $(document).ready(function () {
         pollRegularOrders().catch((error) =>
             console.error("Regular order polling failed:", error),
         );
+        pollWholesaleOrders().catch((error) =>
+            console.error("Wholesale order polling failed:", error),
+        );
     });
     pollRegularOrders().catch((error) =>
         console.error("Regular order polling failed:", error),
@@ -216,12 +232,18 @@ $(document).ready(function () {
     pollWholesaleCount().catch((error) =>
         console.error("Wholesale order count failed:", error),
     );
+    pollWholesaleOrders().catch((error) =>
+        console.error("Wholesale order polling failed:", error),
+    );
     window.setInterval(() => {
         pollRegularOrders().catch((error) =>
             console.error("Regular order polling failed:", error),
         );
         pollWholesaleCount().catch((error) =>
             console.error("Wholesale order count failed:", error),
+        );
+        pollWholesaleOrders().catch((error) =>
+            console.error("Wholesale order polling failed:", error),
         );
     }, 5000);
 });

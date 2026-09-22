@@ -27,7 +27,7 @@
                 <div class="modal-header new-order-header">
                     <div>
                         <span class="new-order-kicker">Incoming order</span>
-                        <h3 class="modal-title">New regular order</h3>
+                        <h3 class="modal-title">New order</h3>
                         <p class="mb-0">Review the details and start preparing.</p>
                     </div>
                 </div>

@@ -188,7 +188,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Return regular orders waiting for the seller's decision.
+     * Return orders waiting for the seller's decision.
      */
     public function getPendingRegularOrders(Request $request): JsonResponse
     {
@@ -211,6 +211,24 @@ class OrderController extends Controller
         })->whereHas('orderItem', function ($query) {
             $query->where('status', OrderItemStatusEnum::AWAITING_STORE_RESPONSE());
         })->orderBy('created_at')->get();
+
+        if ($orderMode === 'wholesale' && $request->boolean('popup')) {
+            $now = Carbon::now();
+            $popupWindowEnd = $now->copy()->addMinutes(30);
+
+            $items = $items->filter(function ($item) use ($now, $popupWindowEnd) {
+                $order = $item->sellerOrder->order;
+                $slot = $order->deliveryTimeSlot;
+
+                if (!$order->delivery_date || !$slot?->end_time) {
+                    return false;
+                }
+
+                $slotEnd = Carbon::parse($order->delivery_date->format('Y-m-d') . ' ' . $slot->end_time);
+
+                return $slotEnd->betweenIncluded($now, $popupWindowEnd);
+            })->values();
+        }
 
         if ($this->getPanel() === 'seller') {
             $seller = auth()->user()?->seller();
