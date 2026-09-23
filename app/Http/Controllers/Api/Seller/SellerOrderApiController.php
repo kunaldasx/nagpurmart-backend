@@ -148,23 +148,46 @@ class SellerOrderApiController extends Controller
     }
 
     /**
-     * Compact queue for regular orders awaiting a seller decision.
+     * Compact queue for orders awaiting a seller decision.
      */
-    public function pendingRegular(): JsonResponse
+    public function pendingRegular(Request $request): JsonResponse
     {
         $seller = auth()->user()?->seller();
         if (!$seller) {
             return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
         }
 
-        $items = SellerOrderItem::with(['sellerOrder.order', 'orderItem', 'product', 'variant'])
-            ->whereHas('sellerOrder', function ($query) use ($seller) {
+        $orderMode = $request->input('order_mode', 'regular');
+        if (!in_array($orderMode, ['regular', 'wholesale'], true)) {
+            $orderMode = 'regular';
+        }
+
+        $items = SellerOrderItem::with(['sellerOrder.order.deliveryTimeSlot', 'orderItem', 'product', 'variant'])
+            ->whereHas('sellerOrder', function ($query) use ($seller, $orderMode) {
                 $query->where('seller_id', $seller->id)
-                    ->whereHas('order', fn ($order) => $order->where('order_mode', 'regular'));
+                    ->whereHas('order', fn ($order) => $order->where('order_mode', $orderMode));
             })
             ->whereHas('orderItem', fn ($query) => $query->where('status', OrderItemStatusEnum::AWAITING_STORE_RESPONSE()))
             ->orderBy('created_at')
             ->get();
+
+        if ($orderMode === 'wholesale' && $request->boolean('popup')) {
+            $now = Carbon::now();
+            $popupWindowEnd = $now->copy()->addMinutes(30);
+
+            $items = $items->filter(function ($item) use ($now, $popupWindowEnd) {
+                $order = $item->sellerOrder->order;
+                $slot = $order->deliveryTimeSlot;
+
+                if (!$order->delivery_date || !$slot?->end_time) {
+                    return false;
+                }
+
+                $slotEnd = Carbon::parse($order->delivery_date->format('Y-m-d') . ' ' . $slot->end_time);
+
+                return $slotEnd->betweenIncluded($now, $popupWindowEnd);
+            })->values();
+        }
 
         $orders = $items->groupBy('seller_order_id')->values()->map(function ($orderItems) {
             $first = $orderItems->first();
@@ -174,6 +197,7 @@ class SellerOrderApiController extends Controller
                 'seller_order_id' => $first->seller_order_id,
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
+                'order_mode' => $order->order_mode,
                 'created_at' => $order->created_at?->toISOString(),
                 'customer' => [
                     'name' => $order->shipping_name,
@@ -199,8 +223,10 @@ class SellerOrderApiController extends Controller
             ];
         })->values();
 
-        return ApiResponseType::sendJsonResponse(true, 'Pending regular orders fetched successfully', [
+        return ApiResponseType::sendJsonResponse(true, 'Pending orders fetched successfully', [
             'orders' => $orders,
+            'count' => $orders->count(),
+            'order_mode' => $orderMode,
         ]);
     }
 
