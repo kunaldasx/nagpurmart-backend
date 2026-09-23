@@ -234,13 +234,26 @@ document.addEventListener("DOMContentLoaded", function () {
     const stockSortFilter = document.getElementById("stockSortFilter");
 
     if (inventoryModal && productsTable) {
-        const modal = bootstrap.Modal.getOrCreateInstance(inventoryModal);
+        const bootstrapModal = window.bootstrap?.Modal
+            ? window.bootstrap.Modal.getOrCreateInstance(inventoryModal)
+            : null;
         const modalBody = document.getElementById("inventory-modal-body");
         const csrfToken = document.querySelector(
             'meta[name="csrf-token"]',
         )?.content;
         const productUrl = (template, productId) =>
             template.replace("__PRODUCT_ID__", productId);
+        const showInventoryModal = () => {
+            if (bootstrapModal) {
+                bootstrapModal.show();
+            } else if (window.jQuery && $.fn.modal) {
+                $(inventoryModal).modal("show");
+            } else {
+                inventoryModal.classList.add("show");
+                inventoryModal.style.display = "block";
+                inventoryModal.removeAttribute("aria-hidden");
+            }
+        };
 
         document.addEventListener("click", async (event) => {
             const button = event.target.closest(".update-inventory");
@@ -251,7 +264,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 `Update inventory: ${button.dataset.productTitle}`;
             modalBody.innerHTML =
                 '<div class="text-center text-secondary py-4">Loading inventory...</div>';
-            modal.show();
+            showInventoryModal();
 
             try {
                 const response = await fetch(
