@@ -603,7 +603,7 @@ class ProductController extends Controller
         $stock = (int)($product->stock_total ?? 0);
         $stockClass = $stock < 20 ? 'bg-danger-lt text-danger' : 'bg-success-lt text-success';
         $inventoryButton = $this->getPanel() === 'seller' && $this->editPermission
-            ? '<button type="button" class="btn btn-sm btn-outline-primary update-inventory" data-product-id="' . $product->id . '" data-product-title="' . e($product->title) . '" title="Update inventory"><i class="ti ti-edit"></i></button>'
+            ? '<button type="button" class="btn btn-icon btn-lg btn-outline-primary update-inventory" data-product-id="' . $product->id . '" data-product-title="' . e($product->title) . '" title="Update inventory"><i class="ti ti-edit fs-2"></i></button>'
             : '';
         $productType = '<span class="badge ' .
             ($product->type == ProductTypeEnum::VARIANT() ? "bg-danger-lt" : "bg-info-lt") .
@@ -611,7 +611,7 @@ class ProductController extends Controller
         $status = view('partials.status', ['status' => $product->status ?? ""])->render();
         return [
             'id' => $product->id,
-            'stock' => '<div class="d-flex align-items-center gap-2"><span class="badge ' . $stockClass . ' fw-medium">' . $stock . '</span>' . $inventoryButton . '</div>',
+            'stock' => '<div class="d-flex align-items-center gap-2"><span class="badge ' . $stockClass . ' fs-3 px-3 py-2 fw-medium">' . $stock . '</span>' . $inventoryButton . '</div>',
             'product_details' => "<div class='d-flex justify-content-start align-items-center'><div class='pe-2'>" .
                 view('partials.image', [
                     'image' => $product->main_image ?? "",
