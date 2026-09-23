@@ -167,6 +167,7 @@ Route::prefix('seller')->name('seller.')->group(function () {
             Route::get('/create', [ProductController::class, 'create'])->name('create');
             Route::post('/', [ProductController::class, 'store'])->name('store');
             Route::get('/datatable', [ProductController::class, 'getProducts'])->name('datatable');
+            Route::post('/{id}/inventory', [ProductController::class, 'updateInventory'])->name('inventory.update');
             Route::get('/search', [ProductController::class, 'search'])->name('search');
             Route::get('/download-template', [ProductController::class, 'downloadTemplate'])->name('download-template');
             // Bulk upload (Shopify-like CSV)

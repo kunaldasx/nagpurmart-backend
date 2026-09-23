@@ -229,6 +229,121 @@ async function loadProductAndSetValue(tomSelectInstance, productId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+    const inventoryModal = document.getElementById("inventory-modal");
+    const productsTable = document.getElementById("products-table");
+    const stockSortFilter = document.getElementById("stockSortFilter");
+
+    if (inventoryModal && productsTable) {
+        const modal = bootstrap.Modal.getOrCreateInstance(inventoryModal);
+        const modalBody = document.getElementById("inventory-modal-body");
+        const csrfToken = document.querySelector(
+            'meta[name="csrf-token"]',
+        )?.content;
+        const productUrl = (template, productId) =>
+            template.replace("__PRODUCT_ID__", productId);
+
+        document.addEventListener("click", async (event) => {
+            const button = event.target.closest(".update-inventory");
+            if (!button) return;
+
+            const productId = button.dataset.productId;
+            document.getElementById("inventory-modal-title").textContent =
+                `Update inventory: ${button.dataset.productTitle}`;
+            modalBody.innerHTML =
+                '<div class="text-center text-secondary py-4">Loading inventory...</div>';
+            modal.show();
+
+            try {
+                const response = await fetch(
+                    productUrl(inventoryModal.dataset.pricingUrl, productId),
+                    { headers: { Accept: "application/json" } },
+                );
+                const payload = await response.json();
+                const variants = Object.values(
+                    payload.data?.variant_pricing || {},
+                );
+                const rows = variants.flatMap((variant) =>
+                    (variant.store_pricing || []).map(
+                        (pricing) => `
+                    <tr>
+                        <td>${variant.title || "Default"}</td>
+                        <td>${pricing.store_name || "Store"}</td>
+                        <td><input type="number" class="form-control form-control-sm inventory-stock" min="0" value="${Number(pricing.stock || 0)}" data-store-product-variant-id="${pricing.id}"></td>
+                        <td><button type="button" class="btn btn-sm btn-primary save-inventory">Save</button></td>
+                    </tr>`,
+                    ),
+                );
+
+                modalBody.innerHTML = rows.length
+                    ? `<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Variant</th><th>Store</th><th>Stock</th><th></th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
+                    : '<div class="alert alert-info mb-0">No store inventory is configured for this product.</div>';
+
+                modalBody
+                    .querySelectorAll(".save-inventory")
+                    .forEach((saveButton) => {
+                        saveButton.addEventListener("click", async () => {
+                            const input = saveButton
+                                .closest("tr")
+                                .querySelector(".inventory-stock");
+                            saveButton.disabled = true;
+                            try {
+                                const updateResponse = await fetch(
+                                    productUrl(
+                                        inventoryModal.dataset.updateUrl,
+                                        productId,
+                                    ),
+                                    {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json",
+                                            Accept: "application/json",
+                                            "X-CSRF-TOKEN": csrfToken,
+                                            "X-Requested-With":
+                                                "XMLHttpRequest",
+                                        },
+                                        body: JSON.stringify({
+                                            store_product_variant_id:
+                                                input.dataset
+                                                    .storeProductVariantId,
+                                            stock: input.value,
+                                        }),
+                                    },
+                                );
+                                const result = await updateResponse.json();
+                                if (!updateResponse.ok || !result.success)
+                                    throw new Error(
+                                        result.message ||
+                                            "Unable to update inventory",
+                                    );
+                                saveButton.textContent = "Saved";
+                                saveButton.classList.replace(
+                                    "btn-primary",
+                                    "btn-success",
+                                );
+                                window.DatatableUtils?.refreshDatatable(
+                                    "products-table",
+                                );
+                            } catch (error) {
+                                alert(error.message);
+                                saveButton.disabled = false;
+                            }
+                        });
+                    });
+            } catch (error) {
+                modalBody.innerHTML =
+                    '<div class="alert alert-danger mb-0">Unable to load inventory.</div>';
+            }
+        });
+    }
+
+    if (stockSortFilter && productsTable) {
+        stockSortFilter.addEventListener("change", () => {
+            const table = $(productsTable).DataTable();
+            const direction = stockSortFilter.value;
+            table.order(direction ? [[1, direction]] : [[0, "desc"]]).draw();
+        });
+    }
+
     try {
         const categoriesElement = document.getElementById("categories");
         if (categoriesElement === null) {

@@ -20,6 +20,7 @@ use App\Models\StoreProductVariant;
 use App\Services\CategoryService;
 use App\Services\GlobalAttributeService;
 use App\Services\ProductService;
+use App\Services\StockService;
 use App\Services\SubscriptionUsageService;
 use App\Traits\ChecksPermissions;
 use App\Traits\SubscriptionLimitGuard;
@@ -76,6 +77,7 @@ class ProductController extends Controller
 
         $columns = [
             ['data' => 'id', 'name' => 'id', 'title' => __('labels.id')],
+            ['data' => 'stock', 'name' => 'stock', 'title' => __('labels.stock')],
             ['data' => 'product_details', 'name' => 'product_details', 'title' => __('labels.product_details')],
             ['data' => 'admin_approval_status', 'name' => 'admin_approval_status', 'title' => __('labels.admin_approval_status')],
             ['data' => 'created_at', 'name' => 'created_at', 'title' => __('labels.created_at')],
@@ -530,7 +532,7 @@ class ProductController extends Controller
 
         $orderColumnIndex = $request->get('order')[0]['column'] ?? 0;
         $orderDirection = $request->get('order')[0]['dir'] ?? 'asc';
-        $columns = ['id', 'title', 'category_id', 'status', 'featured', 'created_at'];
+        $columns = ['id', 'stock_total', 'title', 'category_id', 'status', 'featured', 'created_at'];
         $orderColumn = $columns[$orderColumnIndex] ?? 'id';
 
         return [$draw, $start, $length, $searchValue, $filters, $orderColumn, $orderDirection];
@@ -538,7 +540,8 @@ class ProductController extends Controller
 
     private function buildBaseQuery(): Builder
     {
-        $query = Product::with(['category', 'seller']);
+        $query = Product::with(['category', 'seller'])
+            ->withSum('variants.storeProductVariants as stock_total', 'stock');
 
         if ($this->getPanel() === 'seller') {
             $query->where('seller_id', $this->sellerId);
@@ -590,12 +593,18 @@ class ProductController extends Controller
 
     private function formatProductData(Product $product): array
     {
+        $stock = (int)($product->stock_total ?? 0);
+        $stockClass = $stock < 20 ? 'bg-danger-lt text-danger' : 'bg-success-lt text-success';
+        $inventoryButton = $this->getPanel() === 'seller' && $this->editPermission
+            ? '<button type="button" class="btn btn-sm btn-outline-primary update-inventory" data-product-id="' . $product->id . '" data-product-title="' . e($product->title) . '" title="Update inventory"><i class="ti ti-edit"></i></button>'
+            : '';
         $productType = '<span class="badge ' .
             ($product->type == ProductTypeEnum::VARIANT() ? "bg-danger-lt" : "bg-info-lt") .
             '">' . $product->type . '</span>';
         $status = view('partials.status', ['status' => $product->status ?? ""])->render();
         return [
             'id' => $product->id,
+            'stock' => '<div class="d-flex align-items-center gap-2"><span class="badge ' . $stockClass . ' fw-medium">' . $stock . '</span>' . $inventoryButton . '</div>',
             'product_details' => "<div class='d-flex justify-content-start align-items-center'><div class='pe-2'>" .
                 view('partials.image', [
                     'image' => $product->main_image ?? "",
@@ -623,6 +632,44 @@ class ProductController extends Controller
                 'viewPermission' => $this->viewPermission,
             ])->render(),
         ];
+    }
+
+    public function updateInventory(Request $request, string $id, StockService $stockService): JsonResponse
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $this->authorize('update', $product);
+
+            $validated = $request->validate([
+                'store_product_variant_id' => ['required', 'integer'],
+                'stock' => ['required', 'integer', 'min:0'],
+            ]);
+
+            $storeVariant = StoreProductVariant::whereKey($validated['store_product_variant_id'])
+                ->whereHas('productVariant', fn ($query) => $query->where('product_id', $product->id))
+                ->whereHas('store', fn ($query) => $query->where('seller_id', $this->sellerId))
+                ->firstOrFail();
+
+            $change = (int)$validated['stock'] - (int)$storeVariant->stock;
+            $result = $change === 0
+                ? ['success' => true, 'message' => 'Stock is already up to date', 'data' => ['new_stock' => (int)$storeVariant->stock]]
+                : $stockService->updateStock(
+                    (int)$storeVariant->store_id,
+                    (int)$storeVariant->product_variant_id,
+                    $change,
+                    'Seller product list inventory update'
+                );
+
+            return response()->json($result, $result['success'] ? 200 : 422);
+        } catch (AuthorizationException $e) {
+            return ApiResponseType::sendJsonResponse(false, 'labels.permission_denied', []);
+        } catch (ModelNotFoundException $e) {
+            return ApiResponseType::sendJsonResponse(false, 'labels.product_not_found', []);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->validator->errors()->first()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
     }
 
 

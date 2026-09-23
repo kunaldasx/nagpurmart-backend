@@ -156,6 +156,13 @@
                                         </select>
                                     </div>
                                     <div class="col-auto">
+                                        <select class="form-select" id="stockSortFilter" aria-label="Sort by stock">
+                                            <option value="">Sort by stock</option>
+                                            <option value="asc" selected>Stock: Low to High</option>
+                                            <option value="desc">Stock: High to Low</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-auto">
                                         <select class="form-select" id="productCategoryFilter"
                                                 placeholder="{{ __('labels.category') }}">
                                         </select>
@@ -165,7 +172,7 @@
                             <div class="row w-full p-3">
                                 <x-datatable id="products-table" :columns="$columns"
                                              route="{{ route('seller.products.datatable') }}"
-                                             :options="['order' => [[0, 'desc']],'pageLength' => 10,]"/>
+                                             :options="['order' => [[1, 'asc']],'pageLength' => 10,]"/>
                             </div>
                         </div>
                     </div>
@@ -196,6 +203,22 @@
                                                                                            class="fw-medium"></span>
                         </p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="inventory-modal" tabindex="-1" aria-labelledby="inventory-modal-title" aria-hidden="true"
+         data-pricing-url="{{ route('seller.products.pricing', ['id' => '__PRODUCT_ID__']) }}"
+         data-update-url="{{ route('seller.products.inventory.update', ['id' => '__PRODUCT_ID__']) }}">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="inventory-modal-title">Update inventory</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="inventory-modal-body">
+                    <div class="text-center text-secondary py-4">Loading inventory...</div>
                 </div>
             </div>
         </div>
