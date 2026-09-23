@@ -15,7 +15,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">{{ __('labels.delivery_slots') }}</h3>
             @if($canCreateDeliverySlot)
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#delivery-slot-modal">Add delivery slot</button>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#delivery-time-slot-modal">Add delivery slot</button>
             @endif
         </div>
         <div class="card-body">
@@ -24,7 +24,7 @@
     </div></div></div>
 
     @if($canCreateDeliverySlot || $canEditDeliverySlot)
-        <div class="modal fade" id="delivery-slot-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" id="delivery-time-slot-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog"><div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title">Add delivery slot</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <form class="form-submit" method="POST" action="{{ route('admin.delivery-slots.store') }}">

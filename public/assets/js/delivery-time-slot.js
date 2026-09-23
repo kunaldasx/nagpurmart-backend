@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const modal = document.getElementById("delivery-slot-modal");
+    const modal = document.getElementById("delivery-time-slot-modal");
     if (!modal) return;
     const form = modal.querySelector("form");
     const store = document.getElementById("delivery-slot-store");
