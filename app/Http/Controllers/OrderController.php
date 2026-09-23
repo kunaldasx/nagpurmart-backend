@@ -209,8 +209,21 @@ class OrderController extends Controller
         ])->whereHas('sellerOrder', function ($query) use ($orderMode) {
             $query->whereHas('order', fn ($order) => $order->where('order_mode', $orderMode));
         })->whereHas('orderItem', function ($query) {
-            $query->where('status', OrderItemStatusEnum::AWAITING_STORE_RESPONSE());
-        })->orderBy('created_at')->get();
+            $query->whereIn('status', [
+                OrderItemStatusEnum::PENDING(),
+                OrderItemStatusEnum::AWAITING_STORE_RESPONSE(),
+            ]);
+        });
+
+        if ($this->getPanel() === 'seller') {
+            $seller = auth()->user()?->seller();
+            if (!$seller) {
+                return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), []);
+            }
+            $items->whereHas('sellerOrder', fn ($query) => $query->where('seller_id', $seller->id));
+        }
+
+        $items = $items->orderBy('created_at')->get();
 
         if ($orderMode === 'wholesale' && $request->boolean('popup')) {
             $now = Carbon::now();
@@ -228,14 +241,6 @@ class OrderController extends Controller
 
                 return $slotEnd->betweenIncluded($now, $popupWindowEnd);
             })->values();
-        }
-
-        if ($this->getPanel() === 'seller') {
-            $seller = auth()->user()?->seller();
-            if (!$seller) {
-                return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), []);
-            }
-            $items = $items->filter(fn ($item) => $item->sellerOrder->seller_id === $seller->id)->values();
         }
 
         $orders = $items->groupBy('seller_order_id')->values()->map(function ($orderItems) {

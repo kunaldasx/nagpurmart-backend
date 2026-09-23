@@ -46,6 +46,8 @@ $(document).ready(function () {
         data.order_mode = orderMode;
     });
 
+    table.ajax.reload(updateOrderCount, false);
+
     if (pendingOrdersUrl && !$("#newRegularOrderModal").length) {
         const refreshOrderCounts = () => {
             ["regular", "wholesale"].forEach((mode) => {
