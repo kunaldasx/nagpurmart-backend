@@ -11,6 +11,7 @@ use App\Traits\PanelAware;
 use App\Types\Api\ApiResponseType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -60,7 +61,10 @@ class DeliveryTimeSlotController extends Controller
         $this->checkPermission(AdminPermissionEnum::DELIVERY_SLOT_DELETE());
         $slot = DeliveryTimeSlot::find($id);
         if (!$slot) return ApiResponseType::sendJsonResponse(false, 'Delivery slot not found.', [], 404);
-        $slot->delete();
+        DB::transaction(function () use ($slot) {
+            $slot->orders()->update(['delivery_time_slot_id' => null]);
+            $slot->delete();
+        });
         return ApiResponseType::sendJsonResponse(true, 'Delivery slot deleted successfully.', []);
     }
 

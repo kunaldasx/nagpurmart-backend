@@ -3,28 +3,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!modal) return;
     const form = modal.querySelector("form");
     const store = document.getElementById("delivery-slot-store");
-    const storeSelect = new TomSelect(store, {
-        valueField: "value",
-        labelField: "text",
-        searchField: "text",
-        load(query, callback) {
-            fetch(
-                `${base_url}/${panel}/sellers/store/search?search=${encodeURIComponent(query)}`,
-            )
-                .then((response) => response.json())
-                .then(callback)
-                .catch(() => callback());
-        },
-    });
-
-    modal.addEventListener("show.bs.modal", (event) => {
-        const id = event.relatedTarget?.dataset.id;
+    const loadSlot = (id) => {
         form.reset();
         storeSelect.clear();
         storeSelect.clearOptions();
         form.action = `${base_url}/${panel}/delivery-slots`;
         modal.querySelector(".modal-title").textContent = "Add delivery slot";
         if (!id) return;
+
         fetch(`${base_url}/${panel}/delivery-slots/${id}`)
             .then((response) => response.json())
             .then(({ data }) => {
@@ -42,6 +28,33 @@ document.addEventListener("DOMContentLoaded", () => {
                     text: data.store?.name || "Store",
                 });
                 storeSelect.setValue(data.store_id);
-            });
+            })
+            .catch((error) =>
+                console.error("Delivery slot load failed:", error),
+            );
+    };
+
+    const storeSelect = new TomSelect(store, {
+        valueField: "value",
+        labelField: "text",
+        searchField: "text",
+        load(query, callback) {
+            fetch(
+                `${base_url}/${panel}/sellers/store/search?search=${encodeURIComponent(query)}`,
+            )
+                .then((response) => response.json())
+                .then(callback)
+                .catch(() => callback());
+        },
+    });
+
+    modal.addEventListener("show.bs.modal", (event) => {
+        if (!event.relatedTarget?.dataset.id) loadSlot();
+    });
+
+    document.addEventListener("click", (event) => {
+        const editButton = event.target.closest(".edit-delivery-time-slot");
+        if (!editButton) return;
+        loadSlot(editButton.dataset.id);
     });
 });
