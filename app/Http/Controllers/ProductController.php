@@ -36,6 +36,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\View\View;
 
@@ -540,8 +541,14 @@ class ProductController extends Controller
 
     private function buildBaseQuery(): Builder
     {
+        $stockQuery = DB::table('product_variants')
+            ->join('store_product_variants', 'store_product_variants.product_variant_id', '=', 'product_variants.id')
+            ->selectRaw('COALESCE(SUM(store_product_variants.stock), 0)')
+            ->whereColumn('product_variants.product_id', 'products.id');
+
         $query = Product::with(['category', 'seller'])
-            ->withSum('variants.storeProductVariants as stock_total', 'stock');
+            ->select('products.*')
+            ->selectSub($stockQuery, 'stock_total');
 
         if ($this->getPanel() === 'seller') {
             $query->where('seller_id', $this->sellerId);
