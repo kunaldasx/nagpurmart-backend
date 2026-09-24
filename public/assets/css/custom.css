@@ -10,8 +10,8 @@ form {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    min-width: 130px;
+    gap: 0.35rem;
+    min-width: 112px;
     white-space: nowrap;
 }
 
@@ -19,10 +19,10 @@ form {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    min-width: 112px;
-    min-height: 36px;
-    padding: 0.35rem 0.5rem;
-    font-size: 0.7rem;
+    min-width: 96px;
+    min-height: 32px;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.65rem;
     font-weight: 600;
 }
 
@@ -40,8 +40,8 @@ form {
 
 .stock-status-icon {
     flex: 0 0 auto;
-    width: 1rem;
-    height: 1rem;
+    width: 0.85rem;
+    height: 0.85rem;
 }
 
 .stock-status-label {
@@ -50,7 +50,7 @@ form {
 
 .stock-value {
     margin-left: auto;
-    font-size: 1rem;
+    font-size: 0.9rem;
     line-height: 1;
 }
 
@@ -59,15 +59,15 @@ form {
     align-items: center;
     justify-content: center;
     gap: 0.35rem;
-    min-width: 72px;
-    min-height: 36px;
-    padding: 0.35rem 0.5rem;
-    font-size: 0.85rem;
+    min-width: 64px;
+    min-height: 32px;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.78rem;
     font-weight: 600;
 }
 
 .stock-edit-button i {
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .inventory-table-wrap {
@@ -76,8 +76,25 @@ form {
 }
 
 .inventory-table {
-    min-width: 720px;
+    min-width: 680px;
+    width: 100%;
     margin-bottom: 0;
+}
+
+.inventory-variant-column {
+    width: 30%;
+}
+
+.inventory-store-column {
+    width: 19%;
+}
+
+.inventory-stock-column {
+    width: 33%;
+}
+
+.inventory-action-column {
+    width: 18%;
 }
 
 .inventory-table th {
@@ -95,7 +112,7 @@ form {
 }
 
 .inventory-stock-field {
-    min-width: 220px;
+    min-width: 0;
 }
 
 .inventory-stock {
@@ -110,9 +127,15 @@ form {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    min-width: 124px;
+    min-width: 108px;
     min-height: 44px;
+    padding-inline: 0.65rem;
+    white-space: nowrap;
     font-weight: 600;
+}
+
+.inventory-action-cell {
+    white-space: nowrap;
 }
 
 .inventory-save-button i {
