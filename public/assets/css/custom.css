@@ -6,6 +6,42 @@ form {
     margin-bottom: 0;
 }
 
+.stock-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-width: 150px;
+    white-space: nowrap;
+}
+
+.stock-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.stock-edit-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 84px;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.stock-edit-button i {
+    font-size: 1.25rem;
+}
+
 .offcanvas.offcanvas-end {
     margin: 20px;
     border-radius: 10px;
@@ -13,7 +49,11 @@ form {
 }
 
 .card-img {
-    background: color-mix(in oklab, oklch(96.7% .003 264.542) 50%, transparent);
+    background: color-mix(
+        in oklab,
+        oklch(96.7% 0.003 264.542) 50%,
+        transparent
+    );
     border-radius: 10px;
 }
 
@@ -111,62 +151,62 @@ form {
 }
 
 .pending {
-    background-color: #FFF3CD; /* Light yellow for pending */
+    background-color: #fff3cd; /* Light yellow for pending */
     color: #333333;
 }
 
 .awaiting_store_response {
-    background-color: #FFE082; /* Light amber for awaiting store response */
+    background-color: #ffe082; /* Light amber for awaiting store response */
     color: #333333;
 }
 
 .awaiting_seller_response {
-    background-color: #FFECB3; /* Lighter amber for awaiting seller response */
+    background-color: #ffecb3; /* Lighter amber for awaiting seller response */
     color: #333333;
 }
 
 .accepted {
-    background-color: #C8E6C9; /* Light green for accepted */
+    background-color: #c8e6c9; /* Light green for accepted */
     color: #333333;
 }
 
 .accepted_by_seller {
-    background-color: #A5D6A7; /* Slightly darker light green for accepted by seller */
+    background-color: #a5d6a7; /* Slightly darker light green for accepted by seller */
     color: #333333;
 }
 
 .partially_accepted {
-    background-color: #DCEDC8; /* Pale green for partially accepted */
+    background-color: #dcedc8; /* Pale green for partially accepted */
     color: #333333;
 }
 
 .rejected {
-    background-color: #FFCDD2; /* Light red for rejected */
+    background-color: #ffcdd2; /* Light red for rejected */
     color: #333333;
 }
 
 .rejected_by_seller {
-    background-color: #EF9A9A; /* Slightly darker light red for rejected by seller */
+    background-color: #ef9a9a; /* Slightly darker light red for rejected by seller */
     color: #333333;
 }
 
 .preparing {
-    background-color: #BBDEFB; /* Light blue for preparing */
+    background-color: #bbdefb; /* Light blue for preparing */
     color: #333333;
 }
 
 .assigned {
-    background-color: #90CAF9; /* Light medium blue for assigned */
+    background-color: #90caf9; /* Light medium blue for assigned */
     color: #333333;
 }
 
 .collected {
-    background-color: #B2EBF2; /* Light cyan for collected */
+    background-color: #b2ebf2; /* Light cyan for collected */
     color: #333333;
 }
 
 .out_for_delivery {
-    background-color: #4FC3F7; /* Light bright blue for out for delivery */
+    background-color: #4fc3f7; /* Light bright blue for out for delivery */
     color: #333333;
 }
 
@@ -177,17 +217,17 @@ form {
 }
 
 .approved {
-    background-color: #C8E6C9; /* Light green for approved (matches bg-green-lt) */
+    background-color: #c8e6c9; /* Light green for approved (matches bg-green-lt) */
     color: #333333;
 }
 
 .visible {
-    background-color: #C8E6C9; /* Light green for visible (matches bg-green-lt) */
+    background-color: #c8e6c9; /* Light green for visible (matches bg-green-lt) */
     color: #333333;
 }
 
 .published {
-    background-color: #C8E6C9; /* Light green for published (matches bg-green-lt) */
+    background-color: #c8e6c9; /* Light green for published (matches bg-green-lt) */
     color: #333333;
 }
 
@@ -198,27 +238,27 @@ form {
 }
 
 .not_approved {
-    background-color: #FFCDD2; /* Light red for not approved (matches bg-red-lt) */
+    background-color: #ffcdd2; /* Light red for not approved (matches bg-red-lt) */
     color: #333333;
 }
 
 .draft {
-    background-color: #FFCDD2; /* Light red for draft (matches bg-red-lt) */
+    background-color: #ffcdd2; /* Light red for draft (matches bg-red-lt) */
     color: #333333;
 }
 
 .pending_verification {
-    background-color: #FFCDD2; /* Light red for pending verification (matches bg-red-lt) */
+    background-color: #ffcdd2; /* Light red for pending verification (matches bg-red-lt) */
     color: #333333;
 }
 
 .cancelled {
-    background-color: #ECEFF1; /* Light grey for cancelled (matches bg-default-lt) */
+    background-color: #eceff1; /* Light grey for cancelled (matches bg-default-lt) */
     color: #333333;
 }
 
 .failed {
-    background-color: #FFCDD2; /* Light red for failed (matches bg-red-lt) */
+    background-color: #ffcdd2; /* Light red for failed (matches bg-red-lt) */
     color: #333333;
 }
 
@@ -277,7 +317,8 @@ form {
 }
 
 @media (min-width: 992px) {
-    .navbar-expand-lg.navbar-vertical ~ .navbar, .navbar-expand-lg.navbar-vertical ~ .page-wrapper {
+    .navbar-expand-lg.navbar-vertical ~ .navbar,
+    .navbar-expand-lg.navbar-vertical ~ .page-wrapper {
         margin-left: 16rem;
     }
 
@@ -308,7 +349,9 @@ div.dt-button-collection .dropdown-menu {
     -webkit-box-orient: vertical;
 }
 
-.step__item.active .step__icon, .step__item.active ~ .step__divider, .step__item.active ~ .step__item .step__icon {
+.step__item.active .step__icon,
+.step__item.active ~ .step__divider,
+.step__item.active ~ .step__item .step__icon {
     background-color: var(--tblr-primary) !important;
 }
 
