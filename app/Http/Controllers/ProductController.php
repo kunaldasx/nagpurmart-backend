@@ -618,7 +618,7 @@ class ProductController extends Controller
         $status = view('partials.status', ['status' => $product->status ?? ""])->render();
         return [
             'id' => $product->id,
-            'stock' => '<div class="stock-cell"><span class="badge stock-count ' . $stockClass . '" title="' . $stockStatus . '" aria-label="' . $stock . ' units, ' . $stockStatus . '">' . $stockIcon . $stockLabel . '<strong class="stock-value">' . $stock . '</strong></span>' . $inventoryButton . '</div>',
+            'stock' => '<div class="stock-cell"><span class="badge stock-count ' . $stockClass . '" title="' . $stockStatus . '" aria-label="' . $stock . ' units, ' . $stockStatus . '">' . $stockIcon . $stockLabel . '<span class="stock-value-container"><strong class="stock-value">' . $stock . '</strong></span></span>' . $inventoryButton . '</div>',
             'product_details' => "<div class='d-flex justify-content-start align-items-center'><div class='pe-2'>" .
                 view('partials.image', [
                     'image' => $product->main_image ?? "",
