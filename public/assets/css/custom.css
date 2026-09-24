@@ -145,11 +145,20 @@ form {
     justify-content: center;
     gap: 0.4rem;
     width: 100%;
+    box-sizing: border-box;
     min-width: 0;
-    min-height: 44px;
-    padding: 0.65rem 1rem;
+    min-height: 48px;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--tblr-primary) 80%, #ffffff);
+    border-radius: 0.55rem;
+    box-shadow: 0 0.25rem 0.65rem rgb(32 107 196 / 20%);
     white-space: nowrap;
+    font-size: 0.95rem;
     font-weight: 600;
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        background-color 160ms ease;
 }
 
 .inventory-action-cell {
@@ -157,7 +166,24 @@ form {
 }
 
 .inventory-save-button i {
-    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.45rem;
+    height: 1.45rem;
+    border-radius: 0.35rem;
+    background: rgb(255 255 255 / 18%);
+    font-size: 1.05rem;
+}
+
+.inventory-save-button:hover,
+.inventory-save-button:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 0.4rem 0.85rem rgb(32 107 196 / 28%);
+}
+
+.inventory-save-button:active {
+    transform: translateY(0);
 }
 
 .offcanvas.offcanvas-end {
