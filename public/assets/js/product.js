@@ -282,7 +282,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <td>${variant.title || "Default"}</td>
                         <td>${pricing.store_name || "Store"}</td>
                         <td><div class="inventory-stock-field"><label class="visually-hidden" for="inventory-stock-${pricing.id}">Stock quantity</label><input id="inventory-stock-${pricing.id}" type="number" class="form-control inventory-stock" min="0" value="${Number(pricing.stock || 0)}" data-store-product-variant-id="${pricing.id}"></div></td>
-                        <td class="inventory-action-cell"><button type="button" class="btn btn-primary inventory-save-button save-inventory"><i class="ti ti-device-floppy" aria-hidden="true"></i><span>Save stock</span></button></td>
+                        <td class="inventory-action-cell"><button type="button" class="btn btn-primary inventory-save-button save-inventory" title="Save stock"><i class="ti ti-device-floppy" aria-hidden="true"></i><span>Save</span></button></td>
                     </tr>`,
                     ),
                 );
