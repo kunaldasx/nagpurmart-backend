@@ -281,14 +281,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     <tr>
                         <td>${variant.title || "Default"}</td>
                         <td>${pricing.store_name || "Store"}</td>
-                        <td><input type="number" class="form-control form-control-sm inventory-stock" min="0" value="${Number(pricing.stock || 0)}" data-store-product-variant-id="${pricing.id}"></td>
-                        <td><button type="button" class="btn btn-sm btn-primary save-inventory">Save</button></td>
+                        <td><div class="inventory-stock-field"><label class="visually-hidden" for="inventory-stock-${pricing.id}">Stock quantity</label><input id="inventory-stock-${pricing.id}" type="number" class="form-control inventory-stock" min="0" value="${Number(pricing.stock || 0)}" data-store-product-variant-id="${pricing.id}"></div></td>
+                        <td><button type="button" class="btn btn-primary inventory-save-button save-inventory"><i class="ti ti-device-floppy" aria-hidden="true"></i><span>Save stock</span></button></td>
                     </tr>`,
                     ),
                 );
 
                 modalBody.innerHTML = rows.length
-                    ? `<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Variant</th><th>Store</th><th>Stock</th><th></th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
+                    ? `<div class="table-responsive inventory-table-wrap"><table class="table align-middle inventory-table"><thead><tr><th>Variant</th><th>Store</th><th>Stock quantity</th><th></th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
                     : '<div class="alert alert-info mb-0">No store inventory is configured for this product.</div>';
 
                 modalBody

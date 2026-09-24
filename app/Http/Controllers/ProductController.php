@@ -601,7 +601,14 @@ class ProductController extends Controller
     private function formatProductData(Product $product): array
     {
         $stock = (int)($product->stock_total ?? 0);
-        $stockClass = $stock < 20 ? 'bg-danger-lt text-danger' : 'bg-success-lt text-success';
+        $isOutOfStock = $stock === 0;
+        $isLowStock = $stock > 0 && $stock < 20;
+        $stockClass = $isOutOfStock || $isLowStock ? 'stock-warning' : 'stock-available';
+        $stockStatus = $isOutOfStock ? 'Out of stock' : ($isLowStock ? 'Low stock' : 'In stock');
+        $stockIcon = $isOutOfStock || $isLowStock
+            ? '<svg class="stock-status-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.6l-8 14A2 2 0 0 0 4 20.6h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            : '<svg class="stock-status-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        $stockLabel = '<span class="stock-status-label">' . $stockStatus . '</span>';
         $inventoryButton = $this->getPanel() === 'seller' && $this->editPermission
             ? '<button type="button" class="btn btn-outline-primary stock-edit-button update-inventory" data-product-id="' . $product->id . '" data-product-title="' . e($product->title) . '" title="Update inventory" aria-label="Update inventory"><i class="ti ti-edit" aria-hidden="true"></i><span>Edit</span></button>'
             : '';
@@ -611,7 +618,7 @@ class ProductController extends Controller
         $status = view('partials.status', ['status' => $product->status ?? ""])->render();
         return [
             'id' => $product->id,
-            'stock' => '<div class="stock-cell"><span class="badge stock-count ' . $stockClass . '">' . $stock . '</span>' . $inventoryButton . '</div>',
+            'stock' => '<div class="stock-cell"><span class="badge stock-count ' . $stockClass . '" title="' . $stockStatus . '" aria-label="' . $stock . ' units, ' . $stockStatus . '">' . $stockIcon . $stockLabel . '<strong class="stock-value">' . $stock . '</strong></span>' . $inventoryButton . '</div>',
             'product_details' => "<div class='d-flex justify-content-start align-items-center'><div class='pe-2'>" .
                 view('partials.image', [
                     'image' => $product->main_image ?? "",
