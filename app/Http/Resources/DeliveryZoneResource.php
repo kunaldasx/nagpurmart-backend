@@ -34,6 +34,7 @@ class DeliveryZoneResource extends JsonResource
             'buffer_time' => $this->buffer_time,
             'comment' => $this->comment,
             'delay' => $this->delay,
+            'active_hours' => $this->active_hours,
             'delivery_paused' => $this->delivery_paused,
             'delivery_paused_until' => $this->delivery_paused_until?->toISOString(),
             'delivery_pause_comment' => $this->delivery_pause_comment,

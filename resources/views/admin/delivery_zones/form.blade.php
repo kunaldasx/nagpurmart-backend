@@ -191,6 +191,35 @@
                                 </div>
                             </div>
 
+                            @php
+                                $weekdays = ['monday' => 'Monday', 'tuesday' => 'Tuesday', 'wednesday' => 'Wednesday', 'thursday' => 'Thursday', 'friday' => 'Friday', 'saturday' => 'Saturday', 'sunday' => 'Sunday'];
+                            @endphp
+                            <h4 class="mt-4 mb-2">Active hours by weekday</h4>
+                            <p class="text-muted mb-3">Days without custom hours remain active all day.</p>
+                            @foreach($weekdays as $day => $dayLabel)
+                                @php
+                                    $savedHours = $deliveryZone->active_hours[$day] ?? [];
+                                    $hoursEnabled = old('active_hours_enabled.' . $day, !empty($savedHours));
+                                @endphp
+                                <div class="row align-items-center mb-2" data-active-hours-row>
+                                    <div class="col-md-2 fw-medium">{{ $dayLabel }}</div>
+                                    <div class="col-md-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="active_hours_enabled[{{ $day }}]" value="1" data-active-hours-toggle {{ $hoursEnabled ? 'checked' : '' }}>
+                                            <label class="form-check-label">Set custom hours</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="visually-hidden" for="active-hours-{{ $day }}-start">{{ $dayLabel }} opening time</label>
+                                        <input class="form-control" type="time" id="active-hours-{{ $day }}-start" name="active_hours[{{ $day }}][start]" value="{{ old('active_hours.' . $day . '.start', $savedHours['start'] ?? '09:00') }}" data-active-hours-input {{ $hoursEnabled ? '' : 'disabled' }}>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="visually-hidden" for="active-hours-{{ $day }}-end">{{ $dayLabel }} closing time</label>
+                                        <input class="form-control" type="time" id="active-hours-{{ $day }}-end" name="active_hours[{{ $day }}][end]" value="{{ old('active_hours.' . $day . '.end', $savedHours['end'] ?? '22:00') }}" data-active-hours-input {{ $hoursEnabled ? '' : 'disabled' }}>
+                                    </div>
+                                </div>
+                            @endforeach
+
                             <div class="border rounded p-3 mb-3">
                                 <div class="form-check form-switch mb-3">
                                     <input type="hidden" name="delivery_paused" value="0">
@@ -536,6 +565,15 @@
     }
 </style>
 @push('script')
+    <script>
+        document.querySelectorAll('[data-active-hours-toggle]').forEach((toggle) => {
+            toggle.addEventListener('change', () => {
+                toggle.closest('[data-active-hours-row]')
+                    .querySelectorAll('[data-active-hours-input]')
+                    .forEach((input) => input.disabled = !toggle.checked);
+            });
+        });
+    </script>
     <script async defer>(g => {
             var h, a, k, p = "The Google Maps JavaScript API", c = "google", l = "importLibrary", q = "__ib__",
                 m = document, b = window;

@@ -130,6 +130,7 @@ class DeliveryZoneApiController extends Controller
             'zone_count' => $zoneInfo['zone_count'],
             'zone' => $zoneInfo['zone'],
             'zone_id' => $zoneInfo['zone_id'],
+            'active_hours' => $zoneInfo['active_hours'],
             'coordinates' => [
                 'latitude' => $latitude,
                 'longitude' => $longitude,
@@ -305,6 +306,7 @@ class DeliveryZoneApiController extends Controller
         $response['base_prep_time_minutes'] = 5;
         $response['delay'] = $additionalDelay;
         $response['comment'] = $zoneInfo['comment'] ?? null;
+        $response['active_hours'] = $zoneInfo['active_hours'] ?? null;
         $response['delivery_paused'] = false;
         $response['delivery_pause_until'] = null;
         $response['delivery_pause_comment'] = null;

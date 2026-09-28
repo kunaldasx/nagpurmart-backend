@@ -111,7 +111,7 @@ class DeliveryZoneService
         $zones = DeliveryZone::where('status', ActiveInactiveStatusEnum::ACTIVE())
             ->get()
             ->filter(function ($zone) use ($latitude, $longitude) {
-                return self::containsPoint($zone, $latitude, $longitude) && !self::isDeliveryPaused($zone);
+                return self::containsPoint($zone, $latitude, $longitude) && self::isDeliveryAvailableNow($zone);
             });
 
         // Get the first zone if any exists
@@ -134,6 +134,7 @@ class DeliveryZoneService
             'buffer_time' => $zone ? $zone->buffer_time : 0,
             'delay' => $zone ? $zone->delay : 0,
             'comment' => $zone ? $zone->comment : null,
+            'active_hours' => $zone ? $zone->active_hours : null,
             'delivery_paused' => false,
             'delivery_paused_until' => null,
             'delivery_pause_comment' => null,
@@ -145,6 +146,36 @@ class DeliveryZoneService
         return (bool) $zone->delivery_paused
             && (!$zone->delivery_paused_until || Carbon::now()->lt($zone->delivery_paused_until));
     }
+
+    public static function isWithinActiveHours(DeliveryZone $zone, ?Carbon $now = null): bool
+    {
+        $activeHours = $zone->active_hours;
+        if (empty($activeHours)) {
+            return true;
+        }
+
+        $now ??= Carbon::now();
+        $weekday = strtolower($now->format('l'));
+        if (!array_key_exists($weekday, $activeHours)) {
+            return true;
+        }
+
+        $hours = $activeHours[$weekday];
+        if (!isset($hours['start'], $hours['end'])) {
+            return false;
+        }
+
+        $currentTime = $now->format('H:i');
+
+        return $currentTime >= $hours['start'] && $currentTime < $hours['end'];
+    }
+
+    public static function isDeliveryAvailableNow(DeliveryZone $zone, ?Carbon $now = null): bool
+    {
+        return !self::isDeliveryPaused($zone)
+            && self::isWithinActiveHours($zone, $now);
+    }
+
     public static function getPausedZoneAtPoint(float $latitude, float $longitude): ?DeliveryZone
     {
         return DeliveryZone::where('status', ActiveInactiveStatusEnum::ACTIVE())
@@ -509,7 +540,7 @@ class DeliveryZoneService
         // Check if user location is within any delivery zone (polygon or radius)
         foreach ($deliveryZones as $zone) {
             if ($zone->status === ActiveInactiveStatusEnum::ACTIVE()
-                && !self::isDeliveryPaused($zone)
+                && self::isDeliveryAvailableNow($zone)
                 && self::containsPoint($zone, $userLat, $userLng)) {
                 return true;
             }
