@@ -37,6 +37,17 @@ class DeliveryTimeSlot extends Model
         return $value ? Carbon::parse($value)->format('H:i') : null;
     }
 
+    public function isBookableAt(Carbon $deliveryDate, ?Carbon $now = null): bool
+    {
+        if (!$deliveryDate->isToday()) {
+            return true;
+        }
+
+        $slotStart = Carbon::parse($deliveryDate->toDateString() . ' ' . $this->start_time);
+
+        return $slotStart->greaterThan($now ?? Carbon::now());
+    }
+
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);

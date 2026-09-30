@@ -502,6 +502,9 @@ class OrderService
             if (!$deliverySlot || strtolower($deliveryDate->format('l')) !== strtolower($deliverySlot->day_of_week)) {
                 throw new Exception('The selected delivery slot is not available for the selected date.');
             }
+            if (!$deliverySlot->isBookableAt($deliveryDate)) {
+                throw new Exception('The selected delivery slot is no longer available for today.');
+            }
             $bookedOrders = Order::where('delivery_time_slot_id', $deliverySlot->id)
                 ->whereDate('delivery_date', $deliveryDate)
                 ->whereNotIn('status', ['cancelled', 'failed'])

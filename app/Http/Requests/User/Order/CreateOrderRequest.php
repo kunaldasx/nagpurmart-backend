@@ -86,6 +86,11 @@ class CreateOrderRequest extends FormRequest
                 return;
             }
 
+            if (!$slot->isBookableAt($date)) {
+                $validator->errors()->add('delivery_time_slot_id', 'The selected delivery slot is no longer available for today.');
+                return;
+            }
+
             if (Order::where('delivery_time_slot_id', $slot->id)
                 ->whereDate('delivery_date', $date)
                 ->whereNotIn('status', ['cancelled', 'failed'])

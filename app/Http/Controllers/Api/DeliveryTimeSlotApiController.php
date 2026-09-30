@@ -22,6 +22,7 @@ class DeliveryTimeSlotApiController extends Controller
 
         $date = $request->input('date');
         $day = $date ? strtolower(Carbon::parse($date)->format('l')) : strtolower((string) $request->input('day_of_week'));
+        $deliveryDate = $date ? Carbon::parse($date) : null;
         $slots = DeliveryTimeSlot::with('store')
             ->where('is_active', true)
             ->when($day, fn ($query) => $query->where('day_of_week', $day))
@@ -39,6 +40,7 @@ class DeliveryTimeSlotApiController extends Controller
                 $slot->remaining_orders = max(0, (int) $slot->max_orders - (int) $slot->booked_orders);
             })
             ->filter(fn (DeliveryTimeSlot $slot) => (int) $slot->remaining_orders > 0)
+            ->filter(fn (DeliveryTimeSlot $slot) => !$deliveryDate || $slot->isBookableAt($deliveryDate))
             ->values();
 
         return response()->json([
