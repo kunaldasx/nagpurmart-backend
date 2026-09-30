@@ -6,6 +6,7 @@ use App\Enums\Order\OrderItemStatusEnum;
 use App\Enums\Product\ProductTypeEnum;
 use App\Enums\Product\ProductImageFitEnum;
 use App\Models\Store;
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 
@@ -362,6 +363,12 @@ class StoreUpdateProductRequest extends FormRequest
             }
         }
 
+        $this->validateExistingBarcodeUniqueness(
+            $validator,
+            array_column($variants, 'barcode'),
+            'variants_json'
+        );
+
         if (!empty($duplicateBarcodes)) {
             $validator->errors()->add(
                 'variants_json',
@@ -379,6 +386,12 @@ class StoreUpdateProductRequest extends FormRequest
      */
     protected function validateSimpleProduct($validator, array $pricingArr): void
     {
+        $this->validateExistingBarcodeUniqueness(
+            $validator,
+            [$this->input('barcode')],
+            'barcode'
+        );
+
         if (!isset($pricingArr['store_pricing']) || !is_array($pricingArr['store_pricing'])) {
             $validator->errors()->add('pricing', __('labels.store_pricing_array'));
             return;
@@ -386,6 +399,38 @@ class StoreUpdateProductRequest extends FormRequest
 
         foreach ($pricingArr['store_pricing'] as $index => $row) {
             $this->validatePricingRow($validator, $row, "store_pricing.$index");
+        }
+    }
+
+    /**
+     * Reject barcodes already assigned to variants belonging to another product.
+     */
+    protected function validateExistingBarcodeUniqueness($validator, array $barcodes, string $field): void
+    {
+        $barcodes = array_values(array_unique(array_filter(
+            $barcodes,
+            fn ($barcode) => is_string($barcode) && trim($barcode) !== ''
+        )));
+
+        if (empty($barcodes)) {
+            return;
+        }
+
+        $query = ProductVariant::withTrashed()->whereIn('barcode', $barcodes);
+        $productId = $this->route('id') ?? $this->route('product');
+        if (is_object($productId)) {
+            $productId = $productId->getKey();
+        }
+        if (is_numeric($productId)) {
+            $query->where('product_id', '!=', (int) $productId);
+        }
+
+        $duplicates = $query->distinct()->pluck('barcode')->all();
+        if (!empty($duplicates)) {
+            $validator->errors()->add(
+                $field,
+                'Barcode values must be unique. These barcodes are already in use: ' . implode(', ', $duplicates)
+            );
         }
     }
 

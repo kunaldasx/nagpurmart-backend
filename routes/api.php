@@ -221,6 +221,7 @@ Route::prefix('products')->name('products.')->group(function () {
     Route::get('/get-types', [ProductSidebarApiController::class, 'getTypes'])->name('products.get-types');
     Route::get('/search-by-keywords', [ProductApiController::class, 'searchByKeywords']);
     Route::get('/store-wise', [ProductApiController::class, 'storeWise']);
+    Route::get('/barcode/{barcode}', [ProductApiController::class, 'showByBarcode']);
     Route::get('/{slug}', [ProductApiController::class, 'show']);
     Route::get('/{slug}/faqs', [ProductFaqApiController::class, 'getByProduct']);
     Route::get('/{slug}/reviews', [ProductReviewApiController::class, 'getProductReviews']);

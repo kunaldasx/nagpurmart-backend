@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Product;
 
 use App\Http\Controllers\Controller;
+use App\Enums\Product\ProductStatusEnum;
 use App\Http\Requests\Product\GetProductsByLocationRequest;
 use App\Http\Resources\Product\ProductListResource;
 use App\Http\Resources\Product\ProductResource;
+use App\Http\Resources\Product\ProductVariantResource;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Store;
@@ -315,6 +317,55 @@ class ProductApiController extends Controller
                 success: false,
                 message: 'labels.error_fetching_product',
                 data: $e,
+            );
+        }
+    }
+
+    /**
+     * Get an active product and the exact variant identified by its barcode.
+     */
+    public function showByBarcode(string $barcode): JsonResponse
+    {
+        try {
+            $product = Product::query()
+                ->where('status', ProductStatusEnum::ACTIVE())
+                ->whereHas('variants', fn ($query) => $query->where('barcode', $barcode))
+                ->with([
+                    'category',
+                    'brand',
+                    'seller.user',
+                    'variants.attributes.attribute',
+                    'variants.attributes.attributeValue',
+                    'variants.storeProductVariants.store',
+                    'customProductSections.fields',
+                ])
+                ->first();
+
+            if (!$product) {
+                return ApiResponseType::sendJsonResponse(
+                    success: false,
+                    message: 'labels.product_not_found',
+                    data: null,
+                    status: 404
+                );
+            }
+
+            $matchedVariant = $product->variants->firstWhere('barcode', $barcode);
+
+            return ApiResponseType::sendJsonResponse(
+                success: true,
+                message: 'labels.product_fetched_successfully',
+                data: [
+                    'product' => new ProductResource($product),
+                    'matched_variant' => new ProductVariantResource($matchedVariant),
+                ]
+            );
+        } catch (\Throwable $e) {
+            return ApiResponseType::sendJsonResponse(
+                success: false,
+                message: 'labels.error_fetching_product',
+                data: ['error' => $e->getMessage()],
+                status: 500
             );
         }
     }
