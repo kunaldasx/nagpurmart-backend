@@ -35,6 +35,9 @@ Use `order_mode=wholesale` for wholesale orders. The `popup=1` query is used by 
                     "product": "Example Product",
                     "variant": "500 g",
                     "barcode": "8901234500021",
+                    "sku": "EXAMPLE-500G",
+                    "variant_weight": 0.5,
+                    "variant_dimensions": "12 × 8 × 6 cm",
                     "status": "awaiting_store_response",
                     "image": "https://example.com/product.jpg",
                     "quantity": 2,
@@ -48,7 +51,7 @@ Use `order_mode=wholesale` for wholesale orders. The `popup=1` query is used by 
 }
 ```
 
-`status` is `awaiting_store_response` for a new decision or `accepted` when the seller should resume item verification. `barcode` is the expected barcode for that ordered variant.
+`status` is `awaiting_store_response` for a new decision or `accepted` when the seller should resume item verification. `barcode` is the expected barcode for internal comparison and must not be displayed in the popup. `sku`, `variant_weight`, and `variant_dimensions` provide additional identifying details for the seller.
 
 ## 2. Accept all items in the seller order
 
@@ -74,7 +77,7 @@ Success (`200`):
 
 ## 3. Verify every item and mark the seller order preparing
 
-The panel first checks each scanned barcode and arrow-key quantity locally. Only after every item passes does it submit the full set. The server independently validates every value and the exact set of accepted item IDs before changing any statuses.
+The panel checks each scanned barcode and arrow-key quantity locally, shows errors under only the mismatched field, and advances to the next item immediately after a successful check. A checklist shows each item as unchecked, passed, or failed. Only after every item passes does the panel submit the full set. The server independently validates every value and the exact set of accepted item IDs before changing any statuses.
 
 ```http
 POST /seller/orders/701/verify-and-prepare

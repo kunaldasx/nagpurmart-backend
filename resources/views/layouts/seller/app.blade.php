@@ -75,8 +75,20 @@
         .new-order-verification-status { min-height: 1.5rem; font-weight: 700; }
         .new-order-verification-status.is-valid { color: #16803c; }
         .new-order-verification-status.is-invalid { color: #c13535; }
-        .new-order-verification-card input { min-height: 44px; }
-        .new-order-expected-value { color: #536579; overflow-wrap: anywhere; }
+        .new-order-verification-card input { min-height: 48px; }
+        .new-order-quantity-panel { padding: .9rem; border: 2px solid #126fd1; border-radius: 10px; background: #edf6ff; }
+        .new-order-quantity-panel input { min-height: 64px; font-size: 1.5rem; font-weight: 800; text-align: center; }
+        .new-order-field-error { min-height: 1.25rem; margin-top: .25rem; color: #c13535; font-size: .82rem; font-weight: 700; }
+        .new-order-checklist { margin-bottom: .85rem; border: 1px solid #dce7f0; border-radius: 10px; overflow: hidden; }
+        .new-order-checklist-item { display: flex; align-items: center; gap: .65rem; padding: .6rem .75rem; border-bottom: 1px solid #e7edf3; background: #fff; }
+        .new-order-checklist-item:last-child { border-bottom: 0; }
+        .new-order-checklist-icon { width: 1.4rem; flex: 0 0 1.4rem; font-size: 1.1rem; font-weight: 800; text-align: center; }
+        .new-order-checklist-item.is-valid .new-order-checklist-icon { color: #16803c; }
+        .new-order-checklist-item.is-invalid .new-order-checklist-icon { color: #c13535; }
+        .new-order-checklist-item.is-pending .new-order-checklist-icon { color: #8192a3; }
+        .new-order-checklist-item.is-current { background: #edf6ff; }
+        .new-order-checklist-title { min-width: 0; flex: 1; font-weight: 650; overflow-wrap: anywhere; }
+        .new-order-checklist-quantity { color: #536579; white-space: nowrap; }
         .new-order-item-image { width: 52px; height: 52px; flex: 0 0 52px; border: 1px solid #e2ebf3; border-radius: 9px; background: #fff; object-fit: cover; }
         .new-order-item-details { min-width: 0; flex: 1 1 auto; }
         .new-order-item-price { flex: 0 0 auto; color: #274b6c; font-weight: 700; white-space: nowrap; }

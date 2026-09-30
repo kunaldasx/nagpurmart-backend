@@ -93,6 +93,9 @@ $(document).ready(function () {
         verifiedItems = [];
         verificationIndex = 0;
         currentItemCheckPassed = false;
+        activeOrder.items.forEach((item) => {
+            item.verification_status = "pending";
+        });
         popupStage = activeOrder.items.every(
             (item) => item.status === "accepted",
         )
@@ -105,6 +108,7 @@ $(document).ready(function () {
         $("#new-order-dismiss").addClass("d-none");
         $("#new-order-error").addClass("d-none").text("");
         $("#new-order-verification").addClass("d-none").empty();
+        $("#new-order-items").removeClass("d-none");
         $("#new-order-summary").html(
             `<div class="new-order-summary-card">` +
                 `<div class="order-number">Order #${escapeHtml(activeOrder.order_number || activeOrder.order_id)}</div>` +
@@ -154,12 +158,34 @@ $(document).ready(function () {
     };
     const showVerificationItem = () => {
         const item = activeOrder.items[verificationIndex];
+        const checklist =
+            `<div class="new-order-checklist" aria-label="Order item verification status">` +
+            activeOrder.items
+                .map((orderItem, index) => {
+                    const status = orderItem.verification_status || "pending";
+                    const icon =
+                        status === "valid"
+                            ? "✓"
+                            : status === "invalid"
+                              ? "✕"
+                              : "○";
+                    return (
+                        `<div class="new-order-checklist-item is-${status}${index === verificationIndex ? " is-current" : ""}" aria-current="${index === verificationIndex ? "step" : "false"}">` +
+                        `<span class="new-order-checklist-icon" aria-hidden="true">${icon}</span>` +
+                        `<span class="new-order-checklist-title">${escapeHtml(orderItem.product)}${orderItem.variant && orderItem.variant !== orderItem.product ? ` · ${escapeHtml(orderItem.variant)}` : ""}</span>` +
+                        `<span class="new-order-checklist-quantity">× ${escapeHtml(orderItem.quantity)}</span>` +
+                        `</div>`
+                    );
+                })
+                .join("") +
+            `</div>`;
         if (!item) {
             popupStage = "prepare";
             $("#new-order-verification")
                 .removeClass("d-none")
                 .html(
-                    `<div class="new-order-verification-card text-center">` +
+                    checklist +
+                        `<div class="new-order-verification-card text-center">` +
                         `<div class="new-order-verification-status is-valid">All ${activeOrder.items.length} items verified.</div>` +
                         `<p class="mb-0">The server will confirm the barcode and quantity for every item before starting preparation.</p>` +
                         `</div>`,
@@ -174,32 +200,40 @@ $(document).ready(function () {
         $("#new-order-verification")
             .removeClass("d-none")
             .html(
-                `<div class="new-order-verification-card">` +
+                checklist +
+                    `<div class="new-order-verification-card">` +
                     `<div class="d-flex justify-content-between gap-2 mb-3">` +
-                    `<strong>Item ${verificationIndex + 1} of ${activeOrder.items.length}</strong>` +
-                    `<span>${escapeHtml(item.quantity)} ordered</span>` +
+                    `<strong>Scan item ${verificationIndex + 1} of ${activeOrder.items.length}</strong>` +
+                    `<span class="new-order-item-price">${escapeHtml(item.subtotal)}</span>` +
                     `</div>` +
                     `<div class="d-flex align-items-center gap-3 mb-3">` +
                     `<img class="new-order-item-image" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.product)}" loading="lazy">` +
-                    `<div class="new-order-item-details"><strong>${escapeHtml(item.product)}</strong>${item.variant ? `<div>${escapeHtml(item.variant)}</div>` : ""}</div>` +
+                    `<div class="new-order-item-details"><strong>${escapeHtml(item.product)}</strong>${item.variant && item.variant !== item.product ? `<div>${escapeHtml(item.variant)}</div>` : ""}` +
+                    `${item.sku ? `<div class="text-secondary small">SKU: ${escapeHtml(item.sku)}</div>` : ""}` +
+                    `${item.variant_weight ? `<div class="text-secondary small">Weight: ${escapeHtml(item.variant_weight)} kg</div>` : ""}` +
+                    `${item.variant_dimensions ? `<div class="text-secondary small">Dimensions: ${escapeHtml(item.variant_dimensions)}</div>` : ""}</div>` +
                     `</div>` +
-                    `<div class="mb-3"><span class="new-order-meta-label">Expected barcode</span><span class="new-order-expected-value">${escapeHtml(item.barcode || "No barcode on file")}</span></div>` +
-                    `<label class="form-label" for="new-order-scanned-barcode">Scan or enter barcode</label>` +
-                    `<input id="new-order-scanned-barcode" class="form-control mb-3" type="text" autocomplete="off" value="" ${item.barcode ? "" : "disabled"}>` +
-                    `<label class="form-label" for="new-order-verified-quantity">Confirm quantity with the up/down arrow keys</label>` +
-                    `<input id="new-order-verified-quantity" class="form-control" type="number" inputmode="none" min="1" max="${escapeHtml(item.quantity)}" step="1" value="1">` +
-                    `<div id="new-order-item-check" class="new-order-verification-status mt-3" role="status" aria-live="polite"></div>` +
+                    `<label class="form-label fw-bold" for="new-order-scanned-barcode">Scan or enter barcode</label>` +
+                    `<input id="new-order-scanned-barcode" class="form-control" type="text" autocomplete="off" value="">` +
+                    `<div id="new-order-barcode-error" class="new-order-field-error" role="alert"></div>` +
+                    `<div class="new-order-quantity-panel mt-3">` +
+                    `<div class="d-flex justify-content-between align-items-baseline gap-2 mb-2"><label class="form-label fw-bold mb-0" for="new-order-verified-quantity">Confirm quantity</label><span class="badge bg-blue-lt fs-3">${escapeHtml(item.quantity)} ordered</span></div>` +
+                    `<input id="new-order-verified-quantity" class="form-control" type="number" inputmode="none" min="0" max="${escapeHtml(item.quantity)}" step="1" value="0" aria-describedby="new-order-quantity-error">` +
+                    `<div class="small text-secondary mt-1">Use the up/down arrow keys to match the ordered quantity.</div>` +
+                    `<div id="new-order-quantity-error" class="new-order-field-error" role="alert"></div>` +
+                    `</div>` +
                     `</div>`,
             );
         if (!item.barcode) {
             const productEditLink = item.product_id
                 ? ` <a href="/seller/products/${encodeURIComponent(item.product_id)}/edit" target="_blank" rel="noopener">Open product to add its barcode</a>.`
                 : " Update this product to add its barcode.";
-            $("#new-order-item-check")
-                .addClass("is-invalid")
-                .html(
-                    `No barcode is recorded for this item.${productEditLink} Save the product, close this popup, then reload the page to resume.`,
-                );
+            $("#new-order-scanned-barcode")
+                .prop("disabled", true)
+                .addClass("is-invalid");
+            $("#new-order-barcode-error").html(
+                `No barcode is recorded for this item.${productEditLink} Save the product, close this popup, then reload the page to resume.`,
+            );
             $("#new-order-dismiss").removeClass("d-none");
         }
         $("#new-order-accept").prop("disabled", false).text("Check item");
@@ -241,38 +275,50 @@ $(document).ready(function () {
     };
     const checkCurrentItem = () => {
         const item = activeOrder.items[verificationIndex];
-        if (!item.barcode) {
-            currentItemCheckPassed = false;
-            $("#new-order-item-check")
-                .removeClass("is-valid")
-                .addClass("is-invalid")
-                .text(
-                    "No barcode is recorded for this item. Add a barcode to the product variant before preparing this order.",
-                );
-            return;
-        }
         const barcode = $("#new-order-scanned-barcode").val();
         const quantity = Number($("#new-order-verified-quantity").val());
-        const matches =
-            Boolean(item.barcode) &&
-            barcode === String(item.barcode) &&
-            quantity === Number(item.quantity);
-        currentItemCheckPassed = matches;
-        $("#new-order-item-check")
-            .toggleClass("is-valid", matches)
-            .toggleClass("is-invalid", !matches)
-            .text(
-                matches
-                    ? "✓ Barcode and quantity match."
-                    : "✕ Barcode or quantity does not match. Correct the values and check again.",
-            );
-        $("#new-order-accept").text(
-            matches
-                ? verificationIndex + 1 === activeOrder.items.length
-                    ? "Finish item checks"
-                    : "Next item"
-                : "Check item again",
-        );
+        const barcodeMatches =
+            Boolean(item.barcode) && barcode === String(item.barcode);
+        const quantityMatches =
+            Number.isInteger(quantity) && quantity === Number(item.quantity);
+        const barcodeError = !item.barcode
+            ? "No barcode is recorded for this item. Add a barcode to its product variant before preparing."
+            : !barcodeMatches
+              ? "Barcode does not match this item."
+              : "";
+        const quantityError = !quantityMatches
+            ? `Enter the exact ordered quantity: ${item.quantity}.`
+            : "";
+
+        $("#new-order-scanned-barcode")
+            .toggleClass("is-invalid", Boolean(barcodeError))
+            .toggleClass("is-valid", !barcodeError);
+        $("#new-order-barcode-error").text(barcodeError);
+        $("#new-order-verified-quantity")
+            .toggleClass("is-invalid", Boolean(quantityError))
+            .toggleClass("is-valid", !quantityError);
+        $("#new-order-quantity-error").text(quantityError);
+
+        currentItemCheckPassed = !barcodeError && !quantityError;
+        item.verification_status = currentItemCheckPassed ? "valid" : "invalid";
+        if (currentItemCheckPassed) {
+            verifiedItems.push({
+                order_item_id: item.order_item_id,
+                barcode: String(barcode),
+                quantity,
+            });
+            verificationIndex += 1;
+            showVerificationItem();
+            return;
+        }
+
+        $("#new-order-checklist .new-order-checklist-item")
+            .eq(verificationIndex)
+            .removeClass("is-pending is-valid")
+            .addClass("is-invalid")
+            .find(".new-order-checklist-icon")
+            .text("✕");
+        $("#new-order-accept").text("Check item again");
     };
     const submitVerifiedOrder = () => {
         $("#new-order-accept").prop("disabled", true);
@@ -306,18 +352,7 @@ $(document).ready(function () {
             return;
         }
         if (popupStage === "verify") {
-            if (!currentItemCheckPassed) {
-                checkCurrentItem();
-                return;
-            }
-            const item = activeOrder.items[verificationIndex];
-            verifiedItems.push({
-                order_item_id: item.order_item_id,
-                barcode: String($("#new-order-scanned-barcode").val()),
-                quantity: Number($("#new-order-verified-quantity").val()),
-            });
-            verificationIndex += 1;
-            showVerificationItem();
+            checkCurrentItem();
             return;
         }
         submitVerifiedOrder();
@@ -377,12 +412,25 @@ $(document).ready(function () {
     modal.on(
         "input",
         "#new-order-scanned-barcode, #new-order-verified-quantity",
-        () => {
-            if (!currentItemCheckPassed) return;
+        (event) => {
+            const field = $(event.currentTarget);
+            field.removeClass("is-invalid is-valid");
+            if (field.is("#new-order-scanned-barcode")) {
+                $("#new-order-barcode-error").empty();
+            } else {
+                $("#new-order-quantity-error").empty();
+            }
+            if (activeOrder?.items[verificationIndex]) {
+                activeOrder.items[verificationIndex].verification_status =
+                    "pending";
+                $("#new-order-checklist .new-order-checklist-item")
+                    .eq(verificationIndex)
+                    .removeClass("is-invalid")
+                    .addClass("is-pending")
+                    .find(".new-order-checklist-icon")
+                    .text("○");
+            }
             currentItemCheckPassed = false;
-            $("#new-order-item-check")
-                .removeClass("is-valid is-invalid")
-                .text("");
             $("#new-order-accept").text("Check item");
         },
     );

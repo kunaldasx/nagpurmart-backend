@@ -222,6 +222,11 @@ class SellerOrderApiController extends Controller
                     'product' => $item->product?->title,
                     'variant' => $item->variant?->title,
                     'barcode' => $item->variant?->barcode,
+                    'sku' => $item->orderItem?->sku,
+                    'variant_weight' => $item->variant?->weight,
+                    'variant_dimensions' => $item->variant
+                        ? trim($item->variant->length . ' × ' . $item->variant->breadth . ' × ' . $item->variant->height . ' cm')
+                        : null,
                     'quantity' => (int) $item->orderItem->quantity,
                     'status' => $item->orderItem->status,
                     'subtotal' => $item->orderItem->subtotal,

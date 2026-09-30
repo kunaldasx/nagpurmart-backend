@@ -274,6 +274,11 @@ class OrderController extends Controller
                     'product' => $item->product?->title,
                     'variant' => $item->variant?->title,
                     'barcode' => $item->variant?->barcode,
+                    'sku' => $item->orderItem?->sku,
+                    'variant_weight' => $item->variant?->weight,
+                    'variant_dimensions' => $item->variant
+                        ? trim($item->variant->length . ' × ' . $item->variant->breadth . ' × ' . $item->variant->height . ' cm')
+                        : null,
                     'status' => $item->orderItem->status,
                     'image' => $item->variant?->image ?: $item->product?->main_image,
                     'quantity' => $item->orderItem->quantity,
