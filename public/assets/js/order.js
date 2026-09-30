@@ -134,27 +134,11 @@ $(document).ready(function () {
     // Handle preparing order action
     $("#confirmPreparing").on("click", function () {
         if (currentOrderId) {
-            axios
-                .post("/seller/orders/" + currentOrderId + "/preparing")
-                .then(function (response) {
-                    // Handle success
-                    table.ajax.reload(updateOrderCount, false);
-                    let data = response.data;
-                    if (data.success === false) {
-                        return Toast.fire({
-                            icon: "error",
-                            title: data.message,
-                        });
-                    }
-                    return Toast.fire({
-                        icon: "success",
-                        title: data.message,
-                    });
-                })
-                .catch(function (error) {
-                    // Handle error
-                    console.error("Error marking order as preparing:", error);
-                });
+            $("#preparingModel").modal("hide");
+            Toast.fire({
+                icon: "info",
+                title: "Use the incoming-order popup to scan and verify this order before preparing it.",
+            });
         }
     });
 
@@ -245,6 +229,12 @@ $(document).ready(function () {
         $("#status-update-results").empty();
 
         const status = $("#item-status").val();
+        if (status === "preparing") {
+            $("#status-update-results").html(
+                '<div class="alert alert-info">Use the incoming-order popup to scan and verify all accepted items before preparing the order.</div>',
+            );
+            return;
+        }
         let successCount = 0;
         let errorCount = 0;
         let totalRequests = selectedItems.length;

@@ -247,6 +247,8 @@ Route::prefix('seller')->name('seller.')->group(function () {
             Route::get('/', [OrderController::class, 'index'])->name('index');
             Route::get('/datatable', [OrderController::class, 'getOrders'])->name('datatable');
             Route::get('/pending-regular', [OrderController::class, 'getPendingRegularOrders'])->name('pending-regular');
+            Route::post('/{id}/accept-items', [OrderController::class, 'acceptSellerOrderItems'])->name('accept-items');
+            Route::post('/{id}/verify-and-prepare', [OrderController::class, 'verifyAndPrepare'])->name('verify-and-prepare');
             Route::get('/{id}', [OrderController::class, 'show'])->name('show');
             Route::post('/{id}/{status}', [OrderController::class, 'updateStatus'])->name('update_status');
         });

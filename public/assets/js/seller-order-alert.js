@@ -8,6 +8,10 @@ $(document).ready(function () {
     let pendingOrders = [];
     let activeOrder = null;
     const handledOrderIds = new Set();
+    let popupStage = "accept";
+    let verificationIndex = 0;
+    let verifiedItems = [];
+    let currentItemCheckPassed = false;
     let timerHandle = null;
     let startedAt = 0;
     const timerDuration = 60;
@@ -86,8 +90,21 @@ $(document).ready(function () {
         if (activeOrder || pendingOrders.length === 0) return;
         activeOrder = pendingOrders.shift();
         startedAt = Date.now();
+        verifiedItems = [];
+        verificationIndex = 0;
+        currentItemCheckPassed = false;
+        popupStage = activeOrder.items.every(
+            (item) => item.status === "accepted",
+        )
+            ? "verify"
+            : "accept";
         $("#new-order-accept").prop("disabled", false);
+        $("#new-order-accept").text(
+            popupStage === "accept" ? "Accept order" : "Verify items",
+        );
+        $("#new-order-dismiss").addClass("d-none");
         $("#new-order-error").addClass("d-none").text("");
+        $("#new-order-verification").addClass("d-none").empty();
         $("#new-order-summary").html(
             `<div class="new-order-summary-card">` +
                 `<div class="order-number">Order #${escapeHtml(activeOrder.order_number || activeOrder.order_id)}</div>` +
@@ -117,10 +134,15 @@ $(document).ready(function () {
                 )
                 .join(""),
         );
-        updateTimer();
-        timerHandle = window.setInterval(updateTimer, 1000);
+        if (popupStage === "accept") {
+            updateTimer();
+            timerHandle = window.setInterval(updateTimer, 1000);
+        } else {
+            $("#new-order-items").addClass("d-none");
+            showVerificationItem();
+        }
         modal.modal("show");
-        startAlertSound();
+        if (popupStage === "accept") startAlertSound();
     };
     const finishOrder = () => {
         window.clearInterval(timerHandle);
@@ -130,50 +152,175 @@ $(document).ready(function () {
         modal.one("hidden.bs.modal", showNextOrder);
         modal.modal("hide");
     };
-    const decideOrder = () => {
+    const showVerificationItem = () => {
+        const item = activeOrder.items[verificationIndex];
+        if (!item) {
+            popupStage = "prepare";
+            $("#new-order-verification")
+                .removeClass("d-none")
+                .html(
+                    `<div class="new-order-verification-card text-center">` +
+                        `<div class="new-order-verification-status is-valid">All ${activeOrder.items.length} items verified.</div>` +
+                        `<p class="mb-0">The server will confirm the barcode and quantity for every item before starting preparation.</p>` +
+                        `</div>`,
+                );
+            $("#new-order-accept")
+                .prop("disabled", false)
+                .text("Mark order as preparing");
+            return;
+        }
+
+        currentItemCheckPassed = false;
+        $("#new-order-verification")
+            .removeClass("d-none")
+            .html(
+                `<div class="new-order-verification-card">` +
+                    `<div class="d-flex justify-content-between gap-2 mb-3">` +
+                    `<strong>Item ${verificationIndex + 1} of ${activeOrder.items.length}</strong>` +
+                    `<span>${escapeHtml(item.quantity)} ordered</span>` +
+                    `</div>` +
+                    `<div class="d-flex align-items-center gap-3 mb-3">` +
+                    `<img class="new-order-item-image" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.product)}" loading="lazy">` +
+                    `<div class="new-order-item-details"><strong>${escapeHtml(item.product)}</strong>${item.variant ? `<div>${escapeHtml(item.variant)}</div>` : ""}</div>` +
+                    `</div>` +
+                    `<div class="mb-3"><span class="new-order-meta-label">Expected barcode</span><span class="new-order-expected-value">${escapeHtml(item.barcode || "No barcode on file")}</span></div>` +
+                    `<label class="form-label" for="new-order-scanned-barcode">Scan or enter barcode</label>` +
+                    `<input id="new-order-scanned-barcode" class="form-control mb-3" type="text" autocomplete="off" value="" ${item.barcode ? "" : "disabled"}>` +
+                    `<label class="form-label" for="new-order-verified-quantity">Confirm quantity with the up/down arrow keys</label>` +
+                    `<input id="new-order-verified-quantity" class="form-control" type="number" inputmode="none" min="1" max="${escapeHtml(item.quantity)}" step="1" value="1">` +
+                    `<div id="new-order-item-check" class="new-order-verification-status mt-3" role="status" aria-live="polite"></div>` +
+                    `</div>`,
+            );
+        if (!item.barcode) {
+            const productEditLink = item.product_id
+                ? ` <a href="/seller/products/${encodeURIComponent(item.product_id)}/edit" target="_blank" rel="noopener">Open product to add its barcode</a>.`
+                : " Update this product to add its barcode.";
+            $("#new-order-item-check")
+                .addClass("is-invalid")
+                .html(
+                    `No barcode is recorded for this item.${productEditLink} Save the product, close this popup, then reload the page to resume.`,
+                );
+            $("#new-order-dismiss").removeClass("d-none");
+        }
+        $("#new-order-accept").prop("disabled", false).text("Check item");
+        window.setTimeout(
+            () => $("#new-order-scanned-barcode").trigger("focus"),
+            50,
+        );
+    };
+    const acceptOrderItems = () => {
         if (!activeOrder) return;
         $("#new-order-accept").prop("disabled", true);
-        const items = [...activeOrder.items];
-        const processNext = () => {
-            if (items.length === 0) {
+        window.clearInterval(timerHandle);
+        stopAlertSound();
+        axios
+            .post(`/seller/orders/${activeOrder.seller_order_id}/accept-items`)
+            .then((response) => {
+                if (response.data?.success === false)
+                    throw new Error(
+                        response.data.message || "Order acceptance failed.",
+                    );
+                activeOrder.items.forEach((item) => {
+                    item.status = "accepted";
+                });
+                popupStage = "verify";
+                $("#new-order-error").addClass("d-none").text("");
+                $("#new-order-items").addClass("d-none");
+                showVerificationItem();
+            })
+            .catch((error) => {
+                $("#new-order-error")
+                    .removeClass("d-none")
+                    .text(
+                        error.response?.data?.message ||
+                            error.message ||
+                            "Order acceptance failed. Please try again.",
+                    );
+                $("#new-order-accept").prop("disabled", false);
+            });
+    };
+    const checkCurrentItem = () => {
+        const item = activeOrder.items[verificationIndex];
+        if (!item.barcode) {
+            currentItemCheckPassed = false;
+            $("#new-order-item-check")
+                .removeClass("is-valid")
+                .addClass("is-invalid")
+                .text(
+                    "No barcode is recorded for this item. Add a barcode to the product variant before preparing this order.",
+                );
+            return;
+        }
+        const barcode = $("#new-order-scanned-barcode").val();
+        const quantity = Number($("#new-order-verified-quantity").val());
+        const matches =
+            Boolean(item.barcode) &&
+            barcode === String(item.barcode) &&
+            quantity === Number(item.quantity);
+        currentItemCheckPassed = matches;
+        $("#new-order-item-check")
+            .toggleClass("is-valid", matches)
+            .toggleClass("is-invalid", !matches)
+            .text(
+                matches
+                    ? "✓ Barcode and quantity match."
+                    : "✕ Barcode or quantity does not match. Correct the values and check again.",
+            );
+        $("#new-order-accept").text(
+            matches
+                ? verificationIndex + 1 === activeOrder.items.length
+                    ? "Finish item checks"
+                    : "Next item"
+                : "Check item again",
+        );
+    };
+    const submitVerifiedOrder = () => {
+        $("#new-order-accept").prop("disabled", true);
+        axios
+            .post(
+                `/seller/orders/${activeOrder.seller_order_id}/verify-and-prepare`,
+                { items: verifiedItems },
+            )
+            .then((response) => {
+                if (response.data?.success === false)
+                    throw new Error(
+                        response.data.message || "Server verification failed.",
+                    );
                 finishOrder();
+            })
+            .catch((error) => {
+                $("#new-order-error")
+                    .removeClass("d-none")
+                    .text(
+                        error.response?.data?.message ||
+                            error.message ||
+                            "Could not prepare the order. Review the item checks and retry.",
+                    );
+                $("#new-order-accept").prop("disabled", false);
+            });
+    };
+    const decideOrder = () => {
+        if (!activeOrder) return;
+        if (popupStage === "accept") {
+            acceptOrderItems();
+            return;
+        }
+        if (popupStage === "verify") {
+            if (!currentItemCheckPassed) {
+                checkCurrentItem();
                 return;
             }
-            const item = items.shift();
-            axios
-                .post(`/seller/orders/${item.order_item_id}/accept`)
-                .then((response) => {
-                    if (response.data?.success === false)
-                        throw new Error(
-                            response.data.message || "Order acceptance failed.",
-                        );
-                    return axios.post(
-                        `/seller/orders/${item.order_item_id}/preparing`,
-                    );
-                })
-                .then((response) => {
-                    if (response.data?.success === false)
-                        throw new Error(
-                            response.data.message ||
-                                "Order preparation failed.",
-                        );
-                    activeOrder.items = activeOrder.items.filter(
-                        (activeItem) =>
-                            activeItem.order_item_id !== item.order_item_id,
-                    );
-                    processNext();
-                })
-                .catch((error) => {
-                    $("#new-order-error")
-                        .removeClass("d-none")
-                        .text(
-                            error.message ||
-                                "Order update failed. Please try again.",
-                        );
-                    $("#new-order-accept").prop("disabled", false);
-                });
-        };
-        processNext();
+            const item = activeOrder.items[verificationIndex];
+            verifiedItems.push({
+                order_item_id: item.order_item_id,
+                barcode: String($("#new-order-scanned-barcode").val()),
+                quantity: Number($("#new-order-verified-quantity").val()),
+            });
+            verificationIndex += 1;
+            showVerificationItem();
+            return;
+        }
+        submitVerifiedOrder();
     };
     const pollOrders = (orderMode, popupOnly = false) =>
         axios
@@ -218,6 +365,40 @@ $(document).ready(function () {
             });
 
     $("#new-order-accept").on("click", decideOrder);
+    $("#new-order-dismiss").on("click", () => {
+        if (!activeOrder) return;
+        handledOrderIds.add(activeOrder.seller_order_id);
+        activeOrder = null;
+        window.clearInterval(timerHandle);
+        stopAlertSound();
+        modal.one("hidden.bs.modal", showNextOrder);
+        modal.modal("hide");
+    });
+    modal.on(
+        "input",
+        "#new-order-scanned-barcode, #new-order-verified-quantity",
+        () => {
+            if (!currentItemCheckPassed) return;
+            currentItemCheckPassed = false;
+            $("#new-order-item-check")
+                .removeClass("is-valid is-invalid")
+                .text("");
+            $("#new-order-accept").text("Check item");
+        },
+    );
+    modal.on("keydown", "#new-order-verified-quantity", (event) => {
+        if (!["ArrowUp", "ArrowDown", "Tab"].includes(event.key))
+            event.preventDefault();
+    });
+    modal.on("paste wheel", "#new-order-verified-quantity", (event) =>
+        event.preventDefault(),
+    );
+    modal.on("keydown", "#new-order-scanned-barcode", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            $("#new-order-accept").trigger("click");
+        }
+    });
     modal.on("hidden.bs.modal", stopAlertSound);
     window.addEventListener("nagpurmart:notification", () => {
         pollRegularOrders().catch((error) =>

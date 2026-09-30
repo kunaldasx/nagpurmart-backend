@@ -167,7 +167,10 @@ class SellerOrderApiController extends Controller
                 $query->where('seller_id', $seller->id)
                     ->whereHas('order', fn ($order) => $order->where('order_mode', $orderMode));
             })
-            ->whereHas('orderItem', fn ($query) => $query->where('status', OrderItemStatusEnum::AWAITING_STORE_RESPONSE()))
+            ->whereHas('orderItem', fn ($query) => $query->whereIn('status', [
+                OrderItemStatusEnum::AWAITING_STORE_RESPONSE(),
+                OrderItemStatusEnum::ACCEPTED(),
+            ]))
             ->orderBy('created_at')
             ->get();
 
@@ -215,9 +218,12 @@ class SellerOrderApiController extends Controller
                 'total' => $first->sellerOrder->total_price,
                 'items' => $orderItems->map(fn ($item) => [
                     'order_item_id' => $item->order_item_id,
+                    'product_id' => $item->product_id,
                     'product' => $item->product?->title,
                     'variant' => $item->variant?->title,
+                    'barcode' => $item->variant?->barcode,
                     'quantity' => (int) $item->orderItem->quantity,
+                    'status' => $item->orderItem->status,
                     'subtotal' => $item->orderItem->subtotal,
                 ])->values(),
             ];
@@ -264,7 +270,7 @@ class SellerOrderApiController extends Controller
      * Update the status of a seller's order item.
      * $id refers to global order_items.id to align with existing web route behavior.
      */
-    public function updateStatus(int $id, string $status): JsonResponse
+    public function updateStatus(Request $request, int $id, string $status): JsonResponse
     {
         try {
             $seller = auth()->user()->seller();
@@ -284,7 +290,13 @@ class SellerOrderApiController extends Controller
 
             $this->authorize('updateStatus', $orderItem);
 
-            $result = $this->orderService->updateOrderStatusBySeller($id, $status, $seller->id);
+            $result = $this->orderService->updateOrderStatusBySellerWithVerification(
+                $id,
+                $status,
+                $seller->id,
+                $request->input('barcode'),
+                $request->filled('quantity') ? (int) $request->input('quantity') : null
+            );
             if (!$result['success']) {
                 return ApiResponseType::sendJsonResponse(false, $result['message'], $result['data'] ?? []);
             }
@@ -295,6 +307,79 @@ class SellerOrderApiController extends Controller
         } catch (\Throwable $e) {
             return ApiResponseType::sendJsonResponse(false, __('messages.order_status_update_failed') ?? 'Order status update failed', ['error' => $e->getMessage()], 500);
         }
+    }
+
+    public function verifyAndPrepare(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.order_item_id' => ['required', 'integer', 'distinct'],
+            'items.*.barcode' => ['required', 'string', 'max:255'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        $sellerOrder = SellerOrder::query()
+            ->where('id', $id)
+            ->where('seller_id', $seller->id)
+            ->with('items')
+            ->first();
+        if (!$sellerOrder) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
+        }
+
+        try {
+            foreach ($sellerOrder->items as $sellerOrderItem) {
+                $this->authorize('updateStatus', $sellerOrderItem);
+            }
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('messages.unauthorized_action'), [], 403);
+        }
+
+        $result = $this->orderService->verifyAndPrepareSellerOrder($id, $seller->id, $validated['items']);
+        return ApiResponseType::sendJsonResponse(
+            $result['success'],
+            $result['message'],
+            $result['data'] ?? [],
+            $result['success'] ? 200 : 422
+        );
+    }
+
+    public function acceptSellerOrderItems(int $id): JsonResponse
+    {
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        $sellerOrder = SellerOrder::query()
+            ->where('id', $id)
+            ->where('seller_id', $seller->id)
+            ->with('items')
+            ->first();
+        if (!$sellerOrder) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
+        }
+
+        try {
+            foreach ($sellerOrder->items as $sellerOrderItem) {
+                $this->authorize('updateStatus', $sellerOrderItem);
+            }
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('messages.unauthorized_action'), [], 403);
+        }
+
+        $result = $this->orderService->acceptSellerOrderItems($id, $seller->id);
+        return ApiResponseType::sendJsonResponse(
+            $result['success'],
+            $result['message'],
+            $result['data'] ?? [],
+            $result['success'] ? 200 : 422
+        );
     }
 
     private function transformOrderItem(SellerOrderItem $sellerOrderItem): array

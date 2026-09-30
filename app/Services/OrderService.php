@@ -1305,6 +1305,17 @@ class OrderService
     public
     function updateOrderStatusBySeller(int $orderItemId, string $status, int $sellerId): array
     {
+        return $this->updateOrderStatusBySellerWithVerification($orderItemId, $status, $sellerId);
+    }
+
+    public function updateOrderStatusBySellerWithVerification(
+        int $orderItemId,
+        string $status,
+        int $sellerId,
+        ?string $scannedBarcode = null,
+        ?int $scannedQuantity = null
+    ): array
+    {
         try {
             // Validate status parameter
             if (!in_array($status, ['accept', 'reject', 'preparing'])) {
@@ -1332,6 +1343,25 @@ class OrderService
 
             $orderItem = $sellerOrderItem->orderItem;
             $currentStatus = $orderItem->status;
+            if ($status === 'preparing') {
+                $expectedBarcode = $sellerOrderItem->variant?->barcode;
+                if (
+                    $expectedBarcode === null ||
+                    $scannedBarcode === null ||
+                    !hash_equals((string) $expectedBarcode, $scannedBarcode) ||
+                    $scannedQuantity !== (int) $orderItem->quantity
+                ) {
+                    return [
+                        'success' => false,
+                        'message' => 'Barcode or quantity does not match the ordered item.',
+                        'data' => [
+                            'order_item_id' => $orderItemId,
+                            'expected_quantity' => (int) $orderItem->quantity,
+                        ],
+                    ];
+                }
+            }
+
             if ($currentStatus === OrderItemStatusEnum::PENDING()) {
                 return [
                     'success' => false,
@@ -1386,6 +1416,198 @@ class OrderService
                 'success' => false,
                 'message' => __('messages.order_status_update_failed'),
                 'data' => ['error' => $e->getMessage()]
+            ];
+        }
+    }
+
+    public function acceptSellerOrderItems(int $sellerOrderId, int $sellerId): array
+    {
+        $sellerOrder = SellerOrder::query()
+            ->where('id', $sellerOrderId)
+            ->where('seller_id', $sellerId)
+            ->with('items.orderItem')
+            ->first();
+
+        if (!$sellerOrder) {
+            return ['success' => false, 'message' => __('labels.order_not_found'), 'data' => []];
+        }
+
+        $invalidItems = $sellerOrder->items->filter(function ($item) {
+            return !in_array($item->orderItem?->status, [
+                OrderItemStatusEnum::AWAITING_STORE_RESPONSE(),
+                OrderItemStatusEnum::ACCEPTED(),
+                OrderItemStatusEnum::PREPARING(),
+                OrderItemStatusEnum::REJECTED(),
+            ], true);
+        });
+        if ($invalidItems->isNotEmpty()) {
+            return [
+                'success' => false,
+                'message' => 'This seller order contains items that cannot be accepted yet.',
+                'data' => ['order_item_ids' => $invalidItems->pluck('order_item_id')->values()],
+            ];
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($sellerOrder->items as $sellerOrderItem) {
+                if ($sellerOrderItem->orderItem?->status !== OrderItemStatusEnum::AWAITING_STORE_RESPONSE()) {
+                    continue;
+                }
+
+                $result = $this->updateOrderStatusBySellerWithVerification(
+                    (int) $sellerOrderItem->order_item_id,
+                    'accept',
+                    $sellerId
+                );
+                if (!$result['success']) {
+                    DB::rollBack();
+                    return $result;
+                }
+            }
+
+            DB::commit();
+            return [
+                'success' => true,
+                'message' => 'Seller order items accepted. Verify each item before preparing.',
+                'data' => [
+                    'seller_order_id' => $sellerOrderId,
+                    'accepted_order_item_ids' => SellerOrderItem::query()
+                        ->where('seller_order_id', $sellerOrderId)
+                        ->whereHas('orderItem', fn ($query) => $query->where('status', OrderItemStatusEnum::ACCEPTED()))
+                        ->pluck('order_item_id')
+                        ->values(),
+                ],
+            ];
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Failed to accept seller order items', [
+                'seller_order_id' => $sellerOrderId,
+                'seller_id' => $sellerId,
+                'error' => $e->getMessage(),
+            ]);
+            return ['success' => false, 'message' => __('messages.order_status_update_failed'), 'data' => []];
+        }
+    }
+
+    public function verifyAndPrepareSellerOrder(int $sellerOrderId, int $sellerId, array $submittedItems): array
+    {
+        $sellerOrder = SellerOrder::query()
+            ->where('id', $sellerOrderId)
+            ->where('seller_id', $sellerId)
+            ->with(['items.orderItem.variant'])
+            ->first();
+
+        if (!$sellerOrder) {
+            return ['success' => false, 'message' => __('labels.order_not_found'), 'data' => []];
+        }
+
+        if ($sellerOrder->items->contains(fn ($item) => $item->orderItem?->status === OrderItemStatusEnum::AWAITING_STORE_RESPONSE())) {
+            return [
+                'success' => false,
+                'message' => 'Accept all items in this seller order before preparing it.',
+                'data' => [],
+            ];
+        }
+
+        $acceptedItems = $sellerOrder->items
+            ->filter(fn ($sellerOrderItem) => $sellerOrderItem->orderItem?->status === OrderItemStatusEnum::ACCEPTED())
+            ->keyBy('order_item_id');
+        $itemsToVerify = $acceptedItems->isNotEmpty()
+            ? $acceptedItems
+            : $sellerOrder->items
+                ->filter(fn ($sellerOrderItem) => $sellerOrderItem->orderItem?->status === OrderItemStatusEnum::PREPARING())
+                ->keyBy('order_item_id');
+
+        $submittedById = collect($submittedItems)->keyBy(fn ($item) => (int) $item['order_item_id']);
+        if ($itemsToVerify->isEmpty() || $submittedById->keys()->sort()->values()->all() !== $itemsToVerify->keys()->sort()->values()->all()) {
+            return [
+                'success' => false,
+                'message' => 'Submit a barcode and quantity for every accepted item in this seller order.',
+                'data' => ['expected_order_item_ids' => $itemsToVerify->keys()->values()],
+            ];
+        }
+
+        $errors = [];
+        foreach ($itemsToVerify as $orderItemId => $sellerOrderItem) {
+            $orderItem = $sellerOrderItem->orderItem;
+            $submitted = $submittedById->get((int) $orderItemId);
+            $expectedBarcode = $sellerOrderItem->variant?->barcode;
+            $expectedQuantity = (int) $orderItem->quantity;
+
+            if ($expectedBarcode === null || !hash_equals((string) $expectedBarcode, (string) ($submitted['barcode'] ?? ''))) {
+                $errors[] = ['order_item_id' => (int) $orderItemId, 'field' => 'barcode', 'message' => 'Barcode does not match the ordered item.'];
+            }
+            if ((int) ($submitted['quantity'] ?? 0) !== $expectedQuantity) {
+                $errors[] = ['order_item_id' => (int) $orderItemId, 'field' => 'quantity', 'expected' => $expectedQuantity, 'message' => 'Quantity does not match the ordered quantity.'];
+            }
+        }
+
+        if (!empty($errors)) {
+            return [
+                'success' => false,
+                'message' => 'One or more item checks did not match the order.',
+                'data' => ['errors' => $errors],
+            ];
+        }
+
+        DB::beginTransaction();
+        try {
+            $preparedItems = [];
+            foreach ($acceptedItems as $orderItemId => $sellerOrderItem) {
+                $submitted = $submittedById->get((int) $orderItemId);
+                $result = $this->updateOrderStatusBySellerWithVerification(
+                    (int) $orderItemId,
+                    'preparing',
+                    $sellerId,
+                    (string) $submitted['barcode'],
+                    (int) $submitted['quantity']
+                );
+
+                if (!$result['success']) {
+                    DB::rollBack();
+                    return $result;
+                }
+
+                $preparedItems[] = [
+                    'order_item_id' => (int) $orderItemId,
+                    'status' => OrderItemStatusEnum::PREPARING(),
+                    'barcode' => (string) $submitted['barcode'],
+                    'quantity' => (int) $submitted['quantity'],
+                ];
+            }
+
+            if ($acceptedItems->isEmpty()) {
+                foreach ($itemsToVerify as $orderItemId => $sellerOrderItem) {
+                    $submitted = $submittedById->get((int) $orderItemId);
+                    $preparedItems[] = [
+                        'order_item_id' => (int) $orderItemId,
+                        'status' => OrderItemStatusEnum::PREPARING(),
+                        'barcode' => (string) $submitted['barcode'],
+                        'quantity' => (int) $submitted['quantity'],
+                    ];
+                }
+            }
+
+            DB::commit();
+            return [
+                'success' => true,
+                'message' => $acceptedItems->isEmpty()
+                    ? 'All item checks passed. The order was already preparing.'
+                    : 'All item checks passed and the order is now preparing.',
+                'data' => ['seller_order_id' => $sellerOrderId, 'items' => $preparedItems],
+            ];
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Failed to prepare verified seller order', [
+                'seller_order_id' => $sellerOrderId,
+                'seller_id' => $sellerId,
+                'error' => $e->getMessage(),
+            ]);
+            return [
+                'success' => false,
+                'message' => __('messages.order_status_update_failed'),
+                'data' => [],
             ];
         }
     }

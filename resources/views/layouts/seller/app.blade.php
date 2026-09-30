@@ -28,7 +28,7 @@
                     <div>
                         <span class="new-order-kicker">Incoming order</span>
                         <h3 class="modal-title">New order</h3>
-                        <p class="mb-0">Review the details and start preparing.</p>
+                        <p class="mb-0">Accept the order, verify every item, then start preparing.</p>
                     </div>
                 </div>
                 <div class="modal-body">
@@ -37,10 +37,12 @@
                     </div>
                     <div id="new-order-summary"></div>
                     <div id="new-order-items" class="mt-3"></div>
+                    <div id="new-order-verification" class="mt-3 d-none"></div>
                     <div class="alert alert-danger d-none mt-3 mb-0" id="new-order-error"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-success btn-lg w-100" id="new-order-accept">Accept and prepare order</button>
+                    <button type="button" class="btn btn-outline-secondary btn-lg w-100 d-none" id="new-order-dismiss">Close after fixing barcode</button>
+                    <button type="button" class="btn btn-success btn-lg w-100" id="new-order-accept">Accept order</button>
                 </div>
             </div>
         </div>
@@ -69,6 +71,12 @@
         .new-order-meta-value { display: block; color: #274b6c; font-size: .78rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
         #new-order-items { color: #536579; }
         #new-order-items > div { gap: .8rem; align-items: center; }
+        .new-order-verification-card { padding: 1rem; border: 1px solid #dce7f0; border-radius: 10px; background: #f8fbfe; }
+        .new-order-verification-status { min-height: 1.5rem; font-weight: 700; }
+        .new-order-verification-status.is-valid { color: #16803c; }
+        .new-order-verification-status.is-invalid { color: #c13535; }
+        .new-order-verification-card input { min-height: 44px; }
+        .new-order-expected-value { color: #536579; overflow-wrap: anywhere; }
         .new-order-item-image { width: 52px; height: 52px; flex: 0 0 52px; border: 1px solid #e2ebf3; border-radius: 9px; background: #fff; object-fit: cover; }
         .new-order-item-details { min-width: 0; flex: 1 1 auto; }
         .new-order-item-price { flex: 0 0 auto; color: #274b6c; font-weight: 700; white-space: nowrap; }
