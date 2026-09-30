@@ -78,6 +78,7 @@ Route::middleware(['auth:sanctum',
         Route::get('/enums', [SellerProductApiController::class, 'getProductEnums'])->name('enums');
         Route::get('/{id}', [SellerProductApiController::class, 'show'])->name('show');
         Route::post('/', [SellerProductApiController::class, 'store'])->name('store');
+        Route::post('/{id}/inventory', [SellerProductApiController::class, 'updateInventory'])->name('inventory.update');
         Route::post('/{id}', [SellerProductApiController::class, 'update'])->name('update');
         Route::post('/{id}/update-status', [SellerProductApiController::class, 'updateStatus'])->name('update-status');
         Route::delete('/{id}', [SellerProductApiController::class, 'destroy'])->name('destroy');

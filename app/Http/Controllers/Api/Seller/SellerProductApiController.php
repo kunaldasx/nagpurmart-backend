@@ -10,7 +10,9 @@ use App\Enums\Product\ProductVarificationStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\StoreUpdateProductRequest;
 use App\Models\Product;
+use App\Models\StoreProductVariant;
 use App\Services\ProductService;
+use App\Services\StockService;
 use App\Types\Api\ApiResponseType;
 use App\Events\Product\ProductAfterCreate;
 use App\Events\Product\ProductBeforeCreate;
@@ -234,6 +236,67 @@ class SellerProductApiController extends Controller
         } catch (\Throwable $e) {
             Log::error('Seller product update error: ' . $e->getMessage());
             return ApiResponseType::sendJsonResponse(false, __('labels.failed_to_update_product'), ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update stock for a seller-owned product in one of their stores.
+     */
+    public function updateInventory(Request $request, int $id, StockService $stockService): JsonResponse
+    {
+        try {
+            $seller = $request->user()?->seller();
+            if (!$seller) {
+                return ApiResponseType::sendJsonResponse(false, 'labels.seller_not_found', null, 404);
+            }
+
+            $product = Product::where('seller_id', $seller->id)->findOrFail($id);
+            $this->authorize('update', $product);
+
+            $validated = $request->validate([
+                'store_product_variant_id' => ['required', 'integer'],
+                'stock' => ['required', 'integer', 'min:0'],
+            ]);
+
+            $storeVariant = StoreProductVariant::whereKey($validated['store_product_variant_id'])
+                ->whereHas('productVariant', fn ($query) => $query->where('product_id', $product->id))
+                ->whereHas('store', fn ($query) => $query->where('seller_id', $seller->id))
+                ->firstOrFail();
+
+            $change = (int) $validated['stock'] - (int) $storeVariant->stock;
+            $result = $change === 0
+                ? [
+                    'success' => true,
+                    'message' => 'Stock is already up to date',
+                    'data' => ['new_stock' => (int) $storeVariant->stock],
+                ]
+                : $stockService->updateStock(
+                    (int) $storeVariant->store_id,
+                    (int) $storeVariant->product_variant_id,
+                    $change,
+                    'Seller product API inventory update'
+                );
+
+            return ApiResponseType::sendJsonResponse(
+                $result['success'],
+                $result['message'],
+                $result['data'],
+                $result['success'] ? 200 : 422
+            );
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.permission_denied'), [], 403);
+        } catch (ModelNotFoundException) {
+            return ApiResponseType::sendJsonResponse(false, 'labels.product_not_found', [], 404);
+        } catch (ValidationException $e) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                $e->validator->errors()->first(),
+                $e->errors(),
+                422
+            );
+        } catch (\Throwable $e) {
+            Log::error('Seller inventory update error: ' . $e->getMessage());
+            return ApiResponseType::sendJsonResponse(false, __('labels.something_went_wrong'), [], 500);
         }
     }
 
