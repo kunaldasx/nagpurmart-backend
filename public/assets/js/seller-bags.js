@@ -1,6 +1,7 @@
 $(document).ready(function () {
     let page = 1;
     let lastPage = 1;
+    let selectedBagId = null;
     const escapeHtml = (value) =>
         $("<div>")
             .text(value || "")
@@ -22,7 +23,7 @@ $(document).ready(function () {
                         ? payload.items
                               .map(
                                   (bag) =>
-                                      `<tr data-id="${bag.id}"><td><input class="form-control form-control-sm bag-barcode" value="${escapeHtml(bag.barcode)}" ${bag.status === "assigned" ? "disabled" : ""}></td><td><span class="badge ${bag.status === "assigned" ? "bg-blue-lt" : "bg-green-lt"}">${escapeHtml(bag.status)}</span></td><td>${escapeHtml(bag.order_number || (bag.seller_order_id ? `Order #${bag.seller_order_id}` : "—"))}</td><td>${escapeHtml(formatDate(bag.created_at))}</td><td>${bag.status === "available" ? '<div class="btn-list flex-nowrap"><button class="btn btn-outline-primary btn-sm bag-save" type="button">Save</button><button class="btn btn-outline-danger btn-sm bag-delete" type="button">Delete</button></div>' : "—"}</td></tr>`,
+                                      `<tr data-id="${bag.id}"><td class="font-monospace">${escapeHtml(bag.barcode)}</td><td><span class="badge ${bag.status === "assigned" ? "bg-blue-lt" : "bg-green-lt"}">${escapeHtml(bag.status)}</span></td><td>${escapeHtml(bag.order_number || (bag.seller_order_id ? `Order #${bag.seller_order_id}` : "—"))}</td><td>${escapeHtml(formatDate(bag.created_at))}</td><td>${bag.status === "available" ? '<div class="btn-list flex-nowrap"><button class="btn btn-outline-primary btn-sm bag-edit" type="button">Edit</button><button class="btn btn-outline-danger btn-sm bag-delete" type="button">Delete</button></div>' : "—"}</td></tr>`,
                               )
                               .join("")
                         : '<tr><td colspan="5" class="text-secondary">No bags found.</td></tr>',
@@ -59,33 +60,60 @@ $(document).ready(function () {
             .finally(() => button.prop("disabled", false).text("Add barcodes"));
     });
 
-    $("#bag-list").on("click", ".bag-save", function () {
+    $("#bag-list").on("click", ".bag-edit", function () {
         const row = $(this).closest("tr");
-        const id = row.data("id");
-        const barcode = row.find(".bag-barcode").val();
-        axios
-            .put(`/seller/bags/${id}`, { barcode })
-            .then(() => loadBags())
-            .catch((error) =>
-                window.alert(
-                    error.response?.data?.message ||
-                        "Could not update bag barcode.",
-                ),
-            );
+        selectedBagId = row.data("id");
+        $("#edit-bag-barcode").val(row.find("td:first").text().trim());
+        $("#edit-bag-error").empty();
+        $("#edit-bag-modal").modal("show");
     });
 
     $("#bag-list").on("click", ".bag-delete", function () {
         const row = $(this).closest("tr");
-        if (!window.confirm(`Delete bag ${row.find(".bag-barcode").val()}?`))
-            return;
+        selectedBagId = row.data("id");
+        $("#delete-bag-barcode").text(row.find("td:first").text().trim());
+        $("#delete-bag-error").empty();
+        $("#delete-bag-modal").modal("show");
+    });
+
+    $("#edit-bag-form").on("submit", function (event) {
+        event.preventDefault();
+        if (!selectedBagId) return;
+        const button = $("#edit-bag-submit")
+            .prop("disabled", true)
+            .text("Saving…");
         axios
-            .delete(`/seller/bags/${row.data("id")}`)
-            .then(() => loadBags())
-            .catch((error) =>
-                window.alert(
+            .put(`/seller/bags/${selectedBagId}`, {
+                barcode: $("#edit-bag-barcode").val().trim(),
+            })
+            .then(() => {
+                $("#edit-bag-modal").modal("hide");
+                loadBags();
+            })
+            .catch((error) => {
+                $("#edit-bag-error").text(
+                    error.response?.data?.message ||
+                        "Could not update bag barcode.",
+                );
+            })
+            .finally(() => button.prop("disabled", false).text("Save barcode"));
+    });
+
+    $("#delete-bag-submit").on("click", function () {
+        if (!selectedBagId) return;
+        const button = $(this).prop("disabled", true).text("Deleting…");
+        axios
+            .delete(`/seller/bags/${selectedBagId}`)
+            .then(() => {
+                $("#delete-bag-modal").modal("hide");
+                loadBags();
+            })
+            .catch((error) => {
+                $("#delete-bag-error").text(
                     error.response?.data?.message || "Could not delete bag.",
-                ),
-            );
+                );
+            })
+            .finally(() => button.prop("disabled", false).text("Delete bag"));
     });
 
     $("#bag-status-filter").on("change", () => {

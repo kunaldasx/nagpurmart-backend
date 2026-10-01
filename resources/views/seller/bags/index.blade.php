@@ -55,6 +55,45 @@
             </div>
         </div>
     </div>
+
+    <div class="modal modal-blur fade" id="edit-bag-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <form id="edit-bag-form">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Edit bag barcode</h3>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label" for="edit-bag-barcode">Barcode</label>
+                        <input id="edit-bag-barcode" class="form-control font-monospace" type="text" maxlength="255" required autocomplete="off">
+                        <div id="edit-bag-error" class="text-danger small mt-2" role="alert"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-link-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+                        <button id="edit-bag-submit" type="submit" class="btn btn-primary">Save barcode</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal modal-blur fade" id="delete-bag-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-status bg-danger"></div>
+                <div class="modal-body">
+                    <h3 class="modal-title">Delete bag?</h3>
+                    <p class="text-secondary mt-2 mb-0">This removes <span id="delete-bag-barcode" class="font-monospace fw-bold"></span> from your available bag inventory. This cannot be undone.</p>
+                    <div id="delete-bag-error" class="text-danger small mt-2" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-link-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+                    <button id="delete-bag-submit" type="button" class="btn btn-danger">Delete bag</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
