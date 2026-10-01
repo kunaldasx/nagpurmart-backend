@@ -11,7 +11,7 @@ $(document).ready(function () {
     const loadBags = () =>
         axios
             .get(
-                `/api/seller/bags?page=${page}&status=${encodeURIComponent($("#bag-status-filter").val())}`,
+                `/seller/bags/data?page=${page}&status=${encodeURIComponent($("#bag-status-filter").val())}`,
             )
             .then(({ data }) => {
                 const payload = data.data;
@@ -41,7 +41,7 @@ $(document).ready(function () {
         if (!barcodes.trim()) return;
         const button = $(this).prop("disabled", true).text("Adding…");
         axios
-            .post("/api/seller/bags/bulk", { barcodes })
+            .post("/seller/bags/bulk", { barcodes })
             .then(({ data }) => {
                 const result = data.data;
                 $("#bag-import-result").html(
@@ -64,7 +64,7 @@ $(document).ready(function () {
         const id = row.data("id");
         const barcode = row.find(".bag-barcode").val();
         axios
-            .put(`/api/seller/bags/${id}`, { barcode })
+            .put(`/seller/bags/${id}`, { barcode })
             .then(() => loadBags())
             .catch((error) =>
                 window.alert(
@@ -79,7 +79,7 @@ $(document).ready(function () {
         if (!window.confirm(`Delete bag ${row.find(".bag-barcode").val()}?`))
             return;
         axios
-            .delete(`/api/seller/bags/${row.data("id")}`)
+            .delete(`/seller/bags/${row.data("id")}`)
             .then(() => loadBags())
             .catch((error) =>
                 window.alert(

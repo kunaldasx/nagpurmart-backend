@@ -53,6 +53,10 @@ Route::prefix('seller')->name('seller.')->group(function () {
         Route::get('dashboard/data', [DashboardController::class, 'getDashboardData'])->name('dashboard.data');
 
         Route::get('bags', [BagController::class, 'sellerIndex'])->name('bags.index');
+        Route::get('bags/data', [BagController::class, 'index'])->name('bags.data');
+        Route::post('bags/bulk', [BagController::class, 'bulkStore'])->name('bags.bulk-store');
+        Route::put('bags/{id}', [BagController::class, 'update'])->whereNumber('id')->name('bags.update');
+        Route::delete('bags/{id}', [BagController::class, 'destroy'])->whereNumber('id')->name('bags.destroy');
 
 
         // Roles

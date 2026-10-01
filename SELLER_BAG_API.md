@@ -1,6 +1,8 @@
 # Seller Bag Inventory API
 
-All endpoints require a Sanctum-authenticated seller. Send `Authorization: Bearer {token}` for API clients. Bag barcodes are globally unique. Each bag belongs to one seller and can be assigned to at most one seller order. Assigned bags cannot be edited or deleted.
+Bag barcodes are globally unique. Each bag belongs to one seller and can be assigned to at most one seller order. Assigned bags cannot be edited or deleted.
+
+The seller browser panel uses session-authenticated routes under `/seller/bags`. API clients use the equivalent Sanctum-authenticated routes under `/api/seller/bags` and send `Authorization: Bearer {token}`. The examples below show the API-client paths; the same parameters and JSON bodies apply to the browser routes.
 
 ## List bags
 
