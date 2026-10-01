@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SellerOrder extends Model
 {
@@ -23,6 +24,11 @@ class SellerOrder extends Model
     public function items(): HasMany
     {
         return $this->hasMany(SellerOrderItem::class);
+    }
+
+    public function bag(): HasOne
+    {
+        return $this->hasOne(Bag::class);
     }
 
     public function feedback(): HasMany

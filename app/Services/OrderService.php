@@ -1344,6 +1344,18 @@ class OrderService
             $orderItem = $sellerOrderItem->orderItem;
             $currentStatus = $orderItem->status;
             if ($status === 'preparing') {
+                $bagAssigned = \App\Models\Bag::query()
+                    ->where('seller_id', $sellerId)
+                    ->where('seller_order_id', $sellerOrderItem->seller_order_id)
+                    ->exists();
+                if (!$bagAssigned) {
+                    return [
+                        'success' => false,
+                        'message' => 'Scan and assign a bag to this order before marking it as preparing.',
+                        'data' => ['seller_order_id' => $sellerOrderItem->seller_order_id],
+                    ];
+                }
+
                 $expectedBarcode = $sellerOrderItem->variant?->barcode;
                 if (
                     $expectedBarcode === null ||
@@ -1490,6 +1502,65 @@ class OrderService
         }
     }
 
+    public function assignBagToSellerOrder(int $sellerOrderId, int $sellerId, string $barcode): array
+    {
+        $sellerOrder = SellerOrder::query()
+            ->where('id', $sellerOrderId)
+            ->where('seller_id', $sellerId)
+            ->with('bag')
+            ->first();
+
+        if (!$sellerOrder) {
+            return ['success' => false, 'message' => __('labels.order_not_found'), 'data' => []];
+        }
+
+        if ($sellerOrder->bag) {
+            if (hash_equals($sellerOrder->bag->barcode, $barcode)) {
+                return [
+                    'success' => true,
+                    'message' => 'This bag is already assigned to the order.',
+                    'data' => ['seller_order_id' => $sellerOrderId, 'bag' => ['id' => $sellerOrder->bag->id, 'barcode' => $sellerOrder->bag->barcode]],
+                ];
+            }
+            return ['success' => false, 'message' => 'A different bag is already assigned to this order.', 'data' => []];
+        }
+
+        $acceptedCount = $sellerOrder->items()
+            ->whereHas('orderItem', fn ($query) => $query->where('status', OrderItemStatusEnum::ACCEPTED()))
+            ->count();
+        if ($acceptedCount === 0) {
+            return ['success' => false, 'message' => 'Accept the order items before assigning a bag.', 'data' => []];
+        }
+
+        DB::beginTransaction();
+        try {
+            $bag = \App\Models\Bag::query()
+                ->where('seller_id', $sellerId)
+                ->where('barcode', $barcode)
+                ->whereNull('seller_order_id')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$bag) {
+                DB::rollBack();
+                return ['success' => false, 'message' => 'Bag barcode not found in your available bag pool.', 'data' => ['barcode' => $barcode]];
+            }
+
+            $bag->update(['seller_order_id' => $sellerOrderId, 'assigned_at' => now()]);
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'Bag assigned to order successfully.',
+                'data' => ['seller_order_id' => $sellerOrderId, 'bag' => ['id' => $bag->id, 'barcode' => $bag->barcode, 'assigned_at' => $bag->assigned_at?->toISOString()]],
+            ];
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Failed to assign bag to seller order', ['seller_order_id' => $sellerOrderId, 'seller_id' => $sellerId, 'error' => $e->getMessage()]);
+            return ['success' => false, 'message' => 'Unable to assign bag to order.', 'data' => []];
+        }
+    }
+
     public function verifyAndPrepareSellerOrder(int $sellerOrderId, int $sellerId, array $submittedItems): array
     {
         $sellerOrder = SellerOrder::query()
@@ -1500,6 +1571,14 @@ class OrderService
 
         if (!$sellerOrder) {
             return ['success' => false, 'message' => __('labels.order_not_found'), 'data' => []];
+        }
+
+        if (!$sellerOrder->bag) {
+            return [
+                'success' => false,
+                'message' => 'Scan and assign a bag to this order before dispatching.',
+                'data' => ['seller_order_id' => $sellerOrderId, 'bag_required' => true],
+            ];
         }
 
         if ($sellerOrder->items->contains(fn ($item) => $item->orderItem?->status === OrderItemStatusEnum::AWAITING_STORE_RESPONSE())) {
@@ -1595,7 +1674,11 @@ class OrderService
                 'message' => $acceptedItems->isEmpty()
                     ? 'All item checks passed. The order was already preparing.'
                     : 'All item checks passed and the order is now preparing.',
-                'data' => ['seller_order_id' => $sellerOrderId, 'items' => $preparedItems],
+                'data' => [
+                    'seller_order_id' => $sellerOrderId,
+                    'bag' => ['id' => $sellerOrder->bag->id, 'barcode' => $sellerOrder->bag->barcode],
+                    'items' => $preparedItems,
+                ],
             ];
         } catch (\Throwable $e) {
             DB::rollBack();

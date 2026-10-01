@@ -90,7 +90,7 @@ class OrderController extends Controller
         $columns = ['id', 'order_id', 'price', 'status', 'created_at'];
         $orderColumn = $columns[$orderColumnIndex] ?? 'id';
 
-        $query = SellerOrderItem::with(['sellerOrder', 'orderItem', 'orderItem.store', 'variant', 'product'])
+        $query = SellerOrderItem::with(['sellerOrder.bag', 'sellerOrder.order', 'orderItem', 'orderItem.store', 'variant', 'product'])
             ->whereHas('product', function ($q) {
                 $q->whereNotNull('id');
             });
@@ -203,6 +203,7 @@ class OrderController extends Controller
 
         $items = SellerOrderItem::with([
             'sellerOrder.order.deliveryTimeSlot',
+            'sellerOrder.bag',
             'orderItem',
             'product',
             'variant',
@@ -267,6 +268,10 @@ class OrderController extends Controller
                 ],
                 'payment_method' => $order->payment_method,
                 'total' => $first->sellerOrder->total_price,
+                'bag' => $first->sellerOrder->bag ? [
+                    'id' => $first->sellerOrder->bag->id,
+                    'barcode' => $first->sellerOrder->bag->barcode,
+                ] : null,
                 'delivery' => $order->deliveryTimeSlot ? trim(($order->delivery_date?->format('d M') ?? '') . ' ' . $order->deliveryTimeSlot->start_time . ' - ' . $order->deliveryTimeSlot->end_time) : null,
                 'items' => $orderItems->map(fn ($item) => [
                     'order_item_id' => $item->order_item_id,
@@ -329,6 +334,7 @@ class OrderController extends Controller
                         <p class='m-0'>" . __('labels.sku') . ": {$sellerOrderItem->orderItem->sku}</p>
                         <p class='m-0 fw-medium'>" . __('labels.quantity') . ": {$sellerOrderItem->orderItem->quantity}</p>
                         <p class='m-0 fw-medium'>" . __('labels.item_sub_total') . ": " . $this->currencyService->format($sellerOrderItem->orderItem->subtotal) . "</p>
+                        <p class='m-0 fw-medium'>Bag: " . e($sellerOrderItem->sellerOrder->bag?->barcode ?? 'Not assigned') . "</p>
                         </div>",
             'status' => view('partials.order-status', [
                 'status' => $sellerOrderItem->orderItem->status,
@@ -395,11 +401,11 @@ class OrderController extends Controller
                 abort(404, __('labels.seller_not_found'));
             }
             $order = SellerOrder::where('id', $id)
-                ->with(['order', 'order.deliveryTimeSlot.store', 'items.product', 'items.variant', 'items.orderItem', 'order.items.store'])
+                ->with(['order', 'order.deliveryTimeSlot.store', 'bag', 'items.product', 'items.variant', 'items.orderItem', 'order.items.store'])
                 ->where('seller_id', $seller->id)
                 ->firstOrFail();
         } else {
-            $order = Order::with(['items', 'items.product', 'items.variant', 'items.store', 'promoLine', 'deliveryTimeSlot.store'])
+            $order = Order::with(['items', 'items.product', 'items.variant', 'items.store', 'sellerOrders.bag', 'sellerOrders.seller.user', 'promoLine', 'deliveryTimeSlot.store'])
                 ->findOrFail($id);
         }
         $this->authorize('viewAny', $order);
@@ -517,6 +523,30 @@ class OrderController extends Controller
             $result['data'] ?? [],
             $result['success'] ? 200 : 422
         );
+    }
+
+    public function assignBag(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate(['barcode' => ['required', 'string', 'max:255']]);
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        $sellerOrder = SellerOrder::query()->where('id', $id)->where('seller_id', $seller->id)->with('items')->first();
+        if (!$sellerOrder) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
+        }
+        try {
+            foreach ($sellerOrder->items as $sellerOrderItem) {
+                $this->authorize('updateStatus', $sellerOrderItem);
+            }
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('messages.unauthorized_action'), [], 403);
+        }
+
+        $result = $this->orderService->assignBagToSellerOrder($id, $seller->id, trim($validated['barcode']));
+        return ApiResponseType::sendJsonResponse($result['success'], $result['message'], $result['data'] ?? [], $result['success'] ? 200 : 422);
     }
 
     public function acceptSellerOrderItems(int $id): JsonResponse

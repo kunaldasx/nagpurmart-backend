@@ -96,6 +96,7 @@ $(document).ready(function () {
         activeOrder.items.forEach((item) => {
             item.verification_status = "pending";
         });
+        activeOrder.checklistMarkup = "";
         popupStage = activeOrder.items.every(
             (item) => item.status === "accepted",
         )
@@ -180,19 +181,8 @@ $(document).ready(function () {
                 .join("") +
             `</div>`;
         if (!item) {
-            popupStage = "prepare";
-            $("#new-order-verification")
-                .removeClass("d-none")
-                .html(
-                    checklist +
-                        `<div class="new-order-verification-card text-center">` +
-                        `<div class="new-order-verification-status is-valid">All ${activeOrder.items.length} items verified.</div>` +
-                        `<p class="mb-0">The server will confirm the barcode and quantity for every item before starting preparation.</p>` +
-                        `</div>`,
-                );
-            $("#new-order-accept")
-                .prop("disabled", false)
-                .text("Mark order as preparing");
+            activeOrder.checklistMarkup = checklist;
+            showBagScan(checklist);
             return;
         }
 
@@ -241,6 +231,79 @@ $(document).ready(function () {
             () => $("#new-order-scanned-barcode").trigger("focus"),
             50,
         );
+    };
+    const showBagScan = (checklist = "") => {
+        checklist = checklist || activeOrder.checklistMarkup || "";
+        if (activeOrder.bag) {
+            popupStage = "dispatch";
+            $("#new-order-verification")
+                .removeClass("d-none")
+                .html(
+                    checklist +
+                        `<div class="new-order-verification-card">` +
+                        `<div class="new-order-verification-status is-valid">Bag assigned: ${escapeHtml(activeOrder.bag.barcode)}</div>` +
+                        `<p class="mb-0">All items and the assigned bag are ready for dispatch.</p>` +
+                        `</div>`,
+                );
+            $("#new-order-accept")
+                .prop("disabled", false)
+                .text("Dispatch order");
+            return;
+        }
+
+        popupStage = "bag";
+        $("#new-order-verification")
+            .removeClass("d-none")
+            .html(
+                checklist +
+                    `<div class="new-order-verification-card">` +
+                    `<div class="new-order-verification-status is-valid mb-3">All items verified. Scan a bag to assign it to this order.</div>` +
+                    `<label class="form-label fw-bold" for="new-order-bag-barcode">Bag barcode</label>` +
+                    `<input id="new-order-bag-barcode" class="form-control" type="text" autocomplete="off">` +
+                    `<div id="new-order-bag-error" class="new-order-field-error" role="alert"></div>` +
+                    `</div>`,
+            );
+        $("#new-order-accept").prop("disabled", false).text("Assign bag");
+        window.setTimeout(
+            () => $("#new-order-bag-barcode").trigger("focus"),
+            50,
+        );
+    };
+    const assignScannedBag = () => {
+        const barcode = String($("#new-order-bag-barcode").val() || "").trim();
+        if (!barcode) {
+            $("#new-order-bag-barcode").addClass("is-invalid");
+            $("#new-order-bag-error").text("Scan or enter a bag barcode.");
+            return;
+        }
+
+        $("#new-order-accept").prop("disabled", true);
+        axios
+            .post(`/seller/orders/${activeOrder.seller_order_id}/assign-bag`, {
+                barcode,
+            })
+            .then((response) => {
+                if (response.data?.success === false) {
+                    const error = new Error(
+                        response.data.message || "Bag not found.",
+                    );
+                    error.responseData = response.data;
+                    throw error;
+                }
+                activeOrder.bag = response.data.data?.bag || { barcode };
+                showBagScan(activeOrder.checklistMarkup);
+            })
+            .catch((error) => {
+                $("#new-order-bag-barcode").addClass("is-invalid");
+                $("#new-order-bag-error").text(
+                    error.responseData?.message ||
+                        error.response?.data?.message ||
+                        "Bag not found in your available bag pool.",
+                );
+                $("#new-order-accept")
+                    .prop("disabled", false)
+                    .text("Try bag again");
+            });
     };
     const acceptOrderItems = () => {
         if (!activeOrder) return;
@@ -355,6 +418,10 @@ $(document).ready(function () {
             checkCurrentItem();
             return;
         }
+        if (popupStage === "bag") {
+            assignScannedBag();
+            return;
+        }
         submitVerifiedOrder();
     };
     const pollOrders = (orderMode, popupOnly = false) =>
@@ -442,6 +509,17 @@ $(document).ready(function () {
         event.preventDefault(),
     );
     modal.on("keydown", "#new-order-scanned-barcode", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            $("#new-order-accept").trigger("click");
+        }
+    });
+    modal.on("input", "#new-order-bag-barcode", () => {
+        $("#new-order-bag-barcode").removeClass("is-invalid");
+        $("#new-order-bag-error").empty();
+        $("#new-order-accept").text("Assign bag");
+    });
+    modal.on("keydown", "#new-order-bag-barcode", (event) => {
         if (event.key === "Enter") {
             event.preventDefault();
             $("#new-order-accept").trigger("click");

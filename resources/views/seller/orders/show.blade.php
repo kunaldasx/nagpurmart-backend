@@ -92,6 +92,10 @@
                                                 class="datagrid-content">{{ $systemSettings['currencySymbol'] . number_format($order['total_price'], 2) }}</div>
                                     </div>
                                     <div class="datagrid-item">
+                                        <div class="datagrid-title">Assigned bag</div>
+                                        <div class="datagrid-content font-monospace">{{ $order['bag']['barcode'] ?? 'Not assigned' }}</div>
+                                    </div>
+                                    <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.payment_method') }}</div>
                                         <div
                                                 class="datagrid-content text-uppercase">{{ $order['payment_method'] }}</div>
