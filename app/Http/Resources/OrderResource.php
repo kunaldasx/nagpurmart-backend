@@ -36,6 +36,11 @@ class OrderResource extends JsonResource
                     : null,
                 'payment_status' => $this->order->payment_status,
                 'total_price' => $this->total_price,
+                'bag' => $this->bag ? [
+                    'id' => $this->bag->id,
+                    'barcode' => $this->bag->barcode,
+                    'assigned_at' => $this->bag->assigned_at?->toISOString(),
+                ] : null,
 
                 // Customer information
                 'billing_name' => $this->order->billing_name,
@@ -183,6 +188,16 @@ class OrderResource extends JsonResource
                         'subtotal' => $item->price * $item->quantity,
                     ];
                 });
+            }),
+            'seller_orders' => $this->whenLoaded('sellerOrders', function () {
+                return $this->sellerOrders->map(fn ($sellerOrder) => [
+                    'seller_order_id' => $sellerOrder->id,
+                    'seller' => $sellerOrder->seller?->user?->name,
+                    'bag' => $sellerOrder->bag ? [
+                        'barcode' => $sellerOrder->bag->barcode,
+                        'assigned_at' => $sellerOrder->bag->assigned_at?->toISOString(),
+                    ] : null,
+                ])->values();
             }),
 
             'created_at' => $this->created_at?->format('M d, Y h:i A'),

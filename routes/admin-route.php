@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\SellerWithdrawalController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\BannerController;
+use App\Http\Controllers\BagController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CartRecommendationSectionController;
@@ -465,6 +466,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{id}', [OrderController::class, 'show'])->name('show');
             Route::post('/{id}/{status}', [OrderController::class, 'updateStatus'])->name('update_status');
         });
+
+        Route::get('bags', [BagController::class, 'adminIndex'])->name('bags.index');
+        Route::get('bags/data', [BagController::class, 'adminData'])->name('bags.data');
 
         // products
         Route::prefix('products')->name('products.')->group(function () {

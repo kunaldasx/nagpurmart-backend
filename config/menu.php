@@ -16,6 +16,12 @@ return [
             'active' => 'orders',
             'permission' => 'orders.view',
         ],
+        'bags' => [
+            'icon' => 'ti-shopping-bag',
+            'route' => 'admin.bags.index',
+            'title' => 'labels.bag_inventory',
+            'active' => 'bags',
+        ],
         'categories' => [
             'icon' => 'ti-category-2',
             'title' => 'labels.categories',
@@ -492,6 +498,12 @@ return [
             'title' => 'labels.seller_orders',
             'active' => 'orders',
             'permission' => 'order.view'
+        ],
+        'bags' => [
+            'icon' => 'ti-shopping-bag',
+            'route' => 'seller.bags.index',
+            'title' => 'labels.bag_inventory',
+            'active' => 'bags',
         ],
         'return_orders' => [
             'icon' => 'ti-truck-return',

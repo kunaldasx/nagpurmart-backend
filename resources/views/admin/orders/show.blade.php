@@ -90,6 +90,14 @@
                                         <div
                                             class="datagrid-content">{{ $systemSettings['currencySymbol'] . number_format($order['final_total'], 2) }}</div>
                                     </div>
+                                    @if(!empty($order['seller_orders']))
+                                        @foreach($order['seller_orders'] as $sellerOrder)
+                                            <div class="datagrid-item">
+                                                <div class="datagrid-title">Bag · {{ $sellerOrder['seller'] ?? 'Seller' }}</div>
+                                                <div class="datagrid-content font-monospace">{{ $sellerOrder['bag']['barcode'] ?? 'Not assigned' }}</div>
+                                            </div>
+                                        @endforeach
+                                    @endif
                                     <div class="datagrid-item">
                                         <div class="datagrid-title">{{ __('labels.payment_method') }}</div>
                                         <div

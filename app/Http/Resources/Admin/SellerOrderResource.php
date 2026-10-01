@@ -21,6 +21,13 @@ class SellerOrderResource extends JsonResource
             'seller_id' => $this->seller_id,
             'total_price' => $this->total_price,
             'status' => $this->status,
+            'bag' => $this->whenLoaded('bag', function () {
+                return [
+                    'id' => $this->bag->id,
+                    'barcode' => $this->bag->barcode,
+                    'assigned_at' => $this->bag->assigned_at?->toISOString(),
+                ];
+            }),
 
             // Relationships
             'order' => $this->whenLoaded('order', function() {

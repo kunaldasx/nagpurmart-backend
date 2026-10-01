@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Seller\SellerAuthApiController;
+use App\Http\Controllers\BagController;
 use App\Http\Controllers\Api\Seller\SellerAttributeApiController;
 use App\Http\Controllers\Api\Seller\SellerAttributeValueApiController;
 use App\Http\Controllers\Api\Seller\SellerStoreApiController;
@@ -30,6 +31,13 @@ Route::middleware(['auth:sanctum',
 //    'ensure.seller.subscription'
 ])->prefix('seller')->name('seller.api.')->group(function () {
     Route::post('logout', [SellerAuthApiController::class, 'logout']);
+
+    Route::prefix('bags')->name('bags.')->group(function () {
+        Route::get('/', [BagController::class, 'index'])->name('index');
+        Route::post('/bulk', [BagController::class, 'bulkStore'])->name('bulk-store');
+        Route::put('/{id}', [BagController::class, 'update'])->whereNumber('id')->name('update');
+        Route::delete('/{id}', [BagController::class, 'destroy'])->whereNumber('id')->name('destroy');
+    });
 
     // Dashboard (single endpoint only)
     Route::get('dashboard', [SellerDashboardApiController::class, 'overview'])->name('dashboard.overview');
@@ -111,6 +119,7 @@ Route::middleware(['auth:sanctum',
         Route::get('/enums', [SellerOrderApiController::class, 'enums'])->name('enums');
         Route::get('/pending-regular', [SellerOrderApiController::class, 'pendingRegular'])->name('pending-regular');
         Route::post('/{id}/accept-items', [SellerOrderApiController::class, 'acceptSellerOrderItems'])->name('accept-items');
+        Route::post('/{id}/assign-bag', [SellerOrderApiController::class, 'assignBag'])->name('assign-bag');
         Route::post('/{id}/verify-and-prepare', [SellerOrderApiController::class, 'verifyAndPrepare'])->name('verify-and-prepare');
         Route::get('/{id}', [SellerOrderApiController::class, 'show'])->name('show');
         Route::post('/{id}/{status}', [SellerOrderApiController::class, 'updateStatus'])->name('update_status');

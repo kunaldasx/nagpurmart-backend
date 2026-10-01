@@ -75,7 +75,7 @@ class SellerOrderApiController extends Controller
             $storeId = null;
         }
 
-        $query = SellerOrderItem::with(['sellerOrder', 'orderItem', 'orderItem.store', 'variant', 'product', 'sellerOrder.order'])
+        $query = SellerOrderItem::with(['sellerOrder.bag', 'sellerOrder', 'orderItem', 'orderItem.store', 'variant', 'product', 'sellerOrder.order'])
             ->whereHas('sellerOrder', fn($q) => $q->where('seller_id', $seller->id))
             ->whereHas('orderItem', function ($q) {
                 $q->where('status', '!=', OrderItemStatusEnum::PENDING());
@@ -162,7 +162,7 @@ class SellerOrderApiController extends Controller
             $orderMode = 'regular';
         }
 
-        $items = SellerOrderItem::with(['sellerOrder.order.deliveryTimeSlot', 'orderItem', 'product', 'variant'])
+        $items = SellerOrderItem::with(['sellerOrder.order.deliveryTimeSlot', 'sellerOrder.bag', 'orderItem', 'product', 'variant'])
             ->whereHas('sellerOrder', function ($query) use ($seller, $orderMode) {
                 $query->where('seller_id', $seller->id)
                     ->whereHas('order', fn ($order) => $order->where('order_mode', $orderMode));
@@ -216,6 +216,10 @@ class SellerOrderApiController extends Controller
                 ],
                 'payment_method' => $order->payment_method,
                 'total' => $first->sellerOrder->total_price,
+                'bag' => $first->sellerOrder->bag ? [
+                    'id' => $first->sellerOrder->bag->id,
+                    'barcode' => $first->sellerOrder->bag->barcode,
+                ] : null,
                 'items' => $orderItems->map(fn ($item) => [
                     'order_item_id' => $item->order_item_id,
                     'product_id' => $item->product_id,
@@ -253,7 +257,7 @@ class SellerOrderApiController extends Controller
         }
 
         $sellerOrder = SellerOrder::where('id', $id)
-            ->with(['order', 'items.product', 'items.variant', 'items.orderItem', 'order.items.store'])
+            ->with(['order', 'bag', 'items.product', 'items.variant', 'items.orderItem', 'order.items.store'])
             ->where('seller_id', $seller->id)
             ->first();
 
@@ -354,6 +358,30 @@ class SellerOrderApiController extends Controller
         );
     }
 
+    public function assignBag(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate(['barcode' => ['required', 'string', 'max:255']]);
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        $sellerOrder = SellerOrder::query()->where('id', $id)->where('seller_id', $seller->id)->with('items')->first();
+        if (!$sellerOrder) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
+        }
+        try {
+            foreach ($sellerOrder->items as $sellerOrderItem) {
+                $this->authorize('updateStatus', $sellerOrderItem);
+            }
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('messages.unauthorized_action'), [], 403);
+        }
+
+        $result = $this->orderService->assignBagToSellerOrder($id, $seller->id, trim($validated['barcode']));
+        return ApiResponseType::sendJsonResponse($result['success'], $result['message'], $result['data'] ?? [], $result['success'] ? 200 : 422);
+    }
+
     public function acceptSellerOrderItems(int $id): JsonResponse
     {
         $seller = auth()->user()?->seller();
@@ -395,6 +423,10 @@ class SellerOrderApiController extends Controller
         return [
             'order_item_id' => $sellerOrderItem->order_item_id,
             'seller_order_id' => $sellerOrderItem->seller_order_id,
+            'bag' => $sellerOrderItem->sellerOrder->bag ? [
+                'barcode' => $sellerOrderItem->sellerOrder->bag->barcode,
+                'assigned_at' => $sellerOrderItem->sellerOrder->bag->assigned_at?->toISOString(),
+            ] : null,
             'created_at' => $sellerOrderItem->created_at,
             'order' => [
                 'id' => $sellerOrderItem->sellerOrder->order_id,

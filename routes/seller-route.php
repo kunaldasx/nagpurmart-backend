@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\BagController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\GlobalAttributeController;
 use App\Http\Controllers\GlobalAttributeValueController;
@@ -50,6 +51,8 @@ Route::prefix('seller')->name('seller.')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('dashboard.chart-data');
         Route::get('dashboard/data', [DashboardController::class, 'getDashboardData'])->name('dashboard.data');
+
+        Route::get('bags', [BagController::class, 'sellerIndex'])->name('bags.index');
 
 
         // Roles
@@ -248,6 +251,7 @@ Route::prefix('seller')->name('seller.')->group(function () {
             Route::get('/datatable', [OrderController::class, 'getOrders'])->name('datatable');
             Route::get('/pending-regular', [OrderController::class, 'getPendingRegularOrders'])->name('pending-regular');
             Route::post('/{id}/accept-items', [OrderController::class, 'acceptSellerOrderItems'])->name('accept-items');
+            Route::post('/{id}/assign-bag', [OrderController::class, 'assignBag'])->name('assign-bag');
             Route::post('/{id}/verify-and-prepare', [OrderController::class, 'verifyAndPrepare'])->name('verify-and-prepare');
             Route::get('/{id}', [OrderController::class, 'show'])->name('show');
             Route::post('/{id}/{status}', [OrderController::class, 'updateStatus'])->name('update_status');

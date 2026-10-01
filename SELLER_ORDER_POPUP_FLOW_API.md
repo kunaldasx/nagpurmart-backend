@@ -1,6 +1,6 @@
 # Seller Order Popup API
 
-The seller panel uses the session-authenticated web endpoints below. The seller mobile API exposes matching accept and verify actions under `/api/seller/orders` and requires Sanctum authentication.
+The seller panel uses the session-authenticated web endpoints below. The seller mobile API exposes matching actions under `/api/seller/orders` and requires Sanctum authentication.
 
 ## 1. Fetch incoming or resumable orders
 
@@ -28,6 +28,7 @@ Use `order_mode=wholesale` for wholesale orders. The `popup=1` query is used by 
             "payment_method": "cod",
             "total": 499.0,
             "delivery": "30 Sep 10:30 - 11:00",
+            "bag": null,
             "items": [
                 {
                     "order_item_id": 9901,
@@ -75,9 +76,50 @@ Success (`200`):
 }
 ```
 
-## 3. Verify every item and mark the seller order preparing
+## 3. Verify every ordered item in the popup
 
-The panel checks each scanned barcode and arrow-key quantity locally, shows errors under only the mismatched field, and advances to the next item immediately after a successful check. A checklist shows each item as unchecked, passed, or failed. Only after every item passes does the panel submit the full set. The server independently validates every value and the exact set of accepted item IDs before changing any statuses.
+This step is local to the popup and does not call an endpoint. The seller scans/enters each item barcode and confirms quantity with arrow keys. The UI shows field-specific errors, advances immediately on a valid item, and tracks all item states in the checklist. The barcode is compared internally and is not shown as expected data.
+
+## 4. Scan and assign a bag
+
+Call this after all item checks pass and before dispatch. Only an available bag barcode in this seller's inventory can be assigned. A bag already assigned to this same order is accepted idempotently; bags assigned elsewhere and unknown barcodes are rejected.
+
+```http
+POST /seller/orders/701/assign-bag
+Content-Type: application/json
+Accept: application/json
+```
+
+Request:
+
+```json
+{
+    "barcode": "BAG-000033"
+}
+```
+
+Success (`200`):
+
+```json
+{
+    "success": true,
+    "message": "Bag assigned to order successfully.",
+    "data": {
+        "seller_order_id": 701,
+        "bag": {
+            "id": 33,
+            "barcode": "BAG-000033",
+            "assigned_at": "2026-10-01T10:15:00.000000Z"
+        }
+    }
+}
+```
+
+An unknown or already-assigned barcode returns `422` with a message indicating the bag is not available in the seller's pool. Once assigned, the popup shows **Dispatch order**.
+
+## 5. Dispatch the order
+
+The final request submits all scanned item values. The server rechecks every barcode and quantity and verifies that this seller order has an assigned bag before changing any accepted items to `preparing`.
 
 ```http
 POST /seller/orders/701/verify-and-prepare
@@ -99,7 +141,7 @@ Request:
 }
 ```
 
-Each accepted order item must appear exactly once. `quantity` must be an integer equal to the ordered quantity. `barcode` must exactly match the barcode stored on the ordered product variant.
+Each accepted order item must appear exactly once. `quantity` must be an integer equal to the ordered quantity; `barcode` must exactly match the barcode stored on the ordered product variant.
 
 Success (`200`):
 
@@ -109,6 +151,10 @@ Success (`200`):
     "message": "All item checks passed and the order is now preparing.",
     "data": {
         "seller_order_id": 701,
+        "bag": {
+            "id": 33,
+            "barcode": "BAG-000033"
+        },
         "items": [
             {
                 "order_item_id": 9901,
@@ -140,4 +186,4 @@ Mismatch or incomplete item set (`422`):
 }
 ```
 
-Request-shape validation errors also return `422`. Unauthenticated requests return `401`; an order not owned by the seller returns `404`. Preparing through the existing single-item status endpoints also requires matching `barcode` and `quantity` request values.
+Request-shape validation errors also return `422`. If there is no assigned bag, the endpoint returns `422` with `bag_required: true`. Unauthenticated requests return `401`; an order not owned by the seller returns `404`. The legacy per-item preparing endpoint also requires the matching item barcode, quantity, and an assigned bag.

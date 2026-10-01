@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'bag_inventory' => 'Bag inventory',
     // System Settings Labels
     'system_settings' => 'System Settings',
     'menu' => 'Menu',
