@@ -41,6 +41,7 @@ use ArchTech\Enums\Values;
  * @method static ORDER_VIEW()
  * @method static ORDER_EDIT()
  * @method static ORDER_UPDATE_STATUS()
+ * @method static ORDER_POPUP()
  * @method static EARNING_VIEW()
  * @method static NOTIFICATION_CREATE()
  * @method static NOTIFICATION_VIEW()
@@ -55,6 +56,10 @@ use ArchTech\Enums\Values;
  * @method static WITHDRAWAL_REQUEST()
  * @method static RETURN_VIEW()
  * @method static RETURN_DECIDE()
+ * @method static BAG_VIEW()
+ * @method static BAG_CREATE()
+ * @method static BAG_EDIT()
+ * @method static BAG_DELETE()
  * @method static BRAND_VIEW()
  * @method static SUBSCRIPTION_VIEW()
  * @method static SUBSCRIPTION_BUY()
@@ -98,6 +103,7 @@ enum SellerPermissionEnum: string
     case ORDER_VIEW = 'order.view';
     case ORDER_EDIT = 'order.edit';
     case ORDER_UPDATE_STATUS = 'order.update_status';
+    case ORDER_POPUP = 'order.popup';
     case EARNING_VIEW = 'earning.view';
     case NOTIFICATION_CREATE = 'notification.create';
     case NOTIFICATION_VIEW = 'notification.view';
@@ -112,6 +118,10 @@ enum SellerPermissionEnum: string
     case WITHDRAWAL_REQUEST = 'withdrawal.request';
     case RETURN_VIEW = 'return.view';
     case RETURN_DECIDE = 'return.decide';
+    case BAG_VIEW = 'bag.view';
+    case BAG_CREATE = 'bag.create';
+    case BAG_EDIT = 'bag.edit';
+    case BAG_DELETE = 'bag.delete';
     case CATEGORY_VIEW = 'category.view';
     case BRAND_VIEW = 'brand.view';
     case SUBSCRIPTION_VIEW = 'subscription.view';
@@ -152,6 +162,7 @@ enum SellerPermissionEnum: string
                     self::ORDER_VIEW(),
                     self::ORDER_EDIT(),
                     self::ORDER_UPDATE_STATUS(),
+                    self::ORDER_POPUP(),
                 ],
             ],
             'return' => [
@@ -159,6 +170,15 @@ enum SellerPermissionEnum: string
                 'permissions' => [
                     self::RETURN_VIEW(),
                     self::RETURN_DECIDE(),
+                ],
+            ],
+            'bag' => [
+                'name' => 'Bag',
+                'permissions' => [
+                    self::BAG_VIEW(),
+                    self::BAG_CREATE(),
+                    self::BAG_EDIT(),
+                    self::BAG_DELETE(),
                 ],
             ],
             'category' => [

@@ -9,6 +9,13 @@
     @endphp
 @endsection
 @section('content')
+    @php
+        $sellerUser = auth()->user();
+        $canShowSellerOrderPopup = $sellerUser && (
+            $sellerUser->hasRole(\App\Enums\DefaultSystemRolesEnum::SELLER()) ||
+            $sellerUser->can('order.popup')
+        );
+    @endphp
     @if(empty($page) || $page != 'login')
         @include('layouts.partials._header', [
             'page_title' => $page_title ?? 'Seller Dashboard',
@@ -21,6 +28,7 @@
             @yield('seller-content')
         </div>
     </div>
+    @if($canShowSellerOrderPopup)
     <div class="modal modal-blur fade" id="newRegularOrderModal" data-pending-url="{{ route('seller.orders.pending-regular') }}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -97,6 +105,7 @@
         @media (max-width: 480px) { .new-order-header { padding-left: 1rem; padding-right: 1rem; } #newRegularOrderModal .modal-body, #newRegularOrderModal .modal-footer { padding-left: 1rem; padding-right: 1rem; } }
     </style>
     <script src="{{ hyperAsset('assets/js/seller-order-alert.js') }}" defer></script>
+    @endif
     {{-- Mobile App Deep Link Bootstrap Modal for Seller Panel --}}
     @php
         $sellerScheme = $appSettings['sellerAppScheme'] ?? '';

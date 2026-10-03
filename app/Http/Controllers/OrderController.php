@@ -217,9 +217,13 @@ class OrderController extends Controller
         });
 
         if ($this->getPanel() === 'seller') {
-            $seller = auth()->user()?->seller();
+            $user = auth()->user();
+            $seller = $user?->seller();
             if (!$seller) {
                 return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), []);
+            }
+            if (!$user->hasRole(DefaultSystemRolesEnum::SELLER()) && !$user->can('order.popup')) {
+                return response()->json(['data' => []]);
             }
             $items->whereHas('sellerOrder', fn ($query) => $query->where('seller_id', $seller->id));
         }
