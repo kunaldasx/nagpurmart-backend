@@ -152,9 +152,18 @@ class SellerOrderApiController extends Controller
      */
     public function pendingRegular(Request $request): JsonResponse
     {
-        $seller = auth()->user()?->seller();
+        $user = auth()->user();
+        $seller = $user?->seller();
         if (!$seller) {
             return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        if (!$user->hasRole(\App\Enums\DefaultSystemRolesEnum::SELLER()) && !$user->can('order.popup')) {
+            return ApiResponseType::sendJsonResponse(true, 'Pending orders fetched successfully', [
+                'orders' => [],
+                'count' => 0,
+                'order_mode' => $request->input('order_mode', 'regular'),
+            ]);
         }
 
         $orderMode = $request->input('order_mode', 'regular');

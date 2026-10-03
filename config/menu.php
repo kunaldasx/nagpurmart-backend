@@ -504,6 +504,7 @@ return [
             'route' => 'seller.bags.index',
             'title' => 'labels.bag_inventory',
             'active' => 'bags',
+            'permission' => 'bag.view',
         ],
         'return_orders' => [
             'icon' => 'ti-truck-return',
