@@ -34,7 +34,7 @@ class CategoryApiController extends Controller
     #[QueryParameter('slug', description: 'Category slug to filter by', type: 'string', example: 'apple')]
     #[QueryParameter('search', description: 'Search term to filter categories', type: 'string', example: 'electronics')]
     #[QueryParameter('home', description: 'When true, returns only root categories marked as home categories, ordered by sort_order', type: 'boolean', example: true)]
-    #[QueryParameter('include_no_product', description: 'When true, also return categories without product', type: 'boolean', example: 'false')]
+    #[QueryParameter('include_no_product', description: 'Whether to include categories without products', type: 'boolean', default: true, example: true)]
     public function index(Request $request): JsonResponse
     {
         // Validate inputs
@@ -46,10 +46,11 @@ class CategoryApiController extends Controller
             'slug' => 'sometimes|string',
             'search' => 'sometimes|string',
             'home' => 'nullable',
+            'include_no_product' => 'sometimes|boolean',
         ]);
 
         $perPage = (int)$request->input('per_page', 15);
-        $includeNoProduct = $request->input('include_no_product', false);
+        $includeNoProduct = filter_var($request->input('include_no_product', true), FILTER_VALIDATE_BOOLEAN);
 
         // Base query: either children of slug or root categories
         $query = Category::query()->with('parent')->where('status', CategoryStatusEnum::ACTIVE());
@@ -119,6 +120,7 @@ class CategoryApiController extends Controller
     #[QueryParameter('filter', description: 'Filter enum: random | top_category', type: 'string', example: 'random')]
     #[QueryParameter('latitude', description: 'Latitude of the user location for zone-wise product counts', type: 'float', example: 23.11684540)]
     #[QueryParameter('longitude', description: 'Longitude of the user location for zone-wise product counts', type: 'float', example: 70.02805670)]
+    #[QueryParameter('include_no_product', description: 'Whether to include categories without products', type: 'boolean', default: true, example: true)]
     public function subCategories(Request $request): JsonResponse
     {
         // Validate inputs
@@ -128,9 +130,11 @@ class CategoryApiController extends Controller
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'filter' => 'nullable|string',
+            'include_no_product' => 'sometimes|boolean',
         ]);
 
         $perPage = (int)$request->input('per_page', 15);
+        $includeNoProduct = filter_var($request->input('include_no_product', true), FILTER_VALIDATE_BOOLEAN);
 //        $filter = is_null($request->input('filter')) ? CategorySubCategoryFilterEnum::RANDOM() : $request->input('filter');
         $filter = $request->input('filter');
 
@@ -168,7 +172,7 @@ class CategoryApiController extends Controller
             return ($cat->children_count ?? 0) > 0;
         }, $useZoneFilter, $storeIds);
 
-        $filtered = $this->filterNonZeroProducts($processed);
+        $filtered = $includeNoProduct ? $processed : $this->filterNonZeroProducts($processed);
 
         $paginator = $this->paginateCollection($filtered, (int)$request->input('page', 1), $perPage, $request);
         $response = array_merge(ApiResponseType::responseFromPaginator($paginator), ['filter' => $filter]);
@@ -183,6 +187,7 @@ class CategoryApiController extends Controller
     #[QueryParameter('per_page', description: 'Number of categories per page', type: 'int', default: 15, example: 15)]
     #[QueryParameter('latitude', description: 'Latitude of the user location for zone-wise product counts', type: 'float', example: 23.11684540)]
     #[QueryParameter('longitude', description: 'Longitude of the user location for zone-wise product counts', type: 'float', example: 70.02805670)]
+    #[QueryParameter('include_no_product', description: 'Whether to include categories without products', type: 'boolean', default: true, example: true)]
     public function getCategories(Request $request): JsonResponse
     {
         // Normalize ids: accept CSV string or array
@@ -200,12 +205,14 @@ class CategoryApiController extends Controller
             'per_page' => 'sometimes|integer|min:1|max:100',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'include_no_product' => 'sometimes|boolean',
         ]);
 
         // Prepare IDs (optional)
         $ids = array_values(array_unique(array_map('intval', $validated['ids'] ?? [])));
 
         $perPage = (int)$request->input('per_page', 15);
+        $includeNoProduct = filter_var($request->input('include_no_product', true), FILTER_VALIDATE_BOOLEAN);
 
         $query = Category::query()
             ->with('parent')
@@ -241,7 +248,7 @@ class CategoryApiController extends Controller
             $storeIds
         );
 
-        $filtered = $this->filterNonZeroProducts($processed);
+        $filtered = $includeNoProduct ? $processed : $this->filterNonZeroProducts($processed);
 
         // Paginate and respond
         $paginator = $this->paginateCollection($filtered, (int)$request->input('page', 1), $perPage, $request);
