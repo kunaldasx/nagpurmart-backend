@@ -99,26 +99,11 @@ document.addEventListener("show.bs.modal", function (event) {
 
                     // Set parent_id in TomSelect (auto-select)
                     if (tomSelectInstance) {
-                        // If the parent is not in the options yet, load it
                         if (data.parent) {
-                            let parentOption =
-                                tomSelectInstance.options[data.parent.id];
-                            if (!parentOption) {
-                                // Fetch the parent (if not already loaded)
-                                await fetch(
-                                    base_url +
-                                        "/admin/categories/search" +
-                                        `?q=${data.parent.title}`,
-                                )
-                                    .then((res) => res.json())
-                                    .then((json) => {
-                                        if (json && json.length) {
-                                            tomSelectInstance.addOption(
-                                                json[0],
-                                            );
-                                        }
-                                    });
-                            }
+                            tomSelectInstance.addOption({
+                                value: String(data.parent.id),
+                                text: data.parent.title,
+                            });
                             tomSelectInstance.setValue(data.parent_id);
                         } else {
                             tomSelectInstance.clear();
