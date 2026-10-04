@@ -37,6 +37,8 @@ class CategoryApiController extends Controller
     #[QueryParameter('include_no_product', description: 'Whether to include categories without products', type: 'boolean', default: true, example: true)]
     public function index(Request $request): JsonResponse
     {
+        $this->normalizeIncludeNoProduct($request);
+
         // Validate inputs
         $request->validate([
             'page' => 'sometimes|integer|min:1',
@@ -123,6 +125,8 @@ class CategoryApiController extends Controller
     #[QueryParameter('include_no_product', description: 'Whether to include categories without products', type: 'boolean', default: true, example: true)]
     public function subCategories(Request $request): JsonResponse
     {
+        $this->normalizeIncludeNoProduct($request);
+
         // Validate inputs
         $request->validate([
             'page' => 'sometimes|integer|min:1',
@@ -190,6 +194,8 @@ class CategoryApiController extends Controller
     #[QueryParameter('include_no_product', description: 'Whether to include categories without products', type: 'boolean', default: true, example: true)]
     public function getCategories(Request $request): JsonResponse
     {
+        $this->normalizeIncludeNoProduct($request);
+
         // Normalize ids: accept CSV string or array
         $idsInput = $request->input('ids');
         if (is_string($idsInput)) {
@@ -269,6 +275,23 @@ class CategoryApiController extends Controller
             'total' => 0,
             'data' => [],
         ], $extra);
+    }
+
+    private function normalizeIncludeNoProduct(Request $request): void
+    {
+        if (!$request->has('include_no_product')) {
+            return;
+        }
+
+        $value = filter_var(
+            $request->input('include_no_product'),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
+
+        if ($value !== null) {
+            $request->merge(['include_no_product' => $value]);
+        }
     }
 
     /**
