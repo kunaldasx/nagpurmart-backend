@@ -482,6 +482,7 @@
                                     <p class="text-muted mb-0 small">Add attributes and their values to create
                                         product
                                         variants</p>
+                                    <p class="text-muted mb-0 small">For package sizes, add a Size, Weight, Volume, or Quantity attribute with values like 200 g or 1 L. Unit pricing uses that value automatically.</p>
                                 </div>
                                 <div class="card-body">
                                     <!-- Attributes Management -->

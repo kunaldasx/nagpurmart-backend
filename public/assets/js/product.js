@@ -637,7 +637,7 @@ function initializeVariantAttributes() {
                     matchingVariant.net_quantity =
                         serverVariant.net_quantity || "";
                     matchingVariant.net_quantity_unit =
-                        serverVariant.net_quantity_unit || "g";
+                        serverVariant.net_quantity_unit || "";
                     matchingVariant.height = serverVariant.height || "";
                     matchingVariant.breadth = serverVariant.breadth || "";
                     matchingVariant.length = serverVariant.length || "";
@@ -841,6 +841,166 @@ function generateSKU(attrs) {
 
 const attrIdMap = {};
 
+function getUnitPriceDetails(quantity, unit) {
+    const amount = Number(quantity);
+    const normalizedUnit = String(unit || "").toLowerCase();
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+
+    const units = {
+        g: { divisor: amount / 100, basis: "100 g" },
+        kg: { divisor: amount * 10, basis: "100 g" },
+        ml: { divisor: amount / 100, basis: "100 ml" },
+        l: { divisor: amount * 10, basis: "100 ml" },
+        item: { divisor: amount, basis: "1 item" },
+    };
+    return units[normalizedUnit] || null;
+}
+
+function syncVariantPackageSize(variant) {
+    const packageAttribute = Object.entries(variant.attributes || {}).find(
+        ([attributeId]) =>
+            /(size|weight|volume|quantity|pack)/i.test(
+                attrIdMap[attributeId]?.name || "",
+            ),
+    );
+    if (!packageAttribute) {
+        if (variant._netQuantityFromAttribute) {
+            variant.net_quantity = "";
+            variant.net_quantity_unit = "";
+            delete variant._netQuantityFromAttribute;
+        }
+        return;
+    }
+
+    const [attributeId, valueId] = packageAttribute;
+    const attributeName = attrIdMap[attributeId]?.name || "";
+    const valueName = attrIdMap[attributeId]?.values[valueId] || "";
+    const valueMatch = String(valueName).match(
+        /(\d+(?:[.,]\d+)?)\s*(kg|ml|g|l|items?|pcs?)?/i,
+    );
+    if (!valueMatch) {
+        if (variant._netQuantityFromAttribute) {
+            variant.net_quantity = "";
+            variant.net_quantity_unit = "";
+            delete variant._netQuantityFromAttribute;
+        }
+        return;
+    }
+
+    let unit = valueMatch[2]?.toLowerCase();
+    if (!unit) {
+        unit = String(attributeName)
+            .match(/\b(kg|ml|g|l|items?|pcs?)\b/i)?.[1]
+            ?.toLowerCase();
+    }
+    if (!unit) {
+        if (variant._netQuantityFromAttribute) {
+            variant.net_quantity = "";
+            variant.net_quantity_unit = "";
+            delete variant._netQuantityFromAttribute;
+        }
+        return;
+    }
+    if (unit.startsWith("item") || unit.startsWith("pc")) unit = "item";
+
+    variant.net_quantity = Number(valueMatch[1].replace(",", "."));
+    variant.net_quantity_unit = unit;
+    variant._netQuantityFromAttribute = true;
+}
+
+function renderStorePriceInputs(price, quantity, unit, name) {
+    const details = getUnitPriceDetails(quantity, unit);
+    const parsedPrice = Number(price);
+    const unitPrice =
+        details && Number.isFinite(parsedPrice) && parsedPrice > 0
+            ? (parsedPrice / details.divisor).toFixed(2)
+            : "";
+
+    return `
+        <div class="input-group input-group-sm">
+            <span class="input-group-text">${currencySymbol}</span>
+            <input type="number" class="form-control store-price" name="${name}" step="0.01" min="0" value="${price}">
+        </div>
+        <label class="form-label small mt-2 mb-1">Unit price <span class="store-unit-price-basis">${details ? `/ ${details.basis}` : "(enter pack size)"}</span></label>
+        <div class="input-group input-group-sm">
+            <span class="input-group-text">${currencySymbol}</span>
+            <input type="number" class="form-control store-unit-price" step="0.01" min="0" value="${unitPrice}" data-unit-divisor="${details?.divisor || ""}" ${details ? "" : "disabled"}>
+        </div>
+    `;
+}
+
+function refreshUnitPriceRows(container, quantity, unit) {
+    const details = getUnitPriceDetails(quantity, unit);
+    container.querySelectorAll("tr").forEach((row) => {
+        const priceInput = row.querySelector(".store-price");
+        const unitInput = row.querySelector(".store-unit-price");
+        const unitBasis = row.querySelector(".store-unit-price-basis");
+        if (!priceInput || !unitInput || !unitBasis) return;
+
+        if (!details) {
+            unitInput.disabled = true;
+            unitInput.value = "";
+            unitInput.dataset.unitDivisor = "";
+            unitBasis.textContent = "(enter pack size)";
+            return;
+        }
+
+        unitInput.disabled = false;
+        unitInput.dataset.unitDivisor = details.divisor;
+        unitBasis.textContent = `/ ${details.basis}`;
+        const price = Number(priceInput.value);
+        unitInput.value =
+            Number.isFinite(price) && price > 0
+                ? (price / details.divisor).toFixed(2)
+                : "";
+    });
+}
+
+function attachUnitPriceSync(container) {
+    if (container.dataset.unitPriceSync) return;
+    container.dataset.unitPriceSync = "true";
+    container.addEventListener("input", (event) => {
+        const input = event.target;
+        if (!input.matches(".store-price, .store-unit-price")) return;
+
+        const row = input.closest("tr");
+        const unitInput = row?.querySelector(".store-unit-price");
+        const priceInput = row?.querySelector(".store-price");
+        if (!unitInput || !priceInput) return;
+
+        const divisor = Number(unitInput.dataset.unitDivisor);
+        const value = Number(input.value);
+        if (!input.value.trim()) {
+            (input === priceInput ? unitInput : priceInput).value = "";
+            return;
+        }
+        if (
+            input === priceInput &&
+            (!Number.isFinite(divisor) || divisor <= 0)
+        ) {
+            return;
+        }
+        if (
+            !Number.isFinite(value) ||
+            !Number.isFinite(divisor) ||
+            divisor <= 0
+        ) {
+            if (!input.value) {
+                const pairedInput =
+                    input === priceInput ? unitInput : priceInput;
+                pairedInput.value = "";
+            }
+            return;
+        }
+
+        if (input === unitInput) {
+            priceInput.value = (value * divisor).toFixed(2);
+        } else {
+            unitInput.value = (value / divisor).toFixed(2);
+        }
+    });
+}
+
 function renderVariants() {
     Object.keys(dbAttributes).forEach((attrKey) => {
         const attr = dbAttributes[attrKey];
@@ -849,6 +1009,7 @@ function renderVariants() {
             values: Object.fromEntries(attr.values.map((v) => [v.id, v.name])),
         };
     });
+    variants.forEach(syncVariantPackageSize);
     document.getElementById("variantsList").innerHTML = variants
         .map(
             (v) =>
@@ -899,14 +1060,8 @@ function renderVariants() {
                     </div>
                     <div class="col-6">
                         <label class="form-label">Pack size / contents</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" min="0.001" step="0.001" value="${v.net_quantity || ""}" placeholder="e.g. 1" onchange="updateVariant('${v.id}', 'net_quantity', this.value)">
-                            <select class="form-select" aria-label="Net quantity unit" onchange="updateVariant('${v.id}', 'net_quantity_unit', this.value)" style="max-width: 90px">
-                                <option value="" ${v.net_quantity_unit ? "" : "selected"}>Unit</option>
-                                ${["g", "kg", "ml", "l", "item"].map((unit) => `<option value="${unit}" ${v.net_quantity_unit === unit ? "selected" : ""}>${unit === "l" ? "L" : unit}</option>`).join("")}
-                            </select>
-                        </div>
-                        <small class="form-hint">For example: 1 L or 200 g. Unit price is calculated automatically.</small>
+                        <input type="text" class="form-control" readonly value="${v.net_quantity && v.net_quantity_unit ? `${v.net_quantity} ${v.net_quantity_unit === "l" ? "L" : v.net_quantity_unit}` : "Use a Size/Quantity attribute"}">
+                        <small class="form-hint">Use a Size, Weight, Volume, or Quantity attribute with values like 200 g or 1 L.</small>
                     </div>
                     <div class="col-6">
                         <label class="form-label required">Height (cm)</label>
@@ -1247,6 +1402,10 @@ function initializeSimplePricing() {
     accordionContainer.className =
         "accordion accordion-flush border m-2 rounded";
     accordionContainer.id = "simplePricingAccordion";
+    const packageQuantity =
+        document.querySelector('[name="net_quantity"]')?.value || "";
+    const packageUnit =
+        document.querySelector('[name="net_quantity_unit"]')?.value || "";
 
     fetchStores().then((stores) => {
         if (stores === null || stores.length === 0) {
@@ -1317,10 +1476,7 @@ function initializeSimplePricing() {
                                     <tbody>
                                         <tr>
                                             <td>
-                                                <div class="input-group input-group-sm">
-                                                    <span class="input-group-text">${currencySymbol}</span>
-                                                    <input type="number" class="form-control store-price" name="store_pricing[${store.id}][price]" step="0.01" min="0" value="${storePrice}">
-                                                </div>
+                                                ${renderStorePriceInputs(storePrice, packageQuantity, packageUnit, `store_pricing[${store.id}][price]`)}
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm">
@@ -1357,8 +1513,27 @@ function initializeSimplePricing() {
         });
 
         accordionContainer.innerHTML = html;
+        attachUnitPriceSync(accordionContainer);
         container.innerHTML = "";
         container.appendChild(accordionContainer);
+        const refreshSimpleUnitPrices = () => {
+            refreshUnitPriceRows(
+                accordionContainer,
+                document.querySelector('[name="net_quantity"]')?.value || "",
+                document.querySelector('[name="net_quantity_unit"]')?.value ||
+                    "",
+            );
+        };
+        [
+            document.querySelector('[name="net_quantity"]'),
+            document.querySelector('[name="net_quantity_unit"]'),
+        ].forEach((field) => {
+            if (!field || field.dataset.unitPriceRefresh) return;
+            field.dataset.unitPriceRefresh = "true";
+            field.addEventListener("input", refreshSimpleUnitPrices);
+            field.addEventListener("change", refreshSimpleUnitPrices);
+        });
+        refreshSimpleUnitPrices();
 
         // Add event listeners for trash buttons
         const removeStoreCard = document.getElementsByClassName(
@@ -1398,6 +1573,7 @@ function updateVariantPricing() {
         }
 
         let html = "";
+        attachUnitPriceSync(container);
         stores.forEach((store, index) => {
             html += `
                 <div class="accordion-item store-pricing-card" data-store-id="${store.id}">
@@ -1607,10 +1783,7 @@ function updateVariantPricing() {
                                                             .join("")}
                                                     </td>
                                                     <td>
-                                                        <div class="input-group input-group-sm">
-                                                            <span class="input-group-text">${currencySymbol}</span>
-                                                            <input type="number" class="form-control store-price" name="variant_pricing[${store.id}][${variantId}][price]" step="0.01" min="0" value="${storePrice}">
-                                                        </div>
+                                                        ${renderStorePriceInputs(storePrice, variant.net_quantity, variant.net_quantity_unit, `variant_pricing[${store.id}][${variantId}][price]`)}
                                                     </td>
                                                     <td>
                                                         <div class="input-group input-group-sm">
@@ -1679,7 +1852,7 @@ function addVariantInputsToForm() {
             title: variant.title || "",
             weight: variant.weight || "",
             net_quantity: variant.net_quantity || "",
-            net_quantity_unit: variant.net_quantity_unit || "g",
+            net_quantity_unit: variant.net_quantity_unit || "",
             breadth: variant.breadth || "",
             length: variant.length || "",
             height: variant.height || "",
