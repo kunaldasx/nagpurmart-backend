@@ -816,6 +816,8 @@ class ProductService
                 'special_price' => !empty($pricing['special_price']) ? $pricing['special_price'] : $pricing['price'],
                 'original_special_price' => !empty($pricing['special_price']) ? $pricing['special_price'] : $pricing['price'],
                 'wholesale_price' => $pricing['wholesale_price'] ?? null,
+                'unit_price_basis_quantity' => $pricing['unit_price_basis_quantity'] ?? null,
+                'unit_price_basis_unit' => $pricing['unit_price_basis_unit'] ?? null,
                 'cost' => $pricing['cost'] ?? null,
                 'stock' => $pricing['stock'] ?? 0,
             ]);

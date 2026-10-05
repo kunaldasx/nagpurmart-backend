@@ -80,7 +80,7 @@ class StoreUpdateProductRequest extends FormRequest
             'custom_sections_json' => 'nullable|json',
             'weight' => 'nullable|min:0',
             'net_quantity' => 'nullable|numeric|min:0.001',
-            'net_quantity_unit' => 'required_with:net_quantity|nullable|in:g,kg,ml,l,item',
+            'net_quantity_unit' => 'required_with:net_quantity|nullable|string|max:30',
             'height' => 'nullable|min:0',
             'length' => 'nullable|min:0',
             'breadth' => 'nullable|min:0',
@@ -321,8 +321,8 @@ class StoreUpdateProductRequest extends FormRequest
             $validator->errors()->add('variants_json', $variant['title'] . ' net quantity must be at least 0.001.');
             return true;
         }
-        if (!empty($variant['net_quantity']) && !in_array($variant['net_quantity_unit'] ?? '', ['g', 'kg', 'ml', 'l', 'item'], true)) {
-            $validator->errors()->add('variants_json', $variant['title'] . ' net quantity unit is invalid.');
+        if (!empty($variant['net_quantity']) && (empty($variant['net_quantity_unit']) || !is_string($variant['net_quantity_unit']) || mb_strlen($variant['net_quantity_unit']) > 30)) {
+            $validator->errors()->add('variants_json', $variant['title'] . ' net quantity unit is required and may not exceed 30 characters.');
             return true;
         }
         if (empty($variant['height'])) {
@@ -487,6 +487,16 @@ class StoreUpdateProductRequest extends FormRequest
                 'condition' => isset($row['wholesale_price']) && $row['wholesale_price'] !== '' &&
                     (!is_numeric($row['wholesale_price']) || $row['wholesale_price'] < 0),
                 'message' => __('labels.price_required_numeric'),
+            ],
+            'unit_price_basis_quantity' => [
+                'condition' => isset($row['unit_price_basis_quantity']) && $row['unit_price_basis_quantity'] !== '' &&
+                    (!is_numeric($row['unit_price_basis_quantity']) || $row['unit_price_basis_quantity'] <= 0),
+                'message' => __('labels.price_required_numeric'),
+            ],
+            'unit_price_basis_unit' => [
+                'condition' => isset($row['unit_price_basis_unit']) &&
+                    (!is_string($row['unit_price_basis_unit']) || mb_strlen($row['unit_price_basis_unit']) > 30),
+                'message' => __('labels.validation_failed'),
             ],
             'cost' => [
                 'condition' => !isset($row['cost']) || !is_numeric($row['cost']),

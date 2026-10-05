@@ -841,19 +841,70 @@ function generateSKU(attrs) {
 
 const attrIdMap = {};
 
-function getUnitPriceDetails(quantity, unit) {
-    const amount = Number(quantity);
-    const normalizedUnit = String(unit || "").toLowerCase();
-    if (!Number.isFinite(amount) || amount <= 0) return null;
-
-    const units = {
-        g: { divisor: amount / 100, basis: "100 g" },
-        kg: { divisor: amount * 10, basis: "100 g" },
-        ml: { divisor: amount / 100, basis: "100 ml" },
-        l: { divisor: amount * 10, basis: "100 ml" },
-        item: { divisor: amount, basis: "1 item" },
+function normalizeUnit(unit) {
+    const normalized = String(unit || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+    const aliases = {
+        gm: "g",
+        gram: "g",
+        grams: "g",
+        kilogram: "kg",
+        kilograms: "kg",
+        milliliter: "ml",
+        milliliters: "ml",
+        millilitre: "ml",
+        millilitres: "ml",
+        liter: "l",
+        liters: "l",
+        litre: "l",
+        litres: "l",
+        pc: "piece",
+        pcs: "piece",
+        pieces: "piece",
+        item: "piece",
+        items: "piece",
     };
-    return units[normalizedUnit] || null;
+    return aliases[normalized] || normalized;
+}
+
+function getComparableQuantity(quantity, unit) {
+    const amount = Number(quantity);
+    const normalizedUnit = normalizeUnit(unit);
+    if (!Number.isFinite(amount) || amount <= 0 || !normalizedUnit) return null;
+
+    if (normalizedUnit === "kg") return { amount: amount * 1000, unit: "g" };
+    if (normalizedUnit === "g") return { amount, unit: "g" };
+    if (normalizedUnit === "l") return { amount: amount * 1000, unit: "ml" };
+    if (normalizedUnit === "ml") return { amount, unit: "ml" };
+    return { amount, unit: normalizedUnit };
+}
+
+function getUnitPriceDetails(
+    quantity,
+    unit,
+    basisQuantity = "",
+    basisUnit = "",
+) {
+    const packageValue = getComparableQuantity(quantity, unit);
+    const basisValue = getComparableQuantity(basisQuantity, basisUnit);
+    if (!packageValue || !basisValue || packageValue.unit !== basisValue.unit)
+        return null;
+
+    return {
+        divisor: packageValue.amount / basisValue.amount,
+        basis: `${basisQuantity} ${basisUnit}`,
+    };
+}
+
+function getDefaultUnitPriceBasis(unit) {
+    const normalizedUnit = normalizeUnit(unit);
+    if (normalizedUnit === "g" || normalizedUnit === "kg")
+        return { quantity: 100, unit: "g" };
+    if (normalizedUnit === "ml" || normalizedUnit === "l")
+        return { quantity: 100, unit: "ml" };
+    return { quantity: 1, unit: String(unit || "") };
 }
 
 function syncVariantPackageSize(variant) {
@@ -875,9 +926,7 @@ function syncVariantPackageSize(variant) {
     const [attributeId, valueId] = packageAttribute;
     const attributeName = attrIdMap[attributeId]?.name || "";
     const valueName = attrIdMap[attributeId]?.values[valueId] || "";
-    const valueMatch = String(valueName).match(
-        /(\d+(?:[.,]\d+)?)\s*(kg|ml|g|l|items?|pcs?)?/i,
-    );
+    const valueMatch = String(valueName).match(/(\d+(?:[.,]\d+)?)\s*(.*)$/i);
     if (!valueMatch) {
         if (variant._netQuantityFromAttribute) {
             variant.net_quantity = "";
@@ -887,12 +936,11 @@ function syncVariantPackageSize(variant) {
         return;
     }
 
-    let unit = valueMatch[2]?.toLowerCase();
-    if (!unit) {
+    let unit = valueMatch[2]?.trim();
+    if (!unit)
         unit = String(attributeName)
-            .match(/\b(kg|ml|g|l|items?|pcs?)\b/i)?.[1]
-            ?.toLowerCase();
-    }
+            .match(/\(([^)]+)\)/)?.[1]
+            ?.trim();
     if (!unit) {
         if (variant._netQuantityFromAttribute) {
             variant.net_quantity = "";
@@ -901,15 +949,34 @@ function syncVariantPackageSize(variant) {
         }
         return;
     }
-    if (unit.startsWith("item") || unit.startsWith("pc")) unit = "item";
-
     variant.net_quantity = Number(valueMatch[1].replace(",", "."));
     variant.net_quantity_unit = unit;
     variant._netQuantityFromAttribute = true;
 }
 
-function renderStorePriceInputs(price, quantity, unit, name) {
-    const details = getUnitPriceDetails(quantity, unit);
+function renderStorePriceInputs(
+    price,
+    quantity,
+    unit,
+    name,
+    basisQuantity = "",
+    basisUnit = "",
+) {
+    const defaultBasis =
+        basisQuantity && basisUnit
+            ? { quantity: basisQuantity, unit: basisUnit }
+            : getDefaultUnitPriceBasis(unit);
+    const details = getUnitPriceDetails(
+        quantity,
+        unit,
+        defaultBasis.quantity,
+        defaultBasis.unit,
+    );
+    const basisQuantityName = name.replace(
+        /\[price\]$/,
+        "[unit_price_basis_quantity]",
+    );
+    const basisUnitName = name.replace(/\[price\]$/, "[unit_price_basis_unit]");
     const parsedPrice = Number(price);
     const unitPrice =
         details && Number.isFinite(parsedPrice) && parsedPrice > 0
@@ -921,33 +988,42 @@ function renderStorePriceInputs(price, quantity, unit, name) {
             <span class="input-group-text">${currencySymbol}</span>
             <input type="number" class="form-control store-price" name="${name}" step="0.01" min="0" value="${price}">
         </div>
-        <label class="form-label small mt-2 mb-1">Unit price <span class="store-unit-price-basis">${details ? `/ ${details.basis}` : "(enter pack size)"}</span></label>
+        <label class="form-label small mt-2 mb-1">Unit price per</label>
         <div class="input-group input-group-sm">
+            <input type="number" class="form-control store-unit-basis-quantity" name="${basisQuantityName}" min="0.001" step="0.001" value="${defaultBasis.quantity}" aria-label="Unit price basis quantity">
+            <input type="text" class="form-control store-unit-basis-unit" name="${basisUnitName}" value="${defaultBasis.unit}" placeholder="unit" aria-label="Unit price basis unit" maxlength="30">
+        </div>
+        <div class="input-group input-group-sm mt-1">
             <span class="input-group-text">${currencySymbol}</span>
-            <input type="number" class="form-control store-unit-price" step="0.01" min="0" value="${unitPrice}" data-unit-divisor="${details?.divisor || ""}" ${details ? "" : "disabled"}>
+            <input type="number" class="form-control store-unit-price" step="0.01" min="0" value="${unitPrice}" data-unit-divisor="${details?.divisor || ""}" ${details ? "" : "disabled"} aria-label="Price per selected unit">
         </div>
     `;
 }
 
 function refreshUnitPriceRows(container, quantity, unit) {
-    const details = getUnitPriceDetails(quantity, unit);
     container.querySelectorAll("tr").forEach((row) => {
         const priceInput = row.querySelector(".store-price");
         const unitInput = row.querySelector(".store-unit-price");
-        const unitBasis = row.querySelector(".store-unit-price-basis");
-        if (!priceInput || !unitInput || !unitBasis) return;
+        const basisQuantity = row.querySelector(".store-unit-basis-quantity");
+        const basisUnit = row.querySelector(".store-unit-basis-unit");
+        if (!priceInput || !unitInput || !basisQuantity || !basisUnit) return;
+
+        const details = getUnitPriceDetails(
+            quantity,
+            unit,
+            basisQuantity.value,
+            basisUnit.value,
+        );
 
         if (!details) {
             unitInput.disabled = true;
             unitInput.value = "";
             unitInput.dataset.unitDivisor = "";
-            unitBasis.textContent = "(enter pack size)";
             return;
         }
 
         unitInput.disabled = false;
         unitInput.dataset.unitDivisor = details.divisor;
-        unitBasis.textContent = `/ ${details.basis}`;
         const price = Number(priceInput.value);
         unitInput.value =
             Number.isFinite(price) && price > 0
@@ -961,14 +1037,43 @@ function attachUnitPriceSync(container) {
     container.dataset.unitPriceSync = "true";
     container.addEventListener("input", (event) => {
         const input = event.target;
-        if (!input.matches(".store-price, .store-unit-price")) return;
+        if (
+            !input.matches(
+                ".store-price, .store-unit-price, .store-unit-basis-quantity, .store-unit-basis-unit",
+            )
+        )
+            return;
 
         const row = input.closest("tr");
         const unitInput = row?.querySelector(".store-unit-price");
         const priceInput = row?.querySelector(".store-price");
-        if (!unitInput || !priceInput) return;
+        const basisQuantity = row?.querySelector(".store-unit-basis-quantity");
+        const basisUnit = row?.querySelector(".store-unit-basis-unit");
+        if (!unitInput || !priceInput || !basisQuantity || !basisUnit) return;
 
-        const divisor = Number(unitInput.dataset.unitDivisor);
+        const quantity = row.closest("tr")?.dataset.packageQuantity || "";
+        const packageUnit = row.closest("tr")?.dataset.packageUnit || "";
+        const details = getUnitPriceDetails(
+            quantity,
+            packageUnit,
+            basisQuantity.value,
+            basisUnit.value,
+        );
+        const divisor = details?.divisor || 0;
+        if (input === basisQuantity || input === basisUnit) {
+            unitInput.disabled = !details;
+            unitInput.dataset.unitDivisor = details?.divisor || "";
+            if (!details) {
+                unitInput.value = "";
+                return;
+            }
+            const price = Number(priceInput.value);
+            unitInput.value =
+                Number.isFinite(price) && price >= 0
+                    ? (price / details.divisor).toFixed(2)
+                    : "";
+            return;
+        }
         const value = Number(input.value);
         if (!input.value.trim()) {
             (input === priceInput ? unitInput : priceInput).value = "";
@@ -1418,6 +1523,8 @@ function initializeSimplePricing() {
         stores.forEach((store, index) => {
             // Get store pricing data if available
             let storePrice = "";
+            let storeUnitBasisQuantity = "";
+            let storeUnitBasisUnit = "";
             let storeSpecialPrice = "";
             let storeCost = "";
             let storeWholesalePrice = "";
@@ -1440,6 +1547,10 @@ function initializeSimplePricing() {
 
                     if (storePricing) {
                         storePrice = storePricing.price || "";
+                        storeUnitBasisQuantity =
+                            storePricing.unit_price_basis_quantity || "";
+                        storeUnitBasisUnit =
+                            storePricing.unit_price_basis_unit || "";
                         storeSpecialPrice = storePricing.special_price || "";
                         storeWholesalePrice =
                             storePricing.wholesale_price || "";
@@ -1464,7 +1575,7 @@ function initializeSimplePricing() {
                             <div class="table-responsive">
                                 <table class="table table-bordered table-sm">
                                     <thead class="table-light">
-                                        <tr>
+                                        <tr data-package-quantity="${packageQuantity}" data-package-unit="${packageUnit}">
                                             <th>Price</th>
                                             <th>Special Price</th>
                                             <th>Wholesale Price</th>
@@ -1476,7 +1587,7 @@ function initializeSimplePricing() {
                                     <tbody>
                                         <tr>
                                             <td>
-                                                ${renderStorePriceInputs(storePrice, packageQuantity, packageUnit, `store_pricing[${store.id}][price]`)}
+                                                ${renderStorePriceInputs(storePrice, packageQuantity, packageUnit, `store_pricing[${store.id}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit)}
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm">
@@ -1605,6 +1716,8 @@ function updateVariantPricing() {
                                             .map((variant) => {
                                                 const variantId = variant.id;
                                                 let storePrice = "";
+                                                let storeUnitBasisQuantity = "";
+                                                let storeUnitBasisUnit = "";
                                                 let storeSpecialPrice = "";
                                                 let storeCost = "";
                                                 let storeWholesalePrice = "";
@@ -1635,6 +1748,12 @@ function updateVariantPricing() {
                                                         if (storePricing) {
                                                             storePrice =
                                                                 storePricing.price ||
+                                                                "";
+                                                            storeUnitBasisQuantity =
+                                                                storePricing.unit_price_basis_quantity ||
+                                                                "";
+                                                            storeUnitBasisUnit =
+                                                                storePricing.unit_price_basis_unit ||
                                                                 "";
                                                             storeSpecialPrice =
                                                                 storePricing.special_price ||
@@ -1726,6 +1845,12 @@ function updateVariantPricing() {
                                                                     storePrice =
                                                                         storePricing.price ||
                                                                         "";
+                                                                    storeUnitBasisQuantity =
+                                                                        storePricing.unit_price_basis_quantity ||
+                                                                        "";
+                                                                    storeUnitBasisUnit =
+                                                                        storePricing.unit_price_basis_unit ||
+                                                                        "";
                                                                     storeSpecialPrice =
                                                                         storePricing.special_price ||
                                                                         "";
@@ -1748,7 +1873,7 @@ function updateVariantPricing() {
                                                 }
 
                                                 return `
-                                                <tr>
+                                                <tr data-package-quantity="${variant.net_quantity || ""}" data-package-unit="${variant.net_quantity_unit || ""}">
                                                     <td>
                                                         ${Object.entries(
                                                             variant.attributes,
@@ -1783,7 +1908,7 @@ function updateVariantPricing() {
                                                             .join("")}
                                                     </td>
                                                     <td>
-                                                        ${renderStorePriceInputs(storePrice, variant.net_quantity, variant.net_quantity_unit, `variant_pricing[${store.id}][${variantId}][price]`)}
+                                                        ${renderStorePriceInputs(storePrice, variant.net_quantity, variant.net_quantity_unit, `variant_pricing[${store.id}][${variantId}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit)}
                                                     </td>
                                                     <td>
                                                         <div class="input-group input-group-sm">

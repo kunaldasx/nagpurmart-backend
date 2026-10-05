@@ -39,21 +39,37 @@ class ProductVariantResource extends JsonResource
         $unitPriceBasis = null;
         $quantity = (float)($this->net_quantity ?? 0);
         $unit = $this->net_quantity_unit;
-        $unitDivisor = match ($unit) {
-            'g', 'ml' => $quantity / 100,
-            'kg', 'l' => $quantity * 10,
-            'item' => $quantity,
-            default => 0,
+        $basisQuantity = (float)($storePricing?->unit_price_basis_quantity ?? 0);
+        $basisUnit = $storePricing?->unit_price_basis_unit;
+        if ($basisQuantity <= 0 || !$basisUnit) {
+            $normalizedUnit = strtolower(trim((string)$unit));
+            $basisQuantity = in_array($normalizedUnit, ['g', 'kg'], true)
+                ? 100
+                : (in_array($normalizedUnit, ['ml', 'l'], true) ? 100 : 1);
+            $basisUnit = in_array($normalizedUnit, ['kg'], true)
+                ? 'g'
+                : (in_array($normalizedUnit, ['l'], true) ? 'ml' : ($unit ?: null));
+        }
+        $normalizeMeasure = static function (float $amount, ?string $measureUnit): ?array {
+            $normalized = strtolower(trim((string)$measureUnit));
+            $aliases = ['gm' => 'g', 'gram' => 'g', 'grams' => 'g', 'kilogram' => 'kg', 'kilograms' => 'kg', 'liter' => 'l', 'litre' => 'l', 'liters' => 'l', 'litres' => 'l', 'milliliter' => 'ml', 'millilitre' => 'ml', 'milliliters' => 'ml', 'millilitres' => 'ml', 'pc' => 'piece', 'pcs' => 'piece', 'pieces' => 'piece', 'items' => 'piece', 'item' => 'piece'];
+            $normalized = $aliases[$normalized] ?? $normalized;
+            if ($normalized === 'kg') return ['amount' => $amount * 1000, 'unit' => 'g'];
+            if ($normalized === 'g') return ['amount' => $amount, 'unit' => 'g'];
+            if ($normalized === 'l') return ['amount' => $amount * 1000, 'unit' => 'ml'];
+            if ($normalized === 'ml') return ['amount' => $amount, 'unit' => 'ml'];
+            return $normalized !== '' ? ['amount' => $amount, 'unit' => $normalized] : null;
         };
+        $packageMeasure = $normalizeMeasure($quantity, $unit);
+        $basisMeasure = $normalizeMeasure($basisQuantity, $basisUnit);
+        $unitDivisor = $packageMeasure && $basisMeasure && $packageMeasure['unit'] === $basisMeasure['unit']
+            ? $packageMeasure['amount'] / $basisMeasure['amount']
+            : 0;
         if ($quantity > 0 && $unitDivisor > 0 && $storePricing) {
             $price = $storePricing->getPriceForMode();
             if ($price !== null) {
                 $unitPrice = round($price / $unitDivisor, 2);
-                $unitPriceBasis = match ($unit) {
-                    'g', 'kg' => '100 g',
-                    'ml', 'l' => '100 ml',
-                    'item' => '1 item',
-                };
+                $unitPriceBasis = $basisQuantity . ' ' . $basisUnit;
             }
         }
 

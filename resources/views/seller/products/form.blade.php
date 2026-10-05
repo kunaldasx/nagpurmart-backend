@@ -431,14 +431,9 @@
                                         <div class="input-group">
                                             <input type="number" min="0.001" step="0.001" class="form-control" name="net_quantity"
                                                    value="{{ $singleProductVariant->net_quantity ?? '' }}" placeholder="e.g. 1">
-                                            <select class="form-select" name="net_quantity_unit" aria-label="Net quantity unit" style="max-width: 110px">
-                                                <option value="" {{ empty($singleProductVariant?->net_quantity) ? 'selected' : '' }}>Unit</option>
-                                                @foreach(['g' => 'g', 'kg' => 'kg', 'ml' => 'ml', 'l' => 'L', 'item' => 'item'] as $unit => $label)
-                                                    <option value="{{ $unit }}" {{ ($singleProductVariant->net_quantity_unit ?? '') === $unit ? 'selected' : '' }}>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
+                                            <input type="text" class="form-control" name="net_quantity_unit" value="{{ $singleProductVariant->net_quantity_unit ?? '' }}" placeholder="g, ml, piece, bottle" aria-label="Pack size unit" maxlength="30" style="max-width: 180px">
                                         </div>
-                                        <small class="form-hint">Enter the amount and unit, for example 1 L or 200 g. Unit price is calculated automatically.</small>
+                                        <small class="form-hint">Enter any unit, for example 1 L, 200 g, or 1 bottle.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">

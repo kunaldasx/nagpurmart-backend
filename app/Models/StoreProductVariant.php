@@ -20,12 +20,15 @@ class StoreProductVariant extends Model
         'wholesale_price',
         'original_special_price',
         'special_price_ends_at',
+        'unit_price_basis_quantity',
+        'unit_price_basis_unit',
         'cost',
         'stock'
     ];
     protected $casts = [
         'original_special_price' => 'decimal:2',
         'wholesale_price' => 'decimal:2',
+        'unit_price_basis_quantity' => 'decimal:3',
         'special_price_ends_at' => 'datetime',
     ];
     protected $appends = ['price_exclude_tax','special_price_exclude_tax','wholesale_price_exclude_tax'];
