@@ -17,6 +17,8 @@ class SellerStoreProductVariantResource extends JsonResource
             'price' => $this->price,
             'special_price' => $this->special_price,
             'wholesale_price' => $this->wholesale_price,
+            'unit_price_basis_quantity' => $this->unit_price_basis_quantity,
+            'unit_price_basis_unit' => $this->unit_price_basis_unit,
             'cost' => $this->cost,
             'stock' => $this->stock,
         ];
