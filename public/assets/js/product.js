@@ -961,6 +961,7 @@ function renderStorePriceInputs(
     name,
     basisQuantity = "",
     basisUnit = "",
+    specialPrice = "",
 ) {
     const defaultBasis =
         basisQuantity && basisUnit
@@ -977,7 +978,8 @@ function renderStorePriceInputs(
         "[unit_price_basis_quantity]",
     );
     const basisUnitName = name.replace(/\[price\]$/, "[unit_price_basis_unit]");
-    const parsedPrice = Number(price);
+    const effectivePrice = Number(specialPrice) > 0 ? specialPrice : price;
+    const parsedPrice = Number(effectivePrice);
     const unitPrice =
         details && Number.isFinite(parsedPrice) && parsedPrice > 0
             ? (parsedPrice / details.divisor).toFixed(2)
@@ -1003,6 +1005,7 @@ function renderStorePriceInputs(
 function refreshUnitPriceRows(container, quantity, unit) {
     container.querySelectorAll("tr").forEach((row) => {
         const priceInput = row.querySelector(".store-price");
+        const specialPriceInput = row.querySelector(".store-special-price");
         const unitInput = row.querySelector(".store-unit-price");
         const basisQuantity = row.querySelector(".store-unit-basis-quantity");
         const basisUnit = row.querySelector(".store-unit-basis-unit");
@@ -1024,7 +1027,9 @@ function refreshUnitPriceRows(container, quantity, unit) {
 
         unitInput.disabled = false;
         unitInput.dataset.unitDivisor = details.divisor;
-        const price = Number(priceInput.value);
+        const specialPrice = Number(specialPriceInput?.value || 0);
+        const price =
+            specialPrice > 0 ? specialPrice : Number(priceInput.value);
         unitInput.value =
             Number.isFinite(price) && price > 0
                 ? (price / details.divisor).toFixed(2)
@@ -1039,7 +1044,7 @@ function attachUnitPriceSync(container) {
         const input = event.target;
         if (
             !input.matches(
-                ".store-price, .store-unit-price, .store-unit-basis-quantity, .store-unit-basis-unit",
+                ".store-price, .store-special-price, .store-unit-price, .store-unit-basis-quantity, .store-unit-basis-unit",
             )
         )
             return;
@@ -1047,6 +1052,7 @@ function attachUnitPriceSync(container) {
         const row = input.closest("tr");
         const unitInput = row?.querySelector(".store-unit-price");
         const priceInput = row?.querySelector(".store-price");
+        const specialPriceInput = row?.querySelector(".store-special-price");
         const basisQuantity = row?.querySelector(".store-unit-basis-quantity");
         const basisUnit = row?.querySelector(".store-unit-basis-unit");
         if (!unitInput || !priceInput || !basisQuantity || !basisUnit) return;
@@ -1067,7 +1073,9 @@ function attachUnitPriceSync(container) {
                 unitInput.value = "";
                 return;
             }
-            const price = Number(priceInput.value);
+            const specialPrice = Number(specialPriceInput?.value || 0);
+            const price =
+                specialPrice > 0 ? specialPrice : Number(priceInput.value);
             unitInput.value =
                 Number.isFinite(price) && price >= 0
                     ? (price / details.divisor).toFixed(2)
@@ -1075,12 +1083,20 @@ function attachUnitPriceSync(container) {
             return;
         }
         const value = Number(input.value);
+        const activePriceInput =
+            Number(specialPriceInput?.value || 0) > 0
+                ? specialPriceInput
+                : priceInput;
         if (!input.value.trim()) {
-            (input === priceInput ? unitInput : priceInput).value = "";
+            if (input === unitInput) {
+                activePriceInput.value = "";
+            } else {
+                unitInput.value = "";
+            }
             return;
         }
         if (
-            input === priceInput &&
+            (input === priceInput || input === specialPriceInput) &&
             (!Number.isFinite(divisor) || divisor <= 0)
         ) {
             return;
@@ -1092,16 +1108,18 @@ function attachUnitPriceSync(container) {
         ) {
             if (!input.value) {
                 const pairedInput =
-                    input === priceInput ? unitInput : priceInput;
+                    input === unitInput ? activePriceInput : unitInput;
                 pairedInput.value = "";
             }
             return;
         }
 
         if (input === unitInput) {
-            priceInput.value = (value * divisor).toFixed(2);
+            activePriceInput.value = (value * divisor).toFixed(2);
         } else {
-            unitInput.value = (value / divisor).toFixed(2);
+            const specialPrice = Number(specialPriceInput?.value || 0);
+            const effectivePrice = specialPrice > 0 ? specialPrice : value;
+            unitInput.value = (effectivePrice / divisor).toFixed(2);
         }
     });
 }
@@ -1575,7 +1593,7 @@ function initializeSimplePricing() {
                             <div class="table-responsive">
                                 <table class="table table-bordered table-sm">
                                     <thead class="table-light">
-                                        <tr data-package-quantity="${packageQuantity}" data-package-unit="${packageUnit}">
+                                        <tr>
                                             <th>Price</th>
                                             <th>Special Price</th>
                                             <th>Wholesale Price</th>
@@ -1587,7 +1605,7 @@ function initializeSimplePricing() {
                                     <tbody>
                                         <tr>
                                             <td>
-                                                ${renderStorePriceInputs(storePrice, packageQuantity, packageUnit, `store_pricing[${store.id}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit)}
+                                                ${renderStorePriceInputs(storePrice, packageQuantity, packageUnit, `store_pricing[${store.id}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit, storeSpecialPrice)}
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm">
@@ -1701,7 +1719,7 @@ function updateVariantPricing() {
                             <div class="table-responsive">
                                 <table class="table table-bordered table-sm">
                                     <thead class="table-light">
-                                        <tr>
+                                        <tr data-package-quantity="${packageQuantity}" data-package-unit="${packageUnit}">
                                             <th>Variant</th>
                                             <th>Price</th>
                                             <th>Special Price</th>
@@ -1908,7 +1926,7 @@ function updateVariantPricing() {
                                                             .join("")}
                                                     </td>
                                                     <td>
-                                                        ${renderStorePriceInputs(storePrice, variant.net_quantity, variant.net_quantity_unit, `variant_pricing[${store.id}][${variantId}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit)}
+                                                        ${renderStorePriceInputs(storePrice, variant.net_quantity, variant.net_quantity_unit, `variant_pricing[${store.id}][${variantId}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit, storeSpecialPrice)}
                                                     </td>
                                                     <td>
                                                         <div class="input-group input-group-sm">
