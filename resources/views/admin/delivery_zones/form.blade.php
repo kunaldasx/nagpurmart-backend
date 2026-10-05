@@ -44,6 +44,29 @@
     </div>
 
     <!-- Page body -->
+    <div class="page-body">
+        <div class="row row-cards">
+            <div class="col-12">
+                @if(!$googleApiKey)
+                    <div class="alert alert-danger alert-dismissible" role="alert">
+                        <div class="alert-icon">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="icon alert-icon icon-2"
+                            >
+                                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/>
+                                <path d="M12 8v4"/>
+                                <path d="M12 16h.01"/>
+                            </svg>
+                        </div>
                         <div>
                             <h4 class="alert-heading"><a
                                     href="{{route('admin.settings.show', ['setting' => \App\Enums\SettingTypeEnum::AUTHENTICATION()])}}"
@@ -228,30 +251,6 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6 d-none">
-                                    <div class="mb-3">
-                                        <label for="rush-delivery-time-per-km" class="form-label">
-                                            {{ __('labels.rush_delivery_time_per_km') }}
-                                            <span data-bs-toggle="tooltip" data-bs-placement="right"
-                                                  title="{{__('messages.rush_delivery_time_per_km_info_message')}}"><svg
-                                                    xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    class="icon icon-tabler icons-tabler-outline icon-tabler-help-octagon"><path
-                                                        stroke="none" d="M0 0h24v24H0z" fill="none"/><path
-                                                        d="M12.802 2.165l5.575 2.389c.48 .206 .863 .589 1.07 1.07l2.388 5.574c.22 .512 .22 1.092 0 1.604l-2.389 5.575c-.206 .48 -.589 .863 -1.07 1.07l-5.574 2.388c-.512 .22 -1.092 .22 -1.604 0l-5.575 -2.389a2.036 2.036 0 0 1 -1.07 -1.07l-2.388 -5.574a2.036 2.036 0 0 1 0 -1.604l2.389 -5.575c.206 -.48 .589 -.863 1.07 -1.07l5.574 -2.388a2.036 2.036 0 0 1 1.604 0z"/><path
-                                                        d="M12 16v.01"/><path
-                                                        d="M12 13a2 2 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483"/></svg></span>
-                                        </label>
-                                        <div class="input-group mb-2">
-                                            <input type="number" class="form-control" name="rush_delivery_time_per_km"
-                                                   id="rush-delivery-time-per-km"
-                                                   placeholder="e.g. 3"
-                                                   value="{{$deliveryZone->rush_delivery_time_per_km ?? ''}}" min="0">
-                                            <span class="input-group-text"> {{__('labels.minutes')}} </span>
-                                        </div>
-                                    </div>
-                                </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="rush-delivery-charges" class="form-label">
