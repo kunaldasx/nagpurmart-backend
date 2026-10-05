@@ -878,6 +878,9 @@ function getComparableQuantity(quantity, unit) {
     if (normalizedUnit === "g") return { amount, unit: "g" };
     if (normalizedUnit === "l") return { amount: amount * 1000, unit: "ml" };
     if (normalizedUnit === "ml") return { amount, unit: "ml" };
+    if (normalizedUnit === "dozen" || normalizedUnit === "dozens") {
+        return { amount: amount * 12, unit: "piece" };
+    }
     return { amount, unit: normalizedUnit };
 }
 
@@ -904,6 +907,8 @@ function getDefaultUnitPriceBasis(unit) {
         return { quantity: 100, unit: "g" };
     if (normalizedUnit === "ml" || normalizedUnit === "l")
         return { quantity: 100, unit: "ml" };
+    if (normalizedUnit === "dozen" || normalizedUnit === "dozens")
+        return { quantity: 1, unit: "piece" };
     return { quantity: 1, unit: String(unit || "") };
 }
 
@@ -1603,7 +1608,7 @@ function initializeSimplePricing() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
+                                        <tr data-package-quantity="${packageQuantity}" data-package-unit="${packageUnit}">
                                             <td>
                                                 ${renderStorePriceInputs(storePrice, packageQuantity, packageUnit, `store_pricing[${store.id}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit, storeSpecialPrice)}
                                             </td>

@@ -48,7 +48,7 @@ class ProductVariantResource extends JsonResource
                 : (in_array($normalizedUnit, ['ml', 'l'], true) ? 100 : 1);
             $basisUnit = in_array($normalizedUnit, ['kg'], true)
                 ? 'g'
-                : (in_array($normalizedUnit, ['l'], true) ? 'ml' : ($unit ?: null));
+                : (in_array($normalizedUnit, ['l'], true) ? 'ml' : (in_array($normalizedUnit, ['dozen', 'dozens'], true) ? 'piece' : ($unit ?: null)));
         }
         $normalizeMeasure = static function (float $amount, ?string $measureUnit): ?array {
             $normalized = strtolower(trim((string)$measureUnit));
@@ -58,6 +58,7 @@ class ProductVariantResource extends JsonResource
             if ($normalized === 'g') return ['amount' => $amount, 'unit' => 'g'];
             if ($normalized === 'l') return ['amount' => $amount * 1000, 'unit' => 'ml'];
             if ($normalized === 'ml') return ['amount' => $amount, 'unit' => 'ml'];
+            if ($normalized === 'dozen' || $normalized === 'dozens') return ['amount' => $amount * 12, 'unit' => 'piece'];
             return $normalized !== '' ? ['amount' => $amount, 'unit' => $normalized] : null;
         };
         $packageMeasure = $normalizeMeasure($quantity, $unit);
