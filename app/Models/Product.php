@@ -192,10 +192,12 @@ class Product extends Model implements HasMedia
         if ($distance === null) {
             return null;
         }
-        // Calculate estimated time (in minutes)
-        $estimatedTime = $basePrepTime + ($distance * $deliveryTimePerKm) + $bufferTime;
-        // Round to the nearest minute
-        return ceil($estimatedTime);
+        return DeliveryZoneService::calculateEstimatedDeliveryMinutes(
+            (float) $distance,
+            (float) $deliveryTimePerKm,
+            (int) $bufferTime,
+            (int) $basePrepTime,
+        );
     }
 
     /**

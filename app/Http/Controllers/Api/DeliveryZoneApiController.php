@@ -180,14 +180,12 @@ class DeliveryZoneApiController extends Controller
     }
 
     /**
-     * Estimate delivery time for a given store and user coordinates.
-     *
-    * Formula used: 5 minutes fixed preparation + configured additional delay + 3 minutes per km (rounded up by km).
-     * Returns time only if the store can deliver to the provided coordinates.
+    * Estimate delivery time using the same route and ETA formula as checkout.
      */
     #[QueryParameter('latitude', description: 'Latitude coordinate of the customer.', type: 'float', example: 23.11684540)]
     #[QueryParameter('longitude', description: 'Longitude coordinate of the customer.', type: 'float', example: 70.02805670)]
     #[QueryParameter('store_id', description: 'Optional store id. If omitted, nearest available store will be picked.', type: 'int', example: 1)]
+    #[QueryParameter('store_ids[]', description: 'Optional cart store IDs. Pass all selected cart stores to match the checkout ETA for a multi-store cart.', type: 'array', example: [1, 2])]
     public function estimateDeliveryTime(Request $request): JsonResponse
     {
         $request->validate([
@@ -195,6 +193,8 @@ class DeliveryZoneApiController extends Controller
             'longitude' => 'nullable|numeric|between:-180,180',
             'address_id' => 'nullable|integer|exists:addresses,id',
             'store_id' => 'nullable|integer|exists:stores,id',
+            'store_ids' => 'nullable|array|min:1',
+            'store_ids.*' => 'required|integer|distinct|exists:stores,id',
         ], [
             'latitude.numeric' => __('messages.latitude_numeric'),
             'longitude.numeric' => __('messages.longitude_numeric'),
@@ -204,6 +204,7 @@ class DeliveryZoneApiController extends Controller
         ]);
 
         $storeId = $request->input('store_id');
+        $requestedStoreIds = array_map('intval', (array) $request->input('store_ids', []));
 
         $latitude = $request->input('latitude');
         $longitude = $request->input('longitude');
@@ -233,8 +234,14 @@ class DeliveryZoneApiController extends Controller
 
         $selectedStore = null;
 
-        // If store_id provided, use it
-        if (!empty($storeId)) {
+        // Cart store IDs take precedence so the result can match checkout exactly.
+        if (!empty($requestedStoreIds)) {
+            $requestedStores = Store::whereIn('id', $requestedStoreIds)->get();
+            if ($requestedStores->count() === count(array_unique($requestedStoreIds))) {
+                $selectedStore = $requestedStores->first();
+            }
+        } elseif (!empty($storeId)) {
+            // If store_id provided, use it
             $selectedStore = Store::find((int)$storeId);
         } else {
             // Find nearest stores (limit 10) and pick the first that can deliver
@@ -272,13 +279,22 @@ class DeliveryZoneApiController extends Controller
             ]);
         }
 
-        // Check delivery availability (defensive)
-        $canDeliver = DeliveryZoneService::canStoreDeliverToLocation($selectedStore, $latitude, $longitude);
+        $routeStoreIds = !empty($requestedStoreIds)
+            ? array_values(array_unique($requestedStoreIds))
+            : [(int) $selectedStore->id];
+        $routeStores = Store::whereIn('id', $routeStoreIds)->get();
+        $canDeliver = count($routeStoreIds) === $routeStores->count()
+            && $routeStores->every(fn (Store $store) =>
+                !empty($store->latitude)
+                && !empty($store->longitude)
+                && DeliveryZoneService::canStoreDeliverToLocation($store, $latitude, $longitude)
+            );
 
         $response = [
             'is_deliverable' => $canDeliver,
             'store_id' => $selectedStore->id,
             'store_name' => $selectedStore->name ?? null,
+            'store_ids' => $routeStoreIds,
             'coordinates' => [
                 'latitude' => $latitude,
                 'longitude' => $longitude,
@@ -293,26 +309,34 @@ class DeliveryZoneApiController extends Controller
             return ApiResponseType::sendJsonResponse(success: true, message: __('labels.delivery_not_available'), data: $response);
         }
 
-        // Calculate distance in km between store and user
-        $distance = DeliveryZoneService::calculateDistance((float)$selectedStore->latitude, (float)$selectedStore->longitude, $latitude, $longitude);
-
-        $distanceMinutes = $distance > 0 ? ((int) ceil($distance) * 3) : 0;
+        $routeInfo = DeliveryZoneService::calculateDeliveryRoute($latitude, $longitude, $routeStoreIds);
+        $distance = (float) ($routeInfo['total_distance'] ?? 0);
         $zoneInfo = DeliveryZoneService::getZonesAtPoint($latitude, $longitude);
-        $additionalDelay = (int) ($zoneInfo['delay'] ?? 0);
-        $estimatedTotalMinutes = DeliveryZoneService::calculateExpectedDeliveryMinutes($distance, $additionalDelay);
+        $basePrepTime = 5;
+        $deliveryTimePerKm = (float) ($zoneInfo['delivery_time_per_km'] ?? 0);
+        $bufferTime = (int) ($zoneInfo['buffer_time'] ?? 0);
+        $distanceMinutes = (int) ceil($distance * $deliveryTimePerKm);
+        $estimatedTotalMinutes = DeliveryZoneService::calculateEstimatedDeliveryMinutes(
+            $distance,
+            $deliveryTimePerKm,
+            $bufferTime,
+            $basePrepTime,
+        );
 
         $response['distance_km'] = round($distance, 2);
         $response['distance_minutes'] = $distanceMinutes;
-        $response['base_prep_time_minutes'] = 5;
-        $response['delay'] = $additionalDelay;
-        $response['comment'] = $zoneInfo['comment'] ?? null;
+        $response['base_prep_time_minutes'] = $basePrepTime;
+        $response['delivery_time_per_km'] = $deliveryTimePerKm;
+        $response['buffer_time_minutes'] = $bufferTime;
+        $response['buffer_comment'] = $zoneInfo['buffer_comment'] ?? null;
         $response['active_hours'] = $zoneInfo['active_hours'] ?? null;
         $response['delivery_paused'] = false;
         $response['delivery_pause_until'] = null;
         $response['delivery_pause_comment'] = null;
         $response['calculation'] = [
-            'base_prep_time_minutes' => 5,
-            'additional_delay_minutes' => $additionalDelay,
+            'base_prep_time_minutes' => $basePrepTime,
+            'delivery_time_per_km' => $deliveryTimePerKm,
+            'buffer_time_minutes' => $bufferTime,
             'distance_minutes' => $distanceMinutes,
             'estimated_time_minutes' => (int) $estimatedTotalMinutes,
         ];

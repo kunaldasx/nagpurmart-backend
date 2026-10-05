@@ -44,30 +44,6 @@
     </div>
 
     <!-- Page body -->
-    <div class="page-body">
-        <div class="row row-cards">
-            <div class="col-12">
-                @if(!$googleApiKey)
-                    <div class="alert alert-danger alert-dismissible" role="alert">
-                        <div class="alert-icon">
-                            <!-- Download SVG icon from http://tabler.io/icons/icon/alert-circle -->
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                class="icon alert-icon icon-2"
-                            >
-                                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/>
-                                <path d="M12 8v4"/>
-                                <path d="M12 16h.01"/>
-                            </svg>
-                        </div>
                         <div>
                             <h4 class="alert-heading"><a
                                     href="{{route('admin.settings.show', ['setting' => \App\Enums\SettingTypeEnum::AUTHENTICATION()])}}"
@@ -170,23 +146,10 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="mb-3">
-                                        <label for="delivery-delay" class="form-label">Additional delivery delay</label>
-                                        <div class="input-group mb-2">
-                                            <input type="number" class="form-control" name="delay"
-                                                   id="delivery-delay"
-                                                   placeholder="e.g. 10"
-                                                   value="{{$deliveryZone->delay ?? 0}}" min="0" step="1">
-                                            <span class="input-group-text"> {{__('labels.minutes')}} </span>
-                                        </div>
-                                        <small class="form-hint">Added to the 5-minute preparation time and distance estimate.</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="delivery-delay-comment" class="form-label">Delay comment</label>
-                                        <textarea class="form-control" name="comment" id="delivery-delay-comment" rows="2" maxlength="1000" placeholder="e.g. Heavy rain">{{$deliveryZone->comment ?? ''}}</textarea>
+                                        <label for="buffer-comment" class="form-label">Buffer comment</label>
+                                        <textarea class="form-control" name="buffer_comment" id="buffer-comment" rows="2" maxlength="1000" placeholder="e.g. Extra time during heavy rain">{{$deliveryZone->comment ?? ''}}</textarea>
                                     </div>
                                 </div>
                             </div>
@@ -265,7 +228,7 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-6 d-none">
                                     <div class="mb-3">
                                         <label for="rush-delivery-time-per-km" class="form-label">
                                             {{ __('labels.rush_delivery_time_per_km') }}

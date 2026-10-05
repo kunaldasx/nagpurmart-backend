@@ -942,7 +942,7 @@ class CartService
         // Note: We no longer throw exceptions for rush delivery unavailability
         // as we handle this gracefully by falling back to regular delivery
         if ($isRushDelivery) {
-            if (!isset($zone['rush_delivery_charges']) || !isset($zone['rush_delivery_time_per_km'])) {
+            if (!isset($zone['rush_delivery_charges'])) {
                 throw new \Exception('Missing required rush delivery data');
             }
         }
@@ -967,11 +967,9 @@ class CartService
                 $routeInfo = DeliveryZoneService::calculateDeliveryRoute($latitude, $longitude, $storeIds);
 
                 // Add delivery distance-based charges if applicable
-                if (isset($routeInfo['total_distance']) &&
-                    $routeInfo['total_distance'] > 0 &&
-                    isset($zone['distance_based_delivery_charges'])) {
+                if (isset($routeInfo['total_distance']) && $routeInfo['total_distance'] > 0) {
                     $deliveryDistanceKm = $routeInfo['total_distance'];
-                    $deliveryDistanceCharges = $zone['distance_based_delivery_charges'] * $routeInfo['total_distance'];
+                    $deliveryDistanceCharges = (float) ($zone['distance_based_delivery_charges'] ?? 0) * $routeInfo['total_distance'];
                 }
             } catch (\Exception $e) {
                 // Log the error but continue with calculation
@@ -996,10 +994,11 @@ class CartService
      */
     private function calculateEstimatedDeliveryTime(Cart $cart, array $zone, float $deliveryDistanceKm, bool $isRushDelivery = false): int
     {
-        // Use the project-wide fixed ETA formula: 5 minutes prep + 3 minutes per km bucket.
-        // This method still accepts the cart/zone args to remain compatible with the flow,
-        // but the calculation is now based on total route distance and the required business rule.
-        return DeliveryZoneService::calculateExpectedDeliveryMinutes($deliveryDistanceKm);
+        return DeliveryZoneService::calculateEstimatedDeliveryMinutes(
+            $deliveryDistanceKm,
+            (float) ($zone['delivery_time_per_km'] ?? 0),
+            (int) ($zone['buffer_time'] ?? 0),
+        );
     }
 
     /**
@@ -1283,8 +1282,7 @@ class CartService
     {
         return isset($zone['rush_delivery_enabled']) &&
             $zone['rush_delivery_enabled'] &&
-            isset($zone['rush_delivery_charges']) &&
-            isset($zone['rush_delivery_time_per_km']);
+            isset($zone['rush_delivery_charges']);
     }
 
     /**

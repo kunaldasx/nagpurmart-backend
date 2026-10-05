@@ -125,15 +125,13 @@ class DeliveryZoneService
             'handling_charges' => $zone ? $zone->handling_charges : 0,
             'delivery_time_per_km' => $zone ? $zone->delivery_time_per_km : 0,
             'rush_delivery_enabled' => $zone ? $zone->rush_delivery_enabled : false,
-            'rush_delivery_time_per_km' => $zone ? $zone->rush_delivery_time_per_km : 0,
             'rush_delivery_charges' => $zone ? $zone->rush_delivery_charges : 0,
             'regular_delivery_charges' => $zone ? $zone->regular_delivery_charges : 0,
             'free_delivery_amount' => $zone ? $zone->free_delivery_amount : 0,
             'distance_based_delivery_charges' => $zone ? $zone->distance_based_delivery_charges : 0,
             'per_store_drop_off_fee' => $zone ? $zone->per_store_drop_off_fee : 0,
             'buffer_time' => $zone ? $zone->buffer_time : 0,
-            'delay' => $zone ? $zone->delay : 0,
-            'comment' => $zone ? $zone->comment : null,
+            'buffer_comment' => $zone ? $zone->comment : null,
             'active_hours' => $zone ? $zone->active_hours : null,
             'delivery_paused' => false,
             'delivery_paused_until' => null,
@@ -257,16 +255,20 @@ class DeliveryZoneService
     }
 
     /**
-     * Calculate expected delivery minutes using the fixed prep and distance formula.
-     *
-     * Formula: 5 minutes fixed preparation + 3 minutes per km rounded up to the next km bucket
-     * (0-1km => 3 mins, 1.1-2km => 6 mins, etc.).
+     * Calculate the customer-facing ETA shared by estimates, carts, and orders.
      */
-    public static function calculateExpectedDeliveryMinutes(float $distanceKm, int $additionalDelay = 0): int
+    public static function calculateEstimatedDeliveryMinutes(
+        float $distanceKm,
+        float $deliveryTimePerKm,
+        int $bufferTime = 0,
+        int $basePrepTime = 5,
+    ): int
     {
-        $distanceBucketMinutes = $distanceKm > 0 ? (int) ceil($distanceKm) * 3 : 0;
+        $totalMinutes = max(0, $basePrepTime)
+            + (max(0, $distanceKm) * max(0, $deliveryTimePerKm))
+            + max(0, $bufferTime);
 
-        return 5 + max(0, $additionalDelay) + $distanceBucketMinutes;
+        return (int) ceil($totalMinutes);
     }
 
     /**
@@ -327,11 +329,12 @@ class DeliveryZoneService
         $deliveryTimePerKm = $zoneInfo['delivery_time_per_km'] ?? 0;
         $bufferTime = $zoneInfo['buffer_time'] ?? 0;
 
-        // Calculate estimated time (in minutes)
-        $estimatedTime = $basePrepTime + ($distance * $deliveryTimePerKm) + $bufferTime;
-
-        // Round to nearest minute
-        $estimatedTime = ceil($estimatedTime);
+        $estimatedTime = self::calculateEstimatedDeliveryMinutes(
+            $distance,
+            (float) $deliveryTimePerKm,
+            (int) $bufferTime,
+            (int) $basePrepTime,
+        );
 
         return [
             'success' => true,
