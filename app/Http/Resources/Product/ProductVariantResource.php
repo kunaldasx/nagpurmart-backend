@@ -35,6 +35,27 @@ class ProductVariantResource extends JsonResource
 
         $cartItem = $this->isInUserCart();
         $storePricing = $this->storeProductVariants->first();
+        $unitPrice = null;
+        $unitPriceBasis = null;
+        $quantity = (float)($this->net_quantity ?? 0);
+        $unit = $this->net_quantity_unit;
+        $unitDivisor = match ($unit) {
+            'g', 'ml' => $quantity / 100,
+            'kg', 'l' => $quantity * 10,
+            'item' => $quantity,
+            default => 0,
+        };
+        if ($quantity > 0 && $unitDivisor > 0 && $storePricing) {
+            $price = $storePricing->getPriceForMode();
+            if ($price !== null) {
+                $unitPrice = round($price / $unitDivisor, 2);
+                $unitPriceBasis = match ($unit) {
+                    'g', 'kg' => '100 g',
+                    'ml', 'l' => '100 ml',
+                    'item' => '1 item',
+                };
+            }
+        }
 
         return [
             'id' => $this->id,
@@ -42,6 +63,10 @@ class ProductVariantResource extends JsonResource
             'slug' => $this->slug,
             'image' => $this->image ?? '',
             'weight' => (float)$this->weight ?? 0,
+            'net_quantity' => $this->net_quantity !== null ? (float)$this->net_quantity : null,
+            'net_quantity_unit' => $unit,
+            'unit_price' => $unitPrice,
+            'unit_price_basis' => $unitPriceBasis,
             'height' => (float)$this->height ?? 0,
             'breadth' => (float)$this->breadth ?? 0,
             'length' => (float)$this->length ?? 0,

@@ -32,6 +32,8 @@ class SellerProductVariantResource extends JsonResource
             'slug' => $this->slug,
             'image' => $this->image ?? '',
             'weight' => (float) ($this->weight ?? 0),
+            'net_quantity' => $this->net_quantity !== null ? (float) $this->net_quantity : null,
+            'net_quantity_unit' => $this->net_quantity_unit,
             'height' => (float) ($this->height ?? 0),
             'breadth' => (float) ($this->breadth ?? 0),
             'length' => (float) ($this->length ?? 0),

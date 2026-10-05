@@ -79,6 +79,8 @@ class StoreUpdateProductRequest extends FormRequest
             // Structure: [{id(optional), title, description, sort_order, fields:[{id, sort_order}]}]
             'custom_sections_json' => 'nullable|json',
             'weight' => 'nullable|min:0',
+            'net_quantity' => 'nullable|numeric|min:0.001',
+            'net_quantity_unit' => 'required_with:net_quantity|nullable|in:g,kg,ml,l,item',
             'height' => 'nullable|min:0',
             'length' => 'nullable|min:0',
             'breadth' => 'nullable|min:0',
@@ -313,6 +315,14 @@ class StoreUpdateProductRequest extends FormRequest
         }
         if (empty($variant['weight'])) {
             $validator->errors()->add('variants_json', $variant['title'] . ' Variant weight is required.');
+            return true;
+        }
+        if (isset($variant['net_quantity']) && $variant['net_quantity'] !== '' && (!is_numeric($variant['net_quantity']) || (float)$variant['net_quantity'] < 0.001)) {
+            $validator->errors()->add('variants_json', $variant['title'] . ' net quantity must be at least 0.001.');
+            return true;
+        }
+        if (!empty($variant['net_quantity']) && !in_array($variant['net_quantity_unit'] ?? '', ['g', 'kg', 'ml', 'l', 'item'], true)) {
+            $validator->errors()->add('variants_json', $variant['title'] . ' net quantity unit is invalid.');
             return true;
         }
         if (empty($variant['height'])) {

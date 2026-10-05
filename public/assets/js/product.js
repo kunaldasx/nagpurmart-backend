@@ -634,6 +634,10 @@ function initializeVariantAttributes() {
                     matchingVariant.db_id = serverVariant.id || null;
                     matchingVariant.title = serverVariant.title || "";
                     matchingVariant.weight = serverVariant.weight || "";
+                    matchingVariant.net_quantity =
+                        serverVariant.net_quantity || "";
+                    matchingVariant.net_quantity_unit =
+                        serverVariant.net_quantity_unit || "g";
                     matchingVariant.height = serverVariant.height || "";
                     matchingVariant.breadth = serverVariant.breadth || "";
                     matchingVariant.length = serverVariant.length || "";
@@ -887,11 +891,22 @@ function renderVariants() {
                             <input type="file" name="variant_image${v.id}" class="form-control variant-image-input" data-image-url="${v.image || ""}" accept="image/*" onchange="updateVariant('${v.id}', 'variant_image', this.value)">
                         </div>
                     <div class="col-6">
-                        <label class="form-label required">Weight (kg)</label>
+                        <label class="form-label required">Shipping weight (kg)</label>
                         <div class="input-group">
                             <input type="number" class="form-control" min="0" value="${v.weight}" onchange="updateVariant('${v.id}', 'weight', this.value)">
                             <span class="input-group-text">kg</span>
                         </div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Pack size / contents</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" min="0.001" step="0.001" value="${v.net_quantity || ""}" placeholder="e.g. 1" onchange="updateVariant('${v.id}', 'net_quantity', this.value)">
+                            <select class="form-select" aria-label="Net quantity unit" onchange="updateVariant('${v.id}', 'net_quantity_unit', this.value)" style="max-width: 90px">
+                                <option value="" ${v.net_quantity_unit ? "" : "selected"}>Unit</option>
+                                ${["g", "kg", "ml", "l", "item"].map((unit) => `<option value="${unit}" ${v.net_quantity_unit === unit ? "selected" : ""}>${unit === "l" ? "L" : unit}</option>`).join("")}
+                            </select>
+                        </div>
+                        <small class="form-hint">For example: 1 L or 200 g. Unit price is calculated automatically.</small>
                     </div>
                     <div class="col-6">
                         <label class="form-label required">Height (cm)</label>
@@ -1175,6 +1190,8 @@ function generateVariants() {
                 attributes: combo,
                 title: "",
                 weight: "",
+                net_quantity: "",
+                net_quantity_unit: "",
                 height: "",
                 breadth: "",
                 length: "",
@@ -1661,6 +1678,8 @@ function addVariantInputsToForm() {
             id: variant.id,
             title: variant.title || "",
             weight: variant.weight || "",
+            net_quantity: variant.net_quantity || "",
+            net_quantity_unit: variant.net_quantity_unit || "g",
             breadth: variant.breadth || "",
             length: variant.length || "",
             height: variant.height || "",

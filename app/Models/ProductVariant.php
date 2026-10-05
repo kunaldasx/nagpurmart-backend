@@ -24,6 +24,8 @@ class ProductVariant extends Model implements HasMedia
         'title',
         'slug',
         'weight',
+        'net_quantity',
+        'net_quantity_unit',
         'height',
         'breadth',
         'length',
@@ -38,6 +40,7 @@ class ProductVariant extends Model implements HasMedia
 
     protected $casts = [
         'provider_json' => 'array',
+        'net_quantity' => 'decimal:3',
         'availability' => 'boolean',
         'is_default' => 'boolean',
     ];

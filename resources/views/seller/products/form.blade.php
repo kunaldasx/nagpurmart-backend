@@ -416,13 +416,29 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label required">{{ __('labels.weight') }}</label>
+                                        <label class="form-label required">Shipping weight</label>
                                         <div class="input-group">
                                             <input type="number" min="0" class="form-control" name="weight"
                                                    value="{{ $singleProductVariant->weight ?? "" }}"><span
                                                 class="input-group-text">kg</span>
                                         </div>
-
+                                        <small class="form-hint">Used for delivery calculations.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Pack size / contents</label>
+                                        <div class="input-group">
+                                            <input type="number" min="0.001" step="0.001" class="form-control" name="net_quantity"
+                                                   value="{{ $singleProductVariant->net_quantity ?? '' }}" placeholder="e.g. 1">
+                                            <select class="form-select" name="net_quantity_unit" aria-label="Net quantity unit" style="max-width: 110px">
+                                                <option value="" {{ empty($singleProductVariant?->net_quantity) ? 'selected' : '' }}>Unit</option>
+                                                @foreach(['g' => 'g', 'kg' => 'kg', 'ml' => 'ml', 'l' => 'L', 'item' => 'item'] as $unit => $label)
+                                                    <option value="{{ $unit }}" {{ ($singleProductVariant->net_quantity_unit ?? '') === $unit ? 'selected' : '' }}>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <small class="form-hint">Enter the amount and unit, for example 1 L or 200 g. Unit price is calculated automatically.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
