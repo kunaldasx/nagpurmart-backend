@@ -430,7 +430,7 @@
                                         <label class="form-label">Pack size / contents</label>
                                         <div class="input-group">
                                             <input type="number" min="0.001" step="0.001" class="form-control" name="net_quantity"
-                                                   value="{{ $singleProductVariant->net_quantity ?? '' }}" placeholder="e.g. 1">
+                                                  value="{{ isset($singleProductVariant->net_quantity) ? rtrim(rtrim(number_format((float) $singleProductVariant->net_quantity, 3, '.', ''), '0'), '.') : '' }}" placeholder="e.g. 1">
                                             <input type="text" class="form-control" name="net_quantity_unit" value="{{ $singleProductVariant->net_quantity_unit ?? '' }}" placeholder="g, ml, piece, bottle" aria-label="Pack size unit" maxlength="30" style="max-width: 180px">
                                         </div>
                                         <small class="form-hint">Enter any unit, for example 1 L, 200 g, or 1 bottle.</small>

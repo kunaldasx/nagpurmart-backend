@@ -915,6 +915,12 @@ function getDefaultUnitPriceBasis(unit) {
     return { quantity: 1, unit: String(unit || "") };
 }
 
+function formatQuantity(value) {
+    const quantity = Number(value);
+    if (!Number.isFinite(quantity)) return value ?? "";
+    return quantity.toFixed(3).replace(/\.?0+$/, "");
+}
+
 function syncVariantPackageSize(variant) {
     const packageAttribute = Object.entries(variant.attributes || {}).find(
         ([attributeId]) =>
@@ -1000,7 +1006,7 @@ function renderStorePriceInputs(
         </div>
         <label class="form-label small mt-2 mb-1">Unit price per</label>
         <div class="input-group input-group-sm">
-            <input type="number" class="form-control store-unit-basis-quantity" name="${basisQuantityName}" min="0.001" step="0.001" value="${defaultBasis.quantity}" aria-label="Unit price basis quantity">
+            <input type="number" class="form-control store-unit-basis-quantity" name="${basisQuantityName}" min="0.001" step="0.001" value="${formatQuantity(defaultBasis.quantity)}" aria-label="Unit price basis quantity">
             <input type="text" class="form-control store-unit-basis-unit" name="${basisUnitName}" value="${defaultBasis.unit}" placeholder="unit" aria-label="Unit price basis unit" maxlength="30">
         </div>
         <div class="input-group input-group-sm mt-1">
@@ -1697,20 +1703,40 @@ function initializeSimplePricing() {
         container.innerHTML = "";
         container.appendChild(accordionContainer);
         const refreshSimpleUnitPrices = () => {
-            refreshUnitPriceRows(
-                accordionContainer,
+            const packageUnit =
+                document.querySelector('[name="net_quantity_unit"]')?.value ||
+                "";
+            const packageQuantity =
                 Number(
                     document.querySelector('[name="net_quantity"]')?.value || 0,
                 ) *
-                    Math.max(
-                        1,
-                        Number(
-                            document.querySelector('[name="unit_count"]')
-                                ?.value || 1,
-                        ),
+                Math.max(
+                    1,
+                    Number(
+                        document.querySelector('[name="unit_count"]')?.value ||
+                            1,
                     ),
-                document.querySelector('[name="net_quantity_unit"]')?.value ||
-                    "",
+                );
+
+            accordionContainer.querySelectorAll("tr").forEach((row) => {
+                row.dataset.packageQuantity = packageQuantity || "";
+                row.dataset.packageUnit = packageUnit;
+
+                const basisQuantity = row.querySelector(
+                    ".store-unit-basis-quantity",
+                );
+                const basisUnit = row.querySelector(".store-unit-basis-unit");
+                if (packageUnit && basisUnit && !basisUnit.value.trim()) {
+                    const defaultBasis = getDefaultUnitPriceBasis(packageUnit);
+                    basisQuantity.value = formatQuantity(defaultBasis.quantity);
+                    basisUnit.value = defaultBasis.unit;
+                }
+            });
+
+            refreshUnitPriceRows(
+                accordionContainer,
+                packageQuantity,
+                packageUnit,
             );
         };
         [
