@@ -438,6 +438,18 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
+                                        <label class="form-label">Items in this pack</label>
+                                        <div class="input-group">
+                                            <input type="number" min="1" step="1" class="form-control" name="unit_count"
+                                                   value="{{ $singleProductVariant->unit_count ?? '' }}" placeholder="e.g. 2">
+                                            <input type="text" class="form-control" name="unit_count_type"
+                                                   value="{{ $singleProductVariant->unit_count_type ?? '' }}" placeholder="packet" maxlength="30" style="max-width: 180px">
+                                        </div>
+                                        <small class="form-hint">For example, 500 g in each of 2 packets.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
                                         <label class="form-label required">{{ __('labels.height') }}</label>
                                         <div class="input-group">
                                             <input type="number" min="0" class="form-control" name="height"

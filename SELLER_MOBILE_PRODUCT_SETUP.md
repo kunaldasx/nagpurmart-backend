@@ -26,6 +26,8 @@ Keep shipping weight distinct from sellable package contents:
 
 - `weight` is shipping weight in kilograms and is used for delivery calculations.
 - `net_quantity` and `net_quantity_unit` describe what the buyer receives, for example `200` + `g`, `1` + `L`, `5` + `pcs`, or `1` + `dozen`.
+- `unit_count` and `unit_count_type` describe how many identical inner units are included in the sellable package, for example `2` + `packet` means two 500 g packets when `net_quantity=500` and `net_quantity_unit=g`. This is package composition, not the customer's order quantity.
+- `net_quantity` is the contents of one inner unit when `unit_count` is set; total comparable contents are `net_quantity * unit_count`. When count is omitted, the effective count is one.
 - Simple products enter the package amount and unit directly. Unit is free text (max 30 characters), not a fixed dropdown.
 - Variant products use the selected Size, Weight, Volume, Quantity, or Pack attribute value as the package amount. Use values such as `200 g`, `1 L`, `5 pcs`, or `1 dozen`. Do not ask for a second editable package amount for variants; show the parsed amount as a read-only summary. Persist parsed variant package data as `net_quantity` and `net_quantity_unit` inside `variants_json`.
 - Attribute names must contain one of `size`, `weight`, `volume`, `quantity`, or `pack` for package-size extraction. Attribute values must start with a number followed by a unit, e.g. `1 L`. Arbitrary units are supported if the package unit and comparison unit match.
@@ -37,7 +39,8 @@ Keep shipping weight distinct from sellable package contents:
 Formula:
 
 ```text
-comparable package quantity = package amount converted into the comparison unit
+total package quantity = quantity per inner unit * unit_count (or quantity per pack when count is omitted)
+comparable package quantity = total package quantity converted into the comparison unit
 unit price = effective selling price / comparable package quantity * comparison amount
 ```
 
@@ -47,6 +50,7 @@ Examples:
 - Pack `1 kg`, special price ₹150, basis `100 g` -> ₹15 / 100 g.
 - Pack `5 pcs`, price ₹100, basis `1 pc` -> ₹20 / pc.
 - Pack `1 dozen`, price ₹240, basis `1 piece` -> ₹20 / piece.
+- Pack `500 g` x `2 packet`, price ₹200, basis `100 g` -> ₹20 / 100 g.
 - Pack `1 bottle`, price ₹80, basis `1 bottle` -> ₹80 / bottle. A bottle cannot be compared to ml unless the package is entered as a volume such as `500 ml`.
 
 ## Create/Update Request Fields
@@ -72,6 +76,8 @@ Send the fields below as multipart form fields. Fields marked JSON must be seria
 | `variants_json`                                                                                                              | JSON string            | Required only for `type=variant`.                                                                                                              |
 | `net_quantity`                                                                                                               | decimal                | Optional top-level field for simple products; if provided, must be >= 0.001.                                                                   |
 | `net_quantity_unit`                                                                                                          | string                 | Required when simple `net_quantity` is supplied; max 30 characters.                                                                            |
+| `unit_count`                                                                                                                 | integer                | Optional positive count of identical inner units in the sellable package.                                                                      |
+| `unit_count_type`                                                                                                            | string                 | Required with `unit_count`; max 30 characters, e.g. `packet`, `bottle`, or `sachet`.                                                           |
 | `weight`, `height`, `length`, `breadth`                                                                                      | decimal                | Simple variant shipping dimensions; optional at request validation, but send them for delivery calculations. Weight is kg; dimensions are cm.  |
 | `barcode`                                                                                                                    | string                 | Required for simple products. Variant barcodes go inside each variant object.                                                                  |
 | `tax_groups[]`                                                                                                               | repeated integer       | Optional; append one field per selected tax group ID. Do not JSON-encode this multipart array.                                                 |
@@ -145,14 +151,16 @@ weight=0.55
 height=8
 length=12
 breadth=6
-net_quantity=5
-net_quantity_unit=pcs
+net_quantity=500
+net_quantity_unit=g
+unit_count=2
+unit_count_type=packet
 is_inclusive_tax=1
 main_image=<file>
-pricing={"store_pricing":[{"store_id":12,"price":200,"special_price":150,"wholesale_price":null,"unit_price_basis_quantity":1,"unit_price_basis_unit":"piece","cost":100,"stock":25,"sku":"SOAP-5PC"}]}
+pricing={"store_pricing":[{"store_id":12,"price":200,"special_price":150,"wholesale_price":null,"unit_price_basis_quantity":100,"unit_price_basis_unit":"g","cost":100,"stock":25,"sku":"MASAALA-500G-2PK"}]}
 ```
 
-Use `net_quantity=1`, `net_quantity_unit=dozen` for a dozen pack. Unit price basis can be `1` + `piece` to show per-piece price or `1` + `dozen` to show per-dozen price.
+This example represents 500 g per packet, 2 packets per sellable pack, or 1 kg total contents. Unit price basis can be `100` + `g` to show price per 100 g. Use `net_quantity=1`, `net_quantity_unit=dozen` for a dozen pack; leave `unit_count` absent unless there are multiple dozens in the package.
 
 ## Variant Product Example
 
@@ -160,11 +168,11 @@ Use `net_quantity=1`, `net_quantity_unit=dozen` for a dozen pack. Unit price bas
 
 ```text
 type=variant
-variants_json=[{"id":"variant-local-1","title":"5-piece pack","attributes":[{"attribute_id":7,"value_id":42}],"barcode":"8901234567890","weight":0.55,"height":8,"length":12,"breadth":6,"availability":"yes","is_default":"on","net_quantity":5,"net_quantity_unit":"pcs"},{"id":"variant-local-2","title":"12-piece pack","attributes":[{"attribute_id":7,"value_id":43}],"barcode":"8901234567891","weight":1.2,"height":10,"length":18,"breadth":8,"availability":"yes","is_default":"off","net_quantity":12,"net_quantity_unit":"pcs"}]
-pricing={"variant_pricing":[{"variant_id":"variant-local-1","store_id":12,"price":200,"special_price":150,"wholesale_price":null,"unit_price_basis_quantity":1,"unit_price_basis_unit":"piece","cost":100,"stock":25,"sku":"SOAP-5PC"},{"variant_id":"variant-local-2","store_id":12,"price":420,"special_price":null,"wholesale_price":null,"unit_price_basis_quantity":1,"unit_price_basis_unit":"piece","cost":220,"stock":12,"sku":"SOAP-12PC"}]}
+variants_json=[{"id":"variant-local-1","title":"2 x 500 g packets","attributes":[{"attribute_id":7,"value_id":42}],"barcode":"8901234567890","weight":1.1,"height":8,"length":12,"breadth":6,"availability":"yes","is_default":"on","net_quantity":500,"net_quantity_unit":"g","unit_count":2,"unit_count_type":"packet"},{"id":"variant-local-2","title":"4 x 500 g packets","attributes":[{"attribute_id":7,"value_id":43}],"barcode":"8901234567891","weight":2.2,"height":10,"length":18,"breadth":8,"availability":"yes","is_default":"off","net_quantity":500,"net_quantity_unit":"g","unit_count":4,"unit_count_type":"packet"}]
+pricing={"variant_pricing":[{"variant_id":"variant-local-1","store_id":12,"price":200,"special_price":150,"wholesale_price":null,"unit_price_basis_quantity":100,"unit_price_basis_unit":"g","cost":100,"stock":25,"sku":"MASAALA-500G-2PK"},{"variant_id":"variant-local-2","store_id":12,"price":420,"special_price":null,"wholesale_price":null,"unit_price_basis_quantity":100,"unit_price_basis_unit":"g","cost":220,"stock":12,"sku":"MASAALA-500G-4PK"}]}
 ```
 
-Each variant requires non-empty `title`, `attributes`, `barcode`, `weight`, `height`, `length`, and `breadth`; exactly one variant must have `is_default="on"`. `availability` should be `yes` or `no`. Variant image files, if uploaded, use the multipart key `variant_image<variant-id>` (e.g. `variant_imagevariant-local-1`). Variant `net_quantity` and `net_quantity_unit` may be omitted if the app is not providing package data, but include them when a Size/Weight/Volume/Quantity/Pack attribute yields an amount and unit.
+Each variant requires non-empty `title`, `attributes`, `barcode`, `weight`, `height`, `length`, and `breadth`; exactly one variant must have `is_default="on"`. `availability` should be `yes` or `no`. Variant image files, if uploaded, use the multipart key `variant_image<variant-id>` (e.g. `variant_imagevariant-local-1`). Variant `net_quantity` and `net_quantity_unit` may be omitted if the app is not providing package data. `unit_count` and `unit_count_type` are optional but must be sent together; `unit_count` must be a positive integer.
 
 ## Success Responses
 
@@ -201,7 +209,7 @@ Use `GET /api/seller/products/{id}` to load the product, including variant attri
         "brand_id": 8,
         "type": "simple",
         "short_description": "Five handmade soap bars",
-        "description": "Pack of five 100 g soap bars.",
+        "description": "Pack contains two packets of 500 g each.",
         "image_fit": "contain",
         "minimum_order_quantity": 1,
         "quantity_step_size": 1,
@@ -210,10 +218,12 @@ Use `GET /api/seller/products/{id}` to load the product, including variant attri
         "variants": [
             {
                 "id": 903,
-                "title": "Herbal Soap Pack",
-                "weight": 0.55,
-                "net_quantity": 5,
-                "net_quantity_unit": "pcs",
+                "title": "Masala Pack",
+                "weight": 1.1,
+                "net_quantity": 500,
+                "net_quantity_unit": "g",
+                "unit_count": 2,
+                "unit_count_type": "packet",
                 "height": 8,
                 "length": 12,
                 "breadth": 6,
@@ -225,12 +235,12 @@ Use `GET /api/seller/products/{id}` to load the product, including variant attri
                         "id": 8801,
                         "store_id": 12,
                         "store_name": "Nagpur Central",
-                        "sku": "SOAP-5PC",
+                        "sku": "MASAALA-500G-2PK",
                         "price": 200,
                         "special_price": 150,
                         "wholesale_price": null,
-                        "unit_price_basis_quantity": 1,
-                        "unit_price_basis_unit": "piece",
+                        "unit_price_basis_quantity": 100,
+                        "unit_price_basis_unit": "g",
                         "cost": 100,
                         "stock": 25
                     }
@@ -241,7 +251,7 @@ Use `GET /api/seller/products/{id}` to load the product, including variant attri
 }
 ```
 
-The example is intentionally limited to product setup fields; the actual resource also returns category/brand display data, images, tags, tax classes, status, and other seller fields. For a simple product, `variants` contains one default variant, and `net_quantity`/`net_quantity_unit` live on that variant in the read response even though they are top-level fields in the simple-product write request.
+The example is intentionally limited to product setup fields; the actual resource also returns category/brand display data, images, tags, tax classes, status, and other seller fields. For a simple product, `variants` contains one default variant, and package fields (`net_quantity`, `net_quantity_unit`, `unit_count`, and `unit_count_type`) live on that variant in the read response even though simple-product write fields are top-level.
 
 ## Error Handling
 
@@ -258,6 +268,7 @@ Always surface field errors beside the corresponding wizard inputs. Keep entered
 - [ ] Use bearer-token seller API routes, not web `/seller/products/...` routes.
 - [ ] Build simple and variant package entry differently: direct amount/unit for simple, attribute-derived amount/unit for variants.
 - [ ] Keep shipping weight separate from net package quantity.
+- [ ] For multipacks, submit `unit_count` and `unit_count_type` together; `net_quantity` is the content quantity per inner unit (for example `500 g` x `2 packet`).
 - [ ] Support custom package and comparison units up to 30 characters.
 - [ ] Convert kg to g, L to ml, and dozen to 12 pieces; only compare custom units that match after trimming/case normalization.
 - [ ] Calculate unit price from special price when set; otherwise regular price.

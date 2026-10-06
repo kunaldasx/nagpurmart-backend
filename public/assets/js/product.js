@@ -638,6 +638,9 @@ function initializeVariantAttributes() {
                         serverVariant.net_quantity || "";
                     matchingVariant.net_quantity_unit =
                         serverVariant.net_quantity_unit || "";
+                    matchingVariant.unit_count = serverVariant.unit_count || "";
+                    matchingVariant.unit_count_type =
+                        serverVariant.unit_count_type || "";
                     matchingVariant.height = serverVariant.height || "";
                     matchingVariant.breadth = serverVariant.breadth || "";
                     matchingVariant.length = serverVariant.length || "";
@@ -1008,7 +1011,10 @@ function renderStorePriceInputs(
 }
 
 function refreshUnitPriceRows(container, quantity, unit) {
-    container.querySelectorAll("tr").forEach((row) => {
+    const rows = container.matches("tr")
+        ? [container]
+        : container.querySelectorAll("tr");
+    rows.forEach((row) => {
         const priceInput = row.querySelector(".store-price");
         const specialPriceInput = row.querySelector(".store-special-price");
         const unitInput = row.querySelector(".store-unit-price");
@@ -1188,8 +1194,15 @@ function renderVariants() {
                     </div>
                     <div class="col-6">
                         <label class="form-label">Pack size / contents</label>
-                        <input type="text" class="form-control" readonly value="${v.net_quantity && v.net_quantity_unit ? `${v.net_quantity} ${v.net_quantity_unit === "l" ? "L" : v.net_quantity_unit}` : "Use a Size/Quantity attribute"}">
+                        <input type="text" class="form-control variant-package-summary" readonly value="${v.net_quantity && v.net_quantity_unit ? `${v.net_quantity} ${v.net_quantity_unit === "l" ? "L" : v.net_quantity_unit}${v.unit_count ? ` x ${v.unit_count} ${v.unit_count_type || "items"}` : ""}` : "Use a Size/Quantity attribute"}">
                         <small class="form-hint">Use a Size, Weight, Volume, or Quantity attribute with values like 200 g or 1 L.</small>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Items in this pack</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" min="1" step="1" value="${v.unit_count || ""}" placeholder="e.g. 2" onchange="updateVariant('${v.id}', 'unit_count', this.value)">
+                            <input type="text" class="form-control" maxlength="30" value="${v.unit_count_type || ""}" placeholder="packet" onchange="updateVariant('${v.id}', 'unit_count_type', this.value)">
+                        </div>
                     </div>
                     <div class="col-6">
                         <label class="form-label required">Height (cm)</label>
@@ -1272,7 +1285,33 @@ function initializeFilePond(
 
 function updateVariant(id, field, value) {
     const variant = variants.find((v) => v.id === id);
-    if (variant) variant[field] = value;
+    if (!variant) return;
+    variant[field] = value;
+
+    if (field === "unit_count" || field === "unit_count_type") {
+        const packageSummary = Array.from(
+            document.querySelectorAll(".variant-package-summary"),
+        ).find((input) => input.closest("[data-id]")?.dataset.id === id);
+        if (packageSummary) {
+            packageSummary.value =
+                variant.net_quantity && variant.net_quantity_unit
+                    ? `${variant.net_quantity} ${variant.net_quantity_unit}${variant.unit_count ? ` x ${variant.unit_count} ${variant.unit_count_type || "items"}` : ""}`
+                    : "Use a Size/Quantity attribute";
+        }
+
+        const packageQuantity =
+            Number(variant.net_quantity || 0) *
+            Math.max(1, Number(variant.unit_count) || 1);
+        document.querySelectorAll("tr[data-variant-id]").forEach((row) => {
+            if (row.dataset.variantId !== id) return;
+            row.dataset.packageQuantity = packageQuantity || "";
+            refreshUnitPriceRows(
+                row,
+                packageQuantity,
+                variant.net_quantity_unit,
+            );
+        });
+    }
 }
 
 function removeVariant(id) {
@@ -1475,6 +1514,8 @@ function generateVariants() {
                 weight: "",
                 net_quantity: "",
                 net_quantity_unit: "",
+                unit_count: "",
+                unit_count_type: "",
                 height: "",
                 breadth: "",
                 length: "",
@@ -1530,8 +1571,13 @@ function initializeSimplePricing() {
     accordionContainer.className =
         "accordion accordion-flush border m-2 rounded";
     accordionContainer.id = "simplePricingAccordion";
-    const packageQuantity =
-        document.querySelector('[name="net_quantity"]')?.value || "";
+    const packageBaseQuantity = Number(
+        document.querySelector('[name="net_quantity"]')?.value || 0,
+    );
+    const packageCount = Number(
+        document.querySelector('[name="unit_count"]')?.value || 1,
+    );
+    const packageQuantity = packageBaseQuantity * Math.max(1, packageCount);
     const packageUnit =
         document.querySelector('[name="net_quantity_unit"]')?.value || "";
 
@@ -1653,7 +1699,16 @@ function initializeSimplePricing() {
         const refreshSimpleUnitPrices = () => {
             refreshUnitPriceRows(
                 accordionContainer,
-                document.querySelector('[name="net_quantity"]')?.value || "",
+                Number(
+                    document.querySelector('[name="net_quantity"]')?.value || 0,
+                ) *
+                    Math.max(
+                        1,
+                        Number(
+                            document.querySelector('[name="unit_count"]')
+                                ?.value || 1,
+                        ),
+                    ),
                 document.querySelector('[name="net_quantity_unit"]')?.value ||
                     "",
             );
@@ -1661,6 +1716,7 @@ function initializeSimplePricing() {
         [
             document.querySelector('[name="net_quantity"]'),
             document.querySelector('[name="net_quantity_unit"]'),
+            document.querySelector('[name="unit_count"]'),
         ].forEach((field) => {
             if (!field || field.dataset.unitPriceRefresh) return;
             field.dataset.unitPriceRefresh = "true";
@@ -1895,8 +1951,20 @@ function updateVariantPricing() {
                                                     }
                                                 }
 
+                                                const packageQuantity =
+                                                    Number(
+                                                        variant.net_quantity ||
+                                                            0,
+                                                    ) *
+                                                    Math.max(
+                                                        1,
+                                                        Number(
+                                                            variant.unit_count,
+                                                        ) || 1,
+                                                    );
+
                                                 return `
-                                                <tr data-package-quantity="${variant.net_quantity || ""}" data-package-unit="${variant.net_quantity_unit || ""}">
+                                                <tr data-variant-id="${variant.id}" data-package-quantity="${packageQuantity || ""}" data-package-unit="${variant.net_quantity_unit || ""}">
                                                     <td>
                                                         ${Object.entries(
                                                             variant.attributes,
@@ -1931,7 +1999,7 @@ function updateVariantPricing() {
                                                             .join("")}
                                                     </td>
                                                     <td>
-                                                        ${renderStorePriceInputs(storePrice, variant.net_quantity, variant.net_quantity_unit, `variant_pricing[${store.id}][${variantId}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit, storeSpecialPrice)}
+                                                        ${renderStorePriceInputs(storePrice, packageQuantity, variant.net_quantity_unit, `variant_pricing[${store.id}][${variantId}][price]`, storeUnitBasisQuantity, storeUnitBasisUnit, storeSpecialPrice)}
                                                     </td>
                                                     <td>
                                                         <div class="input-group input-group-sm">
@@ -2001,6 +2069,8 @@ function addVariantInputsToForm() {
             weight: variant.weight || "",
             net_quantity: variant.net_quantity || "",
             net_quantity_unit: variant.net_quantity_unit || "",
+            unit_count: variant.unit_count || "",
+            unit_count_type: variant.unit_count_type || "",
             breadth: variant.breadth || "",
             length: variant.length || "",
             height: variant.height || "",

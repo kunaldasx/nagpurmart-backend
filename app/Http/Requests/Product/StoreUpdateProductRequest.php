@@ -81,6 +81,8 @@ class StoreUpdateProductRequest extends FormRequest
             'weight' => 'nullable|min:0',
             'net_quantity' => 'nullable|numeric|min:0.001',
             'net_quantity_unit' => 'required_with:net_quantity|nullable|string|max:30',
+            'unit_count' => 'nullable|integer|min:1|required_with:unit_count_type',
+            'unit_count_type' => 'required_with:unit_count|nullable|string|max:30',
             'height' => 'nullable|min:0',
             'length' => 'nullable|min:0',
             'breadth' => 'nullable|min:0',
@@ -323,6 +325,18 @@ class StoreUpdateProductRequest extends FormRequest
         }
         if (!empty($variant['net_quantity']) && (empty($variant['net_quantity_unit']) || !is_string($variant['net_quantity_unit']) || mb_strlen($variant['net_quantity_unit']) > 30)) {
             $validator->errors()->add('variants_json', $variant['title'] . ' net quantity unit is required and may not exceed 30 characters.');
+            return true;
+        }
+        if (isset($variant['unit_count']) && $variant['unit_count'] !== '' && (!filter_var($variant['unit_count'], FILTER_VALIDATE_INT) || (int)$variant['unit_count'] < 1)) {
+            $validator->errors()->add('variants_json', $variant['title'] . ' unit count must be a positive integer.');
+            return true;
+        }
+        if (!empty($variant['unit_count']) && (empty($variant['unit_count_type']) || !is_string($variant['unit_count_type']) || mb_strlen($variant['unit_count_type']) > 30)) {
+            $validator->errors()->add('variants_json', $variant['title'] . ' unit count type is required and may not exceed 30 characters.');
+            return true;
+        }
+        if (empty($variant['unit_count']) && !empty($variant['unit_count_type'])) {
+            $validator->errors()->add('variants_json', $variant['title'] . ' unit count is required when a unit count type is provided.');
             return true;
         }
         if (empty($variant['height'])) {

@@ -34,6 +34,8 @@ class SellerProductVariantResource extends JsonResource
             'weight' => (float) ($this->weight ?? 0),
             'net_quantity' => $this->net_quantity !== null ? (float) $this->net_quantity : null,
             'net_quantity_unit' => $this->net_quantity_unit,
+            'unit_count' => $this->unit_count !== null ? (int) $this->unit_count : null,
+            'unit_count_type' => $this->unit_count_type,
             'height' => (float) ($this->height ?? 0),
             'breadth' => (float) ($this->breadth ?? 0),
             'length' => (float) ($this->length ?? 0),

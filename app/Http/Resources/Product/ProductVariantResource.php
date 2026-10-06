@@ -37,7 +37,7 @@ class ProductVariantResource extends JsonResource
         $storePricing = $this->storeProductVariants->first();
         $unitPrice = null;
         $unitPriceBasis = null;
-        $quantity = (float)($this->net_quantity ?? 0);
+        $quantity = (float)($this->net_quantity ?? 0) * max(1, (int)($this->unit_count ?? 1));
         $unit = $this->net_quantity_unit;
         $basisQuantity = (float)($storePricing?->unit_price_basis_quantity ?? 0);
         $basisUnit = $storePricing?->unit_price_basis_unit;
@@ -82,6 +82,8 @@ class ProductVariantResource extends JsonResource
             'weight' => (float)$this->weight ?? 0,
             'net_quantity' => $this->net_quantity !== null ? (float)$this->net_quantity : null,
             'net_quantity_unit' => $unit,
+            'unit_count' => $this->unit_count !== null ? (int)$this->unit_count : null,
+            'unit_count_type' => $this->unit_count_type,
             'unit_price' => $unitPrice,
             'unit_price_basis' => $unitPriceBasis,
             'height' => (float)$this->height ?? 0,
