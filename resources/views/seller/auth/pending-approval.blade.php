@@ -3,35 +3,63 @@
 @section('title', 'Seller access approval')
 
 @section('content')
-    <div class="text-center mb-4">
-        <a href="{{ route('seller.login') }}" class="navbar-brand navbar-brand-autodark">
-            @if(!empty($systemSettings['logo']))
-                <img src="{{ $systemSettings['logo'] }}" alt="{{ $systemSettings['appName'] ?? config('app.name') }}" width="150">
-            @else
-                <img src="{{ asset('logos/hyper-local-logo.png') }}" alt="{{ $systemSettings['appName'] ?? config('app.name') }}" width="150">
-            @endif
-        </a>
-    </div>
-    <div class="card card-md">
-        <div class="card-body text-center p-4 p-md-5">
-            <span class="avatar avatar-lg bg-yellow-lt text-yellow mb-3">
-                <i class="ti ti-clock-hour-4 fs-1" aria-hidden="true"></i>
-            </span>
-            <h1 class="h2 mb-2">Approval pending</h1>
-            <p class="text-secondary mb-4">
-                Your sign-in request was sent to the seller administrator. This page will stay here until access is approved.
-            </p>
-            <div class="alert alert-warning text-start" role="status" aria-live="polite" id="approval-status-message">
-                Your request is still waiting for approval.
+    <div class="seller-approval-page">
+        <div class="text-center mb-4">
+            <a href="{{ route('seller.login') }}" class="navbar-brand navbar-brand-autodark">
+                @if(!empty($systemSettings['logo']))
+                    <img src="{{ $systemSettings['logo'] }}" alt="{{ $systemSettings['appName'] ?? config('app.name') }}" width="150">
+                @else
+                    <img src="{{ asset('logos/hyper-local-logo.png') }}" alt="{{ $systemSettings['appName'] ?? config('app.name') }}" width="150">
+                @endif
+            </a>
+        </div>
+        <div class="card card-md seller-approval-card">
+            <div class="card-body text-center p-4 p-md-5">
+                <span class="avatar avatar-lg bg-yellow-lt text-yellow mb-3">
+                    <i class="ti ti-clock-hour-4 fs-1" aria-hidden="true"></i>
+                </span>
+                <h1 class="h2 mb-2">Approval pending</h1>
+                <p class="text-secondary mb-4">
+                    Your sign-in request was sent to the seller administrator. This page will stay here until access is approved.
+                </p>
+                <div class="alert alert-warning seller-approval-status" role="status" aria-live="polite" id="approval-status-message">
+                    Your request is still waiting for approval.
+                </div>
+                <button type="button" class="btn btn-primary seller-approval-check-button" id="check-approval-button"
+                        data-status-url="{{ route('seller.login.pending.status') }}">
+                    <i class="ti ti-refresh me-1" aria-hidden="true"></i>
+                    Check approval and open dashboard
+                </button>
+                <div class="small text-secondary mt-3" id="approval-check-feedback" aria-live="polite"></div>
             </div>
-            <button type="button" class="btn btn-primary w-100" id="check-approval-button"
-                    data-status-url="{{ route('seller.login.pending.status') }}">
-                <i class="ti ti-refresh me-1" aria-hidden="true"></i>
-                Check approval and open dashboard
-            </button>
-            <div class="small text-secondary mt-3" id="approval-check-feedback" aria-live="polite"></div>
         </div>
     </div>
+    <style>
+        .seller-approval-page {
+            width: min(100% - 2rem, 560px);
+            margin: 0 auto;
+        }
+
+        .seller-approval-card {
+            width: 100%;
+        }
+
+        .seller-approval-status {
+            width: fit-content;
+            max-width: 100%;
+            margin: 0 auto 1.25rem;
+            text-align: center;
+        }
+
+        .seller-approval-check-button {
+            display: inline-flex;
+            width: fit-content;
+            max-width: 100%;
+            align-items: center;
+            justify-content: center;
+            white-space: normal;
+        }
+    </style>
 @endsection
 
 @push('scripts')
@@ -61,13 +89,13 @@
                     }
 
                     if (result.data.approved) {
-                        message.className = 'alert alert-success text-start';
+                        message.className = 'alert alert-success seller-approval-status';
                         message.textContent = 'Access approved. Opening your dashboard…';
                         window.location.assign(result.data.redirect_url);
                         return;
                     }
 
-                    message.className = 'alert alert-warning text-start';
+                    message.className = 'alert alert-warning seller-approval-status';
                     message.textContent = 'Your request is still waiting for approval. Please check again after the seller administrator approves it.';
                     feedback.textContent = 'Not approved yet.';
                 } catch (error) {
