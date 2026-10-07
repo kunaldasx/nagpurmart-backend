@@ -47,7 +47,7 @@ class SellerSystemUserApiController extends Controller
 
         $query = User::query()
             ->join('seller_user', 'users.id', '=', 'seller_user.user_id')
-            ->select('users.*', 'seller_user.login_approval_status', 'seller_user.login_approval_requested_at')
+            ->select('users.*', 'seller_user.login_approval_status', 'seller_user.login_approval_requested_at', 'seller_user.login_approved_until')
             ->where('seller_user.seller_id', $seller->id)
             ->orderByDesc('users.id');
         if (!empty($q)) {
@@ -91,6 +91,7 @@ class SellerSystemUserApiController extends Controller
             'user' => $user,
             'login_approval_status' => $membership?->login_approval_status,
             'login_approval_requested_at' => $membership?->login_approval_requested_at,
+            'login_approved_until' => $membership?->login_approved_until,
         ]);
     }
 
@@ -190,6 +191,7 @@ class SellerSystemUserApiController extends Controller
                 'mobile' => $membership->user?->mobile,
                 'login_approval_status' => $membership->login_approval_status,
                 'login_approval_requested_at' => $membership->login_approval_requested_at,
+                'login_approved_until' => $membership->login_approved_until,
             ])->items(),
         ]);
     }
@@ -226,13 +228,18 @@ class SellerSystemUserApiController extends Controller
         }
 
         $membership->update([
-            'login_approval_status' => $status,
+            'login_approval_status' => $status === 'approved' ? 'approved' : 'disapproved',
             'login_approved_at' => $status === 'approved' ? now() : null,
+            'login_approved_until' => $status === 'approved' ? now()->addHours(24) : null,
         ]);
+        if ($status !== 'approved') {
+            $user->tokens()->delete();
+        }
 
         return ApiResponseType::sendJsonResponse(true, 'System user login approval updated.', [
             'user_id' => $user->id,
-            'login_approval_status' => $status,
+            'login_approval_status' => $membership->login_approval_status,
+            'login_approved_until' => $membership->login_approved_until,
         ]);
     }
 

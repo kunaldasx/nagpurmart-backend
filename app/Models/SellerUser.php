@@ -31,6 +31,7 @@ class SellerUser extends Model
         'login_approval_status',
         'login_approval_requested_at',
         'login_approved_at',
+        'login_approved_until',
     ];
 
     protected function casts(): array
@@ -38,6 +39,7 @@ class SellerUser extends Model
         return [
             'login_approval_requested_at' => 'datetime',
             'login_approved_at' => 'datetime',
+            'login_approved_until' => 'datetime',
         ];
     }
 

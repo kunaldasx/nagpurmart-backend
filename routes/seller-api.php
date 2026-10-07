@@ -27,7 +27,7 @@ Route::prefix('seller')->name('seller-api.')->group(function () {
     Route::post('login', [SellerAuthApiController::class, 'login'])->name('login');
 });
 
-Route::middleware(['auth:sanctum',
+Route::middleware(['auth:sanctum', 'seller.user.approval',
 //    'ensure.seller.subscription'
 ])->prefix('seller')->name('seller.api.')->group(function () {
     Route::post('logout', [SellerAuthApiController::class, 'logout']);

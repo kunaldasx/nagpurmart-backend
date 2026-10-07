@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Cache;
 use App\Models\SellerSubscription;
+use App\Models\SellerUser;
 use App\Enums\Subscription\SellerSubscriptionStatusEnum;
 
 Artisan::command('inspire', function () {
@@ -48,3 +49,26 @@ Artisan::command('subscription:expire', function () {
 
 // Schedule: run the expiration check hourly
 Schedule::command('subscription:expire')->hourly();
+
+Artisan::command('seller-users:expire-login-approvals', function () {
+    $expiredCount = 0;
+
+    SellerUser::where('login_approval_status', 'approved')
+        ->whereNotNull('login_approved_until')
+        ->where('login_approved_until', '<=', now())
+        ->orderBy('id')
+        ->chunkById(500, function ($memberships) use (&$expiredCount) {
+            foreach ($memberships as $membership) {
+                $membership->update([
+                    'login_approval_status' => 'disapproved',
+                    'login_approved_until' => null,
+                ]);
+                $membership->user?->tokens()->delete();
+                $expiredCount++;
+            }
+        });
+
+    $this->info("Expired {$expiredCount} seller-user login approval(s).");
+})->purpose('Expire seller system-user access grants after 24 hours');
+
+Schedule::command('seller-users:expire-login-approvals')->everyMinute();

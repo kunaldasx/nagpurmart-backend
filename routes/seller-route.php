@@ -43,7 +43,7 @@ Route::prefix('seller')->name('seller.')->group(function () {
         Route::post('reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.update');
     });
 
-    Route::middleware(['seller.query.token', 'validate.seller',
+    Route::middleware(['seller.query.token', 'validate.seller', 'seller.user.approval',
     ])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('index');
 

@@ -14,8 +14,27 @@ class SellerUserLoginApprovalService
     public function requestApprovalIfRequired(User $user): ?JsonResponse
     {
         $membership = SellerUser::where('user_id', $user->id)->first();
-        if (!$membership || $membership->login_approval_status === 'approved') {
+        if (!$membership) {
             return null;
+        }
+
+        $seller = Seller::find($membership->seller_id);
+        if ($seller && (int) $seller->user_id === (int) $user->id) {
+            return null;
+        }
+
+        if ($membership->login_approval_status === 'approved'
+            && $membership->login_approved_until
+            && $membership->login_approved_until->isFuture()) {
+            return null;
+        }
+
+        if ($membership->login_approval_status === 'approved') {
+            $membership->update([
+                'login_approval_status' => 'disapproved',
+                'login_approved_until' => null,
+            ]);
+            $user->tokens()->delete();
         }
 
         $wasAlreadyPending = $membership->login_approval_status === 'pending';
@@ -23,6 +42,8 @@ class SellerUserLoginApprovalService
             $membership->update([
                 'login_approval_status' => 'pending',
                 'login_approval_requested_at' => now(),
+                'login_approved_at' => null,
+                'login_approved_until' => null,
             ]);
 
             try {

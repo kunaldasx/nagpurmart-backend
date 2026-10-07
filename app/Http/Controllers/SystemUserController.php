@@ -328,9 +328,13 @@ class SystemUserController extends Controller
         }
 
         $membership->update([
-            'login_approval_status' => $status,
+            'login_approval_status' => $status === 'approved' ? 'approved' : 'disapproved',
             'login_approved_at' => $status === 'approved' ? now() : null,
+            'login_approved_until' => $status === 'approved' ? now()->addHours(24) : null,
         ]);
+        if ($status !== 'approved') {
+            $user->tokens()->delete();
+        }
 
         return redirect()->route('seller.system-users.index')->with('success', 'System user login approval updated.');
     }
@@ -358,7 +362,7 @@ class SystemUserController extends Controller
             }
             $query = User::query()
                 ->join('seller_user', 'users.id', '=', 'seller_user.user_id') // Join pivot table
-                ->select('users.*', 'seller_user.seller_id', 'seller_user.login_approval_status')
+                ->select('users.*', 'seller_user.seller_id', 'seller_user.login_approval_status', 'seller_user.login_approved_until')
                 ->where('seller_user.seller_id', '=', $seller->id)
                 ->whereDoesntHave('roles', function ($q) {
                     $q->where('name', DefaultSystemRolesEnum::SUPER_ADMIN());
@@ -405,6 +409,7 @@ class SystemUserController extends Controller
                         ? view('partials.seller_system_user_approval', [
                             'status' => $user->login_approval_status,
                             'id' => $user->id,
+                            'approvedUntil' => $user->login_approved_until,
                         ])->render()
                         : null,
                     'action' => view('partials.actions', [

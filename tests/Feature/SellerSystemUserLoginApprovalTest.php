@@ -34,11 +34,27 @@ class SellerSystemUserLoginApprovalTest extends TestCase
 
     public function test_approved_system_user_can_continue_login(): void
     {
-        [, $systemUser] = $this->createSellerSystemUser('approved');
+        [, $systemUser, $membership] = $this->createSellerSystemUser('approved');
+        $membership->update(['login_approved_until' => now()->addHours(23)]);
 
         $response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired($systemUser);
 
         $this->assertNull($response);
+    }
+
+    public function test_expired_approval_requests_a_new_seller_approval(): void
+    {
+        [, $systemUser, $membership] = $this->createSellerSystemUser('approved');
+        $membership->update(['login_approved_until' => now()->subSecond()]);
+
+        $response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired($systemUser);
+
+        $this->assertSame(403, $response?->getStatusCode());
+        $this->assertDatabaseHas('seller_user', [
+            'user_id' => $systemUser->id,
+            'login_approval_status' => 'pending',
+            'login_approved_until' => null,
+        ]);
     }
 
     private function createSellerSystemUser(string $approvalStatus): array
@@ -83,6 +99,6 @@ class SellerSystemUserLoginApprovalTest extends TestCase
             'login_approval_status' => $approvalStatus,
         ]);
 
-        return [$seller, $systemUser];
+        return [$seller, $systemUser, SellerUser::where('user_id', $systemUser->id)->firstOrFail()];
     }
 }

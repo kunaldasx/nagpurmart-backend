@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\PersonalAccessToken;
 use App\Http\Middleware\VerifyLicense;
 use App\Http\Middleware\EnsureSubscriptionFeatureSelected;
+use App\Http\Middleware\EnsureSellerSystemUserApproval;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -58,6 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'validate.admin' => ValidateAdmin::class,
             'validate.seller' => ValidateSeller::class,
             'ensure.seller.subscription' => EnsureSellerHasSubscription::class,
+            'seller.user.approval' => EnsureSellerSystemUserApproval::class,
             'seller.query.token' => SellerQueryTokenAuthenticate::class,
             'permission' => CheckPermission::class,
             'verified.delivery.boy' => VerifiedDeliveryBoy::class,
