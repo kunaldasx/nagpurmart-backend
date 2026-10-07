@@ -172,6 +172,16 @@ class Notification extends BaseDatabaseNotification
         $productId = Arr::get($metadata, 'product_id');
         $withdrawalRequestId = Arr::get($metadata, 'withdrawal_request_id');
         $status = strtolower((string)Arr::get($metadata, 'new_status', Arr::get($metadata, 'status', '')));
+        $approvalUserId = Arr::get($metadata, 'system_user_id');
+
+        if ($panel === 'seller'
+            && Arr::get($metadata, 'event') === 'seller_system_user_login_approval'
+            && $approvalUserId) {
+            return $this->resolveNamedRoute(
+                'seller.system-users.index',
+                'seller.notifications.index',
+            ) . '?approval_user_id=' . (int) $approvalUserId;
+        }
 
         return match ($type) {
             NotificationTypeEnum::ORDER(),
