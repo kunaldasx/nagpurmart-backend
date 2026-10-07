@@ -998,6 +998,8 @@ class CartService
             $deliveryDistanceKm,
             (float) ($zone['delivery_time_per_km'] ?? 0),
             (int) ($zone['buffer_time'] ?? 0),
+            5,
+            (int) ($zone['delivery_wait_minutes'] ?? 0),
         );
     }
 

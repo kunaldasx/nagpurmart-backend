@@ -111,7 +111,7 @@ class DeliveryZoneService
         $zones = DeliveryZone::where('status', ActiveInactiveStatusEnum::ACTIVE())
             ->get()
             ->filter(function ($zone) use ($latitude, $longitude) {
-                return self::containsPoint($zone, $latitude, $longitude) && self::isDeliveryAvailableNow($zone);
+                return self::containsPoint($zone, $latitude, $longitude);
             });
 
         // Get the first zone if any exists
@@ -133,16 +133,20 @@ class DeliveryZoneService
             'buffer_time' => $zone ? $zone->buffer_time : 0,
             'buffer_comment' => $zone ? $zone->comment : null,
             'active_hours' => $zone ? $zone->active_hours : null,
-            'delivery_paused' => false,
-            'delivery_paused_until' => null,
-            'delivery_pause_comment' => null,
+            'delivery_paused' => $zone ? self::isDeliveryPaused($zone) : false,
+            'delivery_paused_until' => $zone?->delivery_paused_until,
+            'delivery_pause_comment' => $zone?->delivery_pause_comment,
+            'delivery_start_at' => $zone ? self::getNextDeliveryStartAt($zone)?->toISOString() : null,
+            'delivery_wait_minutes' => $zone ? self::getDeliveryWaitMinutes($zone) : 0,
         ];
     }
 
-    public static function isDeliveryPaused(DeliveryZone $zone): bool
+    public static function isDeliveryPaused(DeliveryZone $zone, ?Carbon $now = null): bool
     {
+        $now ??= Carbon::now();
+
         return (bool) $zone->delivery_paused
-            && (!$zone->delivery_paused_until || Carbon::now()->lt($zone->delivery_paused_until));
+            && (!$zone->delivery_paused_until || $now->lt($zone->delivery_paused_until));
     }
 
     public static function isWithinActiveHours(DeliveryZone $zone, ?Carbon $now = null): bool
@@ -170,8 +174,59 @@ class DeliveryZoneService
 
     public static function isDeliveryAvailableNow(DeliveryZone $zone, ?Carbon $now = null): bool
     {
+        $now ??= Carbon::now();
+
         return !self::isDeliveryPaused($zone)
             && self::isWithinActiveHours($zone, $now);
+    }
+
+    public static function getNextDeliveryStartAt(DeliveryZone $zone, ?Carbon $now = null): ?Carbon
+    {
+        $now ??= Carbon::now();
+        if (self::isDeliveryAvailableNow($zone, $now)) {
+            return $now->copy();
+        }
+
+        $candidate = $now->copy();
+        if (self::isDeliveryPaused($zone, $now) && $zone->delivery_paused_until) {
+            $candidate = Carbon::parse($zone->delivery_paused_until);
+        }
+
+        $activeHours = $zone->active_hours ?? [];
+        for ($dayOffset = 0; $dayOffset <= 7; $dayOffset++) {
+            $date = $candidate->copy()->startOfDay()->addDays($dayOffset);
+            $weekday = strtolower($date->format('l'));
+            if (!array_key_exists($weekday, $activeHours)) {
+                return $dayOffset === 0 ? $candidate : $date;
+            }
+
+            $hours = $activeHours[$weekday];
+            if (!isset($hours['start'], $hours['end'])) {
+                continue;
+            }
+
+            $opening = $date->copy()->setTimeFromTimeString($hours['start']);
+            $closing = $date->copy()->setTimeFromTimeString($hours['end']);
+            $deliveryStart = $dayOffset === 0 && $candidate->gt($opening)
+                ? $candidate
+                : $opening;
+
+            if ($deliveryStart->lt($closing)) {
+                return $deliveryStart;
+            }
+        }
+
+        return null;
+    }
+
+    public static function getDeliveryWaitMinutes(DeliveryZone $zone, ?Carbon $now = null): int
+    {
+        $now ??= Carbon::now();
+        $deliveryStart = self::getNextDeliveryStartAt($zone, $now);
+
+        return $deliveryStart
+            ? max(0, (int) ceil($now->diffInSeconds($deliveryStart) / 60))
+            : 0;
     }
 
     public static function getPausedZoneAtPoint(float $latitude, float $longitude): ?DeliveryZone
@@ -262,9 +317,11 @@ class DeliveryZoneService
         float $deliveryTimePerKm,
         int $bufferTime = 0,
         int $basePrepTime = 5,
+        int $deliveryWaitMinutes = 0,
     ): int
     {
-        $totalMinutes = max(0, $basePrepTime)
+        $totalMinutes = max(0, $deliveryWaitMinutes)
+            + max(0, $basePrepTime)
             + (max(0, $distanceKm) * max(0, $deliveryTimePerKm))
             + max(0, $bufferTime);
 
@@ -334,6 +391,7 @@ class DeliveryZoneService
             (float) $deliveryTimePerKm,
             (int) $bufferTime,
             (int) $basePrepTime,
+            (int) ($zoneInfo['delivery_wait_minutes'] ?? 0),
         );
 
         return [
@@ -345,6 +403,8 @@ class DeliveryZoneService
                 'distance_km' => round($distance, 2),
                 'delivery_time_per_km' => $deliveryTimePerKm,
                 'buffer_time' => $bufferTime,
+                'delivery_wait_minutes' => $zoneInfo['delivery_wait_minutes'] ?? 0,
+                'delivery_start_at' => $zoneInfo['delivery_start_at'] ?? null,
                 'zone_id' => $zoneInfo['zone_id'],
                 'zone_name' => $zoneInfo['zone']
             ]
@@ -543,7 +603,6 @@ class DeliveryZoneService
         // Check if user location is within any delivery zone (polygon or radius)
         foreach ($deliveryZones as $zone) {
             if ($zone->status === ActiveInactiveStatusEnum::ACTIVE()
-                && self::isDeliveryAvailableNow($zone)
                 && self::containsPoint($zone, $userLat, $userLng)) {
                 return true;
             }

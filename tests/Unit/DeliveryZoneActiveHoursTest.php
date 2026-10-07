@@ -33,3 +33,31 @@ test('an explicit delivery pause overrides active hours', function () {
 
     expect(DeliveryZoneService::isDeliveryAvailableNow($zone))->toBeFalse();
 });
+
+test('after-hours delivery starts at the next configured opening', function () {
+    $zone = new DeliveryZone();
+    $zone->active_hours = [
+        'monday' => ['start' => '09:00', 'end' => '18:00'],
+        'tuesday' => ['start' => '09:00', 'end' => '21:00'],
+    ];
+    $now = Carbon::parse('2026-09-28 22:00');
+
+    expect(DeliveryZoneService::getNextDeliveryStartAt($zone, $now)->toDateTimeString())
+        ->toBe('2026-09-29 09:00:00')
+        ->and(DeliveryZoneService::getDeliveryWaitMinutes($zone, $now))->toBe(660);
+});
+
+test('delivery wait begins after a scheduled pause ends', function () {
+    $zone = new DeliveryZone();
+    $zone->active_hours = [
+        'monday' => ['start' => '09:00', 'end' => '18:00'],
+        'tuesday' => ['start' => '09:00', 'end' => '21:00'],
+    ];
+    $zone->delivery_paused = true;
+    $zone->delivery_paused_until = Carbon::parse('2026-09-29 10:00');
+    $now = Carbon::parse('2026-09-28 22:00');
+
+    expect(DeliveryZoneService::getNextDeliveryStartAt($zone, $now)->toDateTimeString())
+        ->toBe('2026-09-29 10:00:00')
+        ->and(DeliveryZoneService::getDeliveryWaitMinutes($zone, $now))->toBe(720);
+});

@@ -197,6 +197,7 @@ class Product extends Model implements HasMedia
             (float) $deliveryTimePerKm,
             (int) $bufferTime,
             (int) $basePrepTime,
+            (int) ($this->zone_info['delivery_wait_minutes'] ?? 0),
         );
     }
 
