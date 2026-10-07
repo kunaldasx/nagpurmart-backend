@@ -21,7 +21,13 @@
         </form>
     </div>
 @else
-    <span class="badge {{ in_array($status, ['rejected', 'disapproved'], true) ? 'bg-red-lt' : 'bg-secondary-lt' }}">
-        {{ ucfirst(str_replace('_', ' ', $status ?? 'not requested')) }}
-    </span>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge {{ in_array($status, ['rejected', 'disapproved'], true) ? 'bg-red-lt' : 'bg-secondary-lt' }}">
+            {{ ucfirst(str_replace('_', ' ', $status ?? 'not requested')) }}
+        </span>
+        <form method="POST" action="{{ route('seller.system-users.approve-login', $id) }}">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-success">Approve</button>
+        </form>
+    </div>
 @endif
