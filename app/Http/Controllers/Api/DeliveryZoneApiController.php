@@ -321,6 +321,7 @@ class DeliveryZoneApiController extends Controller
             $deliveryTimePerKm,
             $bufferTime,
             $basePrepTime,
+            (int) ($zoneInfo['delivery_wait_minutes'] ?? 0),
         );
 
         $response['distance_km'] = round($distance, 2);
@@ -330,14 +331,17 @@ class DeliveryZoneApiController extends Controller
         $response['buffer_time_minutes'] = $bufferTime;
         $response['buffer_comment'] = $zoneInfo['buffer_comment'] ?? null;
         $response['active_hours'] = $zoneInfo['active_hours'] ?? null;
-        $response['delivery_paused'] = false;
-        $response['delivery_pause_until'] = null;
-        $response['delivery_pause_comment'] = null;
+        $response['delivery_paused'] = $zoneInfo['delivery_paused'] ?? false;
+        $response['delivery_pause_until'] = $zoneInfo['delivery_paused_until'] ?? null;
+        $response['delivery_pause_comment'] = $zoneInfo['delivery_pause_comment'] ?? null;
+        $response['delivery_start_at'] = $zoneInfo['delivery_start_at'] ?? null;
+        $response['delivery_wait_minutes'] = $zoneInfo['delivery_wait_minutes'] ?? 0;
         $response['calculation'] = [
             'base_prep_time_minutes' => $basePrepTime,
             'delivery_time_per_km' => $deliveryTimePerKm,
             'buffer_time_minutes' => $bufferTime,
             'distance_minutes' => $distanceMinutes,
+            'delivery_wait_minutes' => $zoneInfo['delivery_wait_minutes'] ?? 0,
             'estimated_time_minutes' => (int) $estimatedTotalMinutes,
         ];
         $response['estimated_time_minutes'] = (int)$estimatedTotalMinutes;
