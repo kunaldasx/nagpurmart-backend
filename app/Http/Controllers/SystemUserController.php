@@ -81,8 +81,11 @@ class SystemUserController extends Controller
             ['data' => 'mobile', 'name' => 'mobile', 'title' => __('labels.mobile')],
             ['data' => 'role', 'name' => 'role', 'title' => __('labels.role')],
             ['data' => 'created_at', 'name' => 'created_at', 'title' => __('labels.created_at')],
-            ['data' => 'action', 'name' => 'action', 'title' => __('labels.action'), 'orderable' => false, 'searchable' => false],
         ];
+        if ($this->getPanel() === 'seller') {
+            $columns[] = ['data' => 'login_approval_status', 'name' => 'login_approval_status', 'title' => 'Login approval', 'orderable' => false, 'searchable' => false];
+        }
+        $columns[] = ['data' => 'action', 'name' => 'action', 'title' => __('labels.action'), 'orderable' => false, 'searchable' => false];
         $editPermission = $this->editPermission;
         $createPermission = $this->createPermission;
         $systemUserCreateLimitReached = false;
@@ -182,6 +185,7 @@ class SystemUserController extends Controller
             SellerUser::create([
                 'user_id' => $newUser->id,
                 'seller_id' => $validated['seller_id'],
+                'login_approval_status' => 'not_requested',
             ]);
         }
 
@@ -295,6 +299,42 @@ class SystemUserController extends Controller
         return ApiResponseType::sendJsonResponse(true, 'labels.user_deleted', []);
     }
 
+    public function approveSystemUserLogin(int $id)
+    {
+        return $this->updateSystemUserLoginApproval($id, 'approved');
+    }
+
+    public function rejectSystemUserLogin(int $id)
+    {
+        return $this->updateSystemUserLoginApproval($id, 'rejected');
+    }
+
+    private function updateSystemUserLoginApproval(int $id, string $status)
+    {
+        $user = User::find($id);
+        $seller = auth()->user()?->seller();
+        $membership = $seller
+            ? SellerUser::where('user_id', $id)->where('seller_id', $seller->id)->first()
+            : null;
+
+        if (!$user || !$membership) {
+            abort(404);
+        }
+
+        try {
+            $this->authorize('update', $user);
+        } catch (AuthorizationException) {
+            abort(403);
+        }
+
+        $membership->update([
+            'login_approval_status' => $status,
+            'login_approved_at' => $status === 'approved' ? now() : null,
+        ]);
+
+        return redirect()->route('seller.system-users.index')->with('success', 'System user login approval updated.');
+    }
+
     /**
      * Get system users for DataTable.
      */
@@ -318,7 +358,7 @@ class SystemUserController extends Controller
             }
             $query = User::query()
                 ->join('seller_user', 'users.id', '=', 'seller_user.user_id') // Join pivot table
-                ->select('users.*', 'seller_user.seller_id')
+                ->select('users.*', 'seller_user.seller_id', 'seller_user.login_approval_status')
                 ->where('seller_user.seller_id', '=', $seller->id)
                 ->whereDoesntHave('roles', function ($q) {
                     $q->where('name', DefaultSystemRolesEnum::SUPER_ADMIN());
@@ -361,6 +401,12 @@ class SystemUserController extends Controller
                     'mobile' => $demo ? Str::mask($mobile, '****', 3, 4) : $mobile,
                     'role' => view('partials.roles', ['roles' => $user->getRoleNames()])->render(),
                     'created_at' => $user->created_at->format('Y-m-d'),
+                    'login_approval_status' => $this->getPanel() === 'seller'
+                        ? view('partials.seller_system_user_approval', [
+                            'status' => $user->login_approval_status,
+                            'id' => $user->id,
+                        ])->render()
+                        : null,
                     'action' => view('partials.actions', [
                         'modelName' => 'system-user',
                         'id' => $user->id,

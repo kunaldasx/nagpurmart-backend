@@ -89,6 +89,8 @@ Route::prefix('seller')->name('seller.')->group(function () {
             Route::post('/', [SystemUserController::class, 'store'])->name('store');
             Route::get('/{id}/edit', [SystemUserController::class, 'show'])->name('show');
             Route::post('/{id}', [SystemUserController::class, 'update'])->name('update');
+            Route::post('/{id}/approve-login', [SystemUserController::class, 'approveSystemUserLogin'])->name('approve-login');
+            Route::post('/{id}/reject-login', [SystemUserController::class, 'rejectSystemUserLogin'])->name('reject-login');
             Route::delete('/{id}', [SystemUserController::class, 'destroy'])->name('destroy');
             Route::get('/datatable', [SystemUserController::class, 'getSystemUsers'])->name('datatable');
         });

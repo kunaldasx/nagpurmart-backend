@@ -14,6 +14,7 @@ use App\Types\Api\ApiResponseType;
 use App\Services\SettingService;
 use App\Enums\SettingTypeEnum;
 use App\Services\WalletService;
+use App\Services\SellerUserLoginApprovalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth as FacadesAuth;
@@ -233,6 +234,11 @@ trait AuthTrait
                     'message' => __('labels.invalid_credentials'),
                     'data' => []
                 ]);
+            }
+
+            if ($response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired(FacadesAuth::user())) {
+                FacadesAuth::logout();
+                return $response;
             }
 
             // 5) Finalize login response

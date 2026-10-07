@@ -28,7 +28,18 @@ class SellerUser extends Model
     protected $fillable = [
         'user_id',
         'seller_id',
+        'login_approval_status',
+        'login_approval_requested_at',
+        'login_approved_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'login_approval_requested_at' => 'datetime',
+            'login_approved_at' => 'datetime',
+        ];
+    }
 
     /**
      * Get the user associated with the seller-user relationship.

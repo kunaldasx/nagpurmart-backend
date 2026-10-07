@@ -68,6 +68,22 @@ class NotificationService
         }
     }
 
+    public function notifySellerSystemUserLoginRequest(User $sellerOwner, User $systemUser, int $sellerId): void
+    {
+        $this->createNotification([
+            'user_id' => $sellerOwner->id,
+            'type' => NotificationTypeEnum::SYSTEM(),
+            'sent_to' => 'seller',
+            'title' => 'System user login approval required',
+            'message' => $systemUser->name . ' is requesting access to your seller account.',
+            'metadata' => [
+                'event' => 'seller_system_user_login_approval',
+                'seller_id' => $sellerId,
+                'system_user_id' => $systemUser->id,
+            ],
+        ]);
+    }
+
     /**
      * Get paginated notifications for a specific user.
      *

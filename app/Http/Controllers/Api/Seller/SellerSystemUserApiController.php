@@ -47,7 +47,7 @@ class SellerSystemUserApiController extends Controller
 
         $query = User::query()
             ->join('seller_user', 'users.id', '=', 'seller_user.user_id')
-            ->select('users.*')
+            ->select('users.*', 'seller_user.login_approval_status', 'seller_user.login_approval_requested_at')
             ->where('seller_user.seller_id', $seller->id)
             ->orderByDesc('users.id');
         if (!empty($q)) {
@@ -86,7 +86,12 @@ class SellerSystemUserApiController extends Controller
         } catch (AuthorizationException) {
             return ApiResponseType::sendJsonResponse(false, __('labels.permission_denied'), null, 403);
         }
-        return ApiResponseType::sendJsonResponse(true, __('labels.user_retrieved'), ['user' => $user]);
+        $membership = SellerUser::where('user_id', $user->id)->first();
+        return ApiResponseType::sendJsonResponse(true, __('labels.user_retrieved'), [
+            'user' => $user,
+            'login_approval_status' => $membership?->login_approval_status,
+            'login_approval_requested_at' => $membership?->login_approval_requested_at,
+        ]);
     }
 
     /**
@@ -145,12 +150,90 @@ class SellerSystemUserApiController extends Controller
         SellerUser::create([
             'user_id' => $newUser->id,
             'seller_id' => $seller->id,
+            'login_approval_status' => 'not_requested',
         ]);
 
         // Update usage after create (multivendor only)
         $this->recordUsageIfMultivendor($seller->id, SubscriptionPlanKeyEnum::SYSTEM_USER_LIMIT());
 
         return ApiResponseType::sendJsonResponse(true, __('labels.user_created'), ['user' => $newUser], 201);
+    }
+
+    public function pendingLoginApprovals(Request $request): JsonResponse
+    {
+        try {
+            $this->authorize('viewAny', User::class);
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.permission_denied'), null, 403);
+        }
+
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), null, 404);
+        }
+
+        $approvals = SellerUser::with('user:id,name,email,mobile')
+            ->where('seller_id', $seller->id)
+            ->where('login_approval_status', 'pending')
+            ->orderByDesc('login_approval_requested_at')
+            ->paginate((int) $request->input('per_page', 15));
+
+        return ApiResponseType::sendJsonResponse(true, 'Pending login approvals retrieved.', [
+            'current_page' => $approvals->currentPage(),
+            'last_page' => $approvals->lastPage(),
+            'per_page' => $approvals->perPage(),
+            'total' => $approvals->total(),
+            'data' => $approvals->through(fn (SellerUser $membership) => [
+                'user_id' => $membership->user_id,
+                'name' => $membership->user?->name,
+                'email' => $membership->user?->email,
+                'mobile' => $membership->user?->mobile,
+                'login_approval_status' => $membership->login_approval_status,
+                'login_approval_requested_at' => $membership->login_approval_requested_at,
+            ])->items(),
+        ]);
+    }
+
+    public function approveLogin(int $id): JsonResponse
+    {
+        return $this->setLoginApprovalStatus($id, 'approved');
+    }
+
+    public function rejectLogin(int $id): JsonResponse
+    {
+        return $this->setLoginApprovalStatus($id, 'rejected');
+    }
+
+    private function setLoginApprovalStatus(int $id, string $status): JsonResponse
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.user_not_found'), null, 404);
+        }
+
+        try {
+            $this->authorize('update', $user);
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.permission_denied'), null, 403);
+        }
+
+        $seller = auth()->user()?->seller();
+        $membership = $seller
+            ? SellerUser::where('user_id', $user->id)->where('seller_id', $seller->id)->first()
+            : null;
+        if (!$membership) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.permission_denied'), null, 403);
+        }
+
+        $membership->update([
+            'login_approval_status' => $status,
+            'login_approved_at' => $status === 'approved' ? now() : null,
+        ]);
+
+        return ApiResponseType::sendJsonResponse(true, 'System user login approval updated.', [
+            'user_id' => $user->id,
+            'login_approval_status' => $status,
+        ]);
     }
 
     /**

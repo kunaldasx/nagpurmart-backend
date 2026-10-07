@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 use Kreait\Firebase\Factory;
 use App\Services\WalletService;
+use App\Services\SellerUserLoginApprovalService;
 use Illuminate\Support\Str;
 
 #[Group('Auth')]
@@ -168,6 +169,10 @@ class AuthApiController extends Controller
             $firebaseUser = $auth->getUser($uid);
             $user = User::where('email', $firebaseUser->email)->first();
             if ($user) {
+                if ($response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired($user)) {
+                    return $response;
+                }
+
                 $user->update([
                     'email_verified_at' => $firebaseUser->emailVerified ? now() : null,
                 ]);
@@ -303,6 +308,10 @@ class AuthApiController extends Controller
             if ($email) {
                 $user = User::where('email', $email)->first();
                 if ($user) {
+                    if ($response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired($user)) {
+                        return $response;
+                    }
+
                     $user->update([
                         'email_verified_at' => ($firebaseUser->emailVerified ?? ($claims['email_verified'] ?? false)) ? now() : null,
                     ]);
@@ -470,6 +479,10 @@ class AuthApiController extends Controller
                     message: 'labels.user_not_found',
                     data: []
                 );
+            }
+
+            if ($response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired($user)) {
+                return $response;
             }
 
             // Successful login for existing user

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\OtpService;
 use App\Services\WalletService;
 use App\Services\SettingService;
+use App\Services\SellerUserLoginApprovalService;
 use App\Traits\AuthTrait;
 use App\Enums\SettingTypeEnum;
 use App\Types\Api\ApiResponseType;
@@ -169,6 +170,10 @@ class OtpApiController extends Controller
             $user = User::withTrashed()->where('mobile', $sanitizedMobile)->first();
 
             if ($user) {
+                if ($response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired($user)) {
+                    return $response;
+                }
+
                 if ($user->trashed()) {
                     $user->restore();
                 }
@@ -422,6 +427,10 @@ class OtpApiController extends Controller
             }
 
             // Login
+            if ($response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired($user)) {
+                return $response;
+            }
+
             $token = $user->createToken($mobile)->plainTextToken;
             event(new UserLoggedIn($user));
 

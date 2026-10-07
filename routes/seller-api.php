@@ -167,6 +167,9 @@ Route::middleware(['auth:sanctum',
 
     // System Users (seller-scoped)
     Route::prefix('system-users')->name('system_users.')->group(function () {
+        Route::get('/login-approvals', [SellerSystemUserApiController::class, 'pendingLoginApprovals'])->name('login_approvals');
+        Route::post('/{id}/approve-login', [SellerSystemUserApiController::class, 'approveLogin'])->name('approve_login');
+        Route::post('/{id}/reject-login', [SellerSystemUserApiController::class, 'rejectLogin'])->name('reject_login');
         Route::get('/', [SellerSystemUserApiController::class, 'index'])->name('index');
         Route::get('/{id}', [SellerSystemUserApiController::class, 'show'])->name('show');
         Route::post('/', [SellerSystemUserApiController::class, 'store'])->name('store');
