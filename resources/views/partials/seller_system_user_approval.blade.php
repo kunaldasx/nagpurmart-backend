@@ -1,3 +1,7 @@
+@php
+    $approvedUntil = \Illuminate\Support\Carbon::make($approvedUntil ?? null);
+@endphp
+
 @if($status === 'pending')
     <div class="d-flex align-items-center gap-2">
         <span class="badge bg-yellow-lt">Pending</span>
@@ -10,8 +14,8 @@
     </div>
 @elseif($status === 'approved')
     <div class="d-flex align-items-center gap-2">
-        <span class="badge bg-green-lt" title="Approved until {{ $approvedUntil?->format('Y-m-d H:i') }}">
-            Approved until {{ $approvedUntil?->format('H:i') }}
+        <span class="badge bg-green-lt" title="Approved until {{ $approvedUntil?->format('Y-m-d H:i') ?? 'unknown' }}">
+            Approved until {{ $approvedUntil?->format('H:i') ?? 'unknown' }}
         </span>
         <button type="button" class="btn btn-sm btn-outline-danger seller-user-approval-trigger"
             data-approval-action="disapprove" data-action-url="{{ route('seller.system-users.reject-login', $id) }}"
