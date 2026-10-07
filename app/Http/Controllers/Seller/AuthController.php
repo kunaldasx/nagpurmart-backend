@@ -17,9 +17,12 @@ class AuthController extends Controller
     use AuthTrait;
     protected string $role = 'seller';
 
-    public function loginSeller(): View
+    public function loginSeller(): \Illuminate\Http\Response
     {
-        return view('seller.auth.login');
+        return response()->view('seller.auth.login')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function pendingApproval(): View|JsonResponse|\Illuminate\Http\RedirectResponse
