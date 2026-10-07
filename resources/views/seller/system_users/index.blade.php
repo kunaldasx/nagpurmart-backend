@@ -100,10 +100,31 @@
                 <div class="card-table">
                     <div class="row w-full p-3">
                         <x-datatable id="system-user-table" :columns="$columns"
-                                     route="{{ route('seller.system-users.datatable') }}"
+                                     route="{{ route('seller.system-users.datatable', array_filter(['approval_user_id' => $approvalUserId])) }}"
                                      :options="['order' => [[0, 'desc']],'pageLength' => 10,]"/>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal modal-blur fade" id="seller-user-approval-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <form id="seller-user-approval-form" method="POST">
+                    @csrf
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title" id="seller-user-approval-title">Confirm access change</h5>
+                            <div class="text-muted mt-1" id="seller-user-approval-user"></div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="seller-user-approval-message"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn" id="seller-user-approval-confirm">Confirm</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -220,4 +241,46 @@
             </div>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalElement = document.getElementById('seller-user-approval-modal');
+            const approvalForm = document.getElementById('seller-user-approval-form');
+            const approvalModal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            const titleElement = document.getElementById('seller-user-approval-title');
+            const userElement = document.getElementById('seller-user-approval-user');
+            const messageElement = document.getElementById('seller-user-approval-message');
+            const confirmButton = document.getElementById('seller-user-approval-confirm');
+
+            function openApprovalModal(trigger) {
+                const approve = trigger.dataset.approvalAction === 'approve';
+                approvalForm.action = trigger.dataset.actionUrl;
+                titleElement.textContent = approve ? 'Approve system user' : 'Disapprove system user';
+                userElement.textContent = trigger.dataset.userName;
+                messageElement.textContent = approve
+                    ? 'This user will be able to access the seller account for 24 hours.'
+                    : 'This user will lose seller access immediately, including active API sessions.';
+                confirmButton.textContent = approve ? 'Approve access' : 'Disapprove access';
+                confirmButton.className = approve ? 'btn btn-success' : 'btn btn-danger';
+                approvalModal.show();
+            }
+
+            document.addEventListener('click', function (event) {
+                const trigger = event.target.closest('.seller-user-approval-trigger');
+                if (trigger) {
+                    event.preventDefault();
+                    openApprovalModal(trigger);
+                }
+            });
+
+            if (window.jQuery) {
+                window.jQuery(document).on('draw.dt', '#system-user-table', function () {
+                    const autoOpen = document.querySelector('.seller-user-approval-trigger[data-auto-open="true"]');
+                    if (autoOpen) {
+                        autoOpen.dataset.autoOpen = 'false';
+                        openApprovalModal(autoOpen);
+                    }
+                });
+            }
+        });
+    </script>
 @endsection

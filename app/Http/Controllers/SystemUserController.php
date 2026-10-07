@@ -58,7 +58,7 @@ class SystemUserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', User::class);
         if ($this->getPanel() == 'seller') {
@@ -88,6 +88,7 @@ class SystemUserController extends Controller
         $columns[] = ['data' => 'action', 'name' => 'action', 'title' => __('labels.action'), 'orderable' => false, 'searchable' => false];
         $editPermission = $this->editPermission;
         $createPermission = $this->createPermission;
+        $approvalUserId = $this->getPanel() === 'seller' ? $request->integer('approval_user_id') : null;
         $systemUserCreateLimitReached = false;
         $systemUserCreateLimitMessage = null;
 
@@ -118,6 +119,7 @@ class SystemUserController extends Controller
             'columns',
             'editPermission',
             'createPermission',
+            'approvalUserId',
             'systemUserCreateLimitReached',
             'systemUserCreateLimitMessage'
         ));
@@ -367,6 +369,9 @@ class SystemUserController extends Controller
                 ->whereDoesntHave('roles', function ($q) {
                     $q->where('name', DefaultSystemRolesEnum::SUPER_ADMIN());
                 });
+            if ($request->filled('approval_user_id')) {
+                $query->where('users.id', (int) $request->input('approval_user_id'));
+            }
         } else {
             $query = User::query()
                 ->where('access_panel', 'admin')
@@ -390,6 +395,7 @@ class SystemUserController extends Controller
         $filteredRecords = $query->count();
 
         $demo = $this->isDemoModeEnabled();
+        $orderColumn = $this->getPanel() === 'seller' ? 'users.' . $orderColumn : $orderColumn;
         $data = $query
             ->orderBy($orderColumn, $orderDirection)
             ->skip($start)
@@ -410,6 +416,8 @@ class SystemUserController extends Controller
                             'status' => $user->login_approval_status,
                             'id' => $user->id,
                             'approvedUntil' => $user->login_approved_until,
+                            'userName' => $user->name,
+                            'autoOpen' => (int) request()->input('approval_user_id') === (int) $user->id,
                         ])->render()
                         : null,
                     'action' => view('partials.actions', [

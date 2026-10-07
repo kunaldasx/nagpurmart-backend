@@ -1,33 +1,29 @@
 @if($status === 'pending')
     <div class="d-flex align-items-center gap-2">
         <span class="badge bg-yellow-lt">Pending</span>
-        <form method="POST" action="{{ route('seller.system-users.approve-login', $id) }}">
-            @csrf
-            <button type="submit" class="btn btn-sm btn-success">Approve</button>
-        </form>
-        <form method="POST" action="{{ route('seller.system-users.reject-login', $id) }}">
-            @csrf
-            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
-        </form>
+        <button type="button" class="btn btn-sm btn-success seller-user-approval-trigger"
+                data-approval-action="approve" data-action-url="{{ route('seller.system-users.approve-login', $id) }}"
+                data-user-name="{{ $userName }}" data-auto-open="{{ $autoOpen ? 'true' : 'false' }}">Approve</button>
+        <button type="button" class="btn btn-sm btn-outline-danger seller-user-approval-trigger"
+                data-approval-action="disapprove" data-action-url="{{ route('seller.system-users.reject-login', $id) }}"
+                data-user-name="{{ $userName }}">Reject</button>
     </div>
 @elseif($status === 'approved')
     <div class="d-flex align-items-center gap-2">
         <span class="badge bg-green-lt" title="Approved until {{ $approvedUntil?->format('Y-m-d H:i') }}">
             Approved until {{ $approvedUntil?->format('H:i') }}
         </span>
-        <form method="POST" action="{{ route('seller.system-users.reject-login', $id) }}">
-            @csrf
-            <button type="submit" class="btn btn-sm btn-outline-danger">Disapprove</button>
-        </form>
+        <button type="button" class="btn btn-sm btn-outline-danger seller-user-approval-trigger"
+            data-approval-action="disapprove" data-action-url="{{ route('seller.system-users.reject-login', $id) }}"
+            data-user-name="{{ $userName }}">Disapprove</button>
     </div>
 @else
     <div class="d-flex align-items-center gap-2">
         <span class="badge {{ in_array($status, ['rejected', 'disapproved'], true) ? 'bg-red-lt' : 'bg-secondary-lt' }}">
             {{ ucfirst(str_replace('_', ' ', $status ?? 'not requested')) }}
         </span>
-        <form method="POST" action="{{ route('seller.system-users.approve-login', $id) }}">
-            @csrf
-            <button type="submit" class="btn btn-sm btn-success">Approve</button>
-        </form>
+        <button type="button" class="btn btn-sm btn-success seller-user-approval-trigger"
+            data-approval-action="approve" data-action-url="{{ route('seller.system-users.approve-login', $id) }}"
+            data-user-name="{{ $userName }}" data-auto-open="{{ $autoOpen ? 'true' : 'false' }}">Approve</button>
     </div>
 @endif
