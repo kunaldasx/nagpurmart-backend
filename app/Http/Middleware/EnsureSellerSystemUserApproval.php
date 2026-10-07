@@ -41,14 +41,8 @@ class EnsureSellerSystemUserApproval
             ]);
         }
 
-        $user->tokens()->delete();
-        Auth::logout();
-        if ($request->hasSession()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-        }
-
         if ($request->expectsJson() || $request->wantsJson()) {
+            $user->tokens()->delete();
             return response()->json([
                 'success' => false,
                 'message' => 'Seller approval is required to access this account.',
@@ -56,6 +50,6 @@ class EnsureSellerSystemUserApproval
             ], 403);
         }
 
-        return redirect()->route('seller.login')->with('error', 'Seller approval is required to access this account.');
+        return redirect()->route('seller.login.pending');
     }
 }

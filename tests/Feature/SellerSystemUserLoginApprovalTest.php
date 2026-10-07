@@ -57,6 +57,38 @@ class SellerSystemUserLoginApprovalTest extends TestCase
         ]);
     }
 
+    public function test_access_status_marks_expired_approval_disapproved(): void
+    {
+        [, $systemUser, $membership] = $this->createSellerSystemUser('approved');
+        $membership->update(['login_approved_until' => now()->subSecond()]);
+
+        $status = app(SellerUserLoginApprovalService::class)->getAccessStatus($systemUser);
+
+        $this->assertFalse($status['approved']);
+        $this->assertSame('disapproved', $status['status']);
+        $this->assertDatabaseHas('seller_user', [
+            'user_id' => $systemUser->id,
+            'login_approval_status' => 'disapproved',
+            'login_approved_until' => null,
+        ]);
+    }
+
+    public function test_main_seller_owner_does_not_require_system_user_login_approval(): void
+    {
+        [$seller] = $this->createSellerSystemUser('disapproved');
+        $sellerOwner = User::findOrFail($seller->user_id);
+        SellerUser::create([
+            'user_id' => $sellerOwner->id,
+            'seller_id' => $seller->id,
+            'login_approval_status' => 'disapproved',
+        ]);
+
+        $service = app(SellerUserLoginApprovalService::class);
+
+        $this->assertNull($service->requestApprovalIfRequired($sellerOwner));
+        $this->assertTrue($service->getAccessStatus($sellerOwner)['approved']);
+    }
+
     private function createSellerSystemUser(string $approvalStatus): array
     {
         $sellerOwner = User::create([
