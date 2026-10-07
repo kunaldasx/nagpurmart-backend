@@ -191,9 +191,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // delegate remove
     document.addEventListener("click", function (e) {
-        if (e.target && e.target.classList.contains("remove-offer-item")) {
-            e.target.closest(".offer-item-row")?.remove();
-            reindexOfferItemRows();
-        }
+        const removeButton = e.target.closest(".remove-offer-item");
+        if (!removeButton || !offerItemsContainer?.contains(removeButton))
+            return;
+
+        const row = removeButton.closest(".offer-item-row");
+        if (!row) return;
+
+        row.querySelectorAll(".tom-select-ajax").forEach(function (select) {
+            select.tomselect?.destroy();
+        });
+        row.remove();
+        reindexOfferItemRows();
     });
 });
