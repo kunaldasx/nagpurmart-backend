@@ -114,15 +114,21 @@
                     @csrf
                     <div class="modal-header">
                         <div>
-                            <h5 class="modal-title" id="seller-user-approval-title">Confirm access change</h5>
+                            <h5 class="modal-title" id="seller-user-approval-title">Login approval status</h5>
                             <div class="text-muted mt-1" id="seller-user-approval-user"></div>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body" id="seller-user-approval-message"></div>
+                    <div class="modal-body">
+                        <div class="mb-3">Current status: <span class="badge" id="seller-user-approval-status"></span></div>
+                        <div class="text-muted" id="seller-user-approval-message"></div>
+                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn" id="seller-user-approval-confirm">Confirm</button>
+                        <button type="submit" class="btn btn-success" id="seller-user-approve"
+                                formaction="">Approve for 24 hours</button>
+                        <button type="submit" class="btn btn-outline-danger" id="seller-user-disapprove"
+                                formaction="">Disapprove</button>
                     </div>
                 </form>
             </div>
@@ -242,34 +248,34 @@
         </div>
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        (function () {
             const modalElement = document.getElementById('seller-user-approval-modal');
             const approvalForm = document.getElementById('seller-user-approval-form');
-            const approvalModal = bootstrap.Modal.getOrCreateInstance(modalElement);
-            const titleElement = document.getElementById('seller-user-approval-title');
             const userElement = document.getElementById('seller-user-approval-user');
             const messageElement = document.getElementById('seller-user-approval-message');
-            const confirmButton = document.getElementById('seller-user-approval-confirm');
+            const statusElement = document.getElementById('seller-user-approval-status');
+            const approveButton = document.getElementById('seller-user-approve');
+            const disapproveButton = document.getElementById('seller-user-disapprove');
 
-            function openApprovalModal(trigger) {
-                const approve = trigger.dataset.approvalAction === 'approve';
-                approvalForm.action = trigger.dataset.actionUrl;
-                titleElement.textContent = approve ? 'Approve system user' : 'Disapprove system user';
+            modalElement.addEventListener('show.bs.modal', function (event) {
+                const trigger = event.relatedTarget;
+                if (!trigger) return;
+
+                const status = trigger.dataset.status || 'not_requested';
+                const approved = status === 'approved';
+                approvalForm.action = trigger.dataset.disapproveUrl;
+                approveButton.setAttribute('formaction', trigger.dataset.approveUrl);
+                disapproveButton.setAttribute('formaction', trigger.dataset.disapproveUrl);
                 userElement.textContent = trigger.dataset.userName;
-                messageElement.textContent = approve
-                    ? 'This user will be able to access the seller account for 24 hours.'
-                    : 'This user will lose seller access immediately, including active API sessions.';
-                confirmButton.textContent = approve ? 'Approve access' : 'Disapprove access';
-                confirmButton.className = approve ? 'btn btn-success' : 'btn btn-danger';
-                approvalModal.show();
-            }
-
-            document.addEventListener('click', function (event) {
-                const trigger = event.target.closest('.seller-user-approval-trigger');
-                if (trigger) {
-                    event.preventDefault();
-                    openApprovalModal(trigger);
-                }
+                statusElement.textContent = approved && trigger.dataset.approvedUntil
+                    ? `Approved until ${trigger.dataset.approvedUntil}`
+                    : status.replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase());
+                statusElement.className = `badge ${approved ? 'bg-green-lt' : status === 'pending' ? 'bg-yellow-lt' : 'bg-red-lt'}`;
+                messageElement.textContent = approved
+                    ? 'Disapproving will immediately revoke this user’s active API access.'
+                    : 'Approving grants this user access for 24 hours.';
+                approveButton.disabled = approved;
+                disapproveButton.disabled = !approved && status === 'disapproved';
             });
 
             if (window.jQuery) {
@@ -277,10 +283,10 @@
                     const autoOpen = document.querySelector('.seller-user-approval-trigger[data-auto-open="true"]');
                     if (autoOpen) {
                         autoOpen.dataset.autoOpen = 'false';
-                        openApprovalModal(autoOpen);
+                        autoOpen.click();
                     }
                 });
             }
-        });
+        })();
     </script>
 @endsection
