@@ -81,10 +81,10 @@
 
                     <!-- Language dropdown -->
                     <div class="nav-item dropdown d-flex me-3">
-                        <button type="button" class="btn btn-icon border-0 shadow-none nav-link px-0 header-dropdown-trigger"
-                           aria-label="Select language" aria-expanded="false">
+                        <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" tabindex="-1"
+                           aria-label="Select language">
                             <i class="ti ti-language fs-2"></i>
-                        </button>
+                        </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                             <a href="{{ route('set.language', 'en') }}"
                                class="dropdown-item {{ app()->getLocale() == 'en' ? 'active' : '' }}">
@@ -147,8 +147,8 @@
                             $unreadCount   = $headerData['unread_count'];
                         @endphp
                         <div class="nav-item dropdown me-3">
-                            <button type="button" class="btn btn-icon border-0 shadow-none nav-link px-0 header-dropdown-trigger"
-                                aria-expanded="false" aria-label="Show notifications">
+                            <button type="button" class="btn btn-icon border-0 shadow-none nav-link px-0"
+                                    data-bs-toggle="dropdown" tabindex="-1" aria-label="Show notifications">
                                 <i class="ti ti-bell fs-2"></i>
                                 @if($unreadCount > 0)
                                     <span class="badge bg-red badge-sm mt-1 badge-notification text-red-fg">
@@ -157,7 +157,7 @@
                                     </span>
                                 @endif
                             </button>
-                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-card">
+                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-card header-notifications-menu">
                                 <div class="card">
                                     <div class="card-header">
                                         <h3 class="card-title">{{ __('labels.notifications') }}
@@ -236,8 +236,8 @@
 
                     <!-- Admin profile dropdown -->
                     <div class="nav-item dropdown d-flex">
-                                <button type="button" class="btn border-0 shadow-none nav-link d-flex lh-1 text-reset p-0 header-dropdown-trigger"
-                                    aria-label="Open user menu" aria-expanded="false">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown"
+                           aria-label="Open user menu">
                             @if($user->profile_image)
                                 <span class="avatar avatar-sm" id="profile"
                                       style="background-image: url({{ $user->profile_image }});"></span>
@@ -255,7 +255,7 @@
                                     @endif
                                 </div>
                             </div>
-                        </button>
+                        </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                             <a href="{{route(request()->segment(1).'.profile.index')}}" class="dropdown-item">
                                 <i class="ti ti-user me-2 fs-2"></i>{{ __('labels.profile') }}
@@ -272,42 +272,14 @@
             </div>
         </div>
     </div>
-    <script>
-        document.addEventListener('click', function (event) {
-            const trigger = event.target.closest('.header-dropdown-trigger');
-            const openDropdowns = document.querySelectorAll('.page-header .nav-item.dropdown.show');
-
-            openDropdowns.forEach(function (dropdown) {
-                if (!trigger || !dropdown.contains(trigger)) {
-                    dropdown.classList.remove('show');
-                    dropdown.querySelector('.dropdown-menu')?.classList.remove('show');
-                    dropdown.querySelector('.header-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
-                }
-            });
-
-            if (!trigger) return;
-
-            event.preventDefault();
-            const dropdown = trigger.closest('.nav-item.dropdown');
-            const menu = dropdown?.querySelector('.dropdown-menu');
-            if (!dropdown || !menu) return;
-
-            const shouldOpen = !dropdown.classList.contains('show');
-            dropdown.classList.toggle('show', shouldOpen);
-            menu.classList.toggle('show', shouldOpen);
-            trigger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-        });
-
-        document.addEventListener('keydown', function (event) {
-            if (event.key !== 'Escape') return;
-
-            document.querySelectorAll('.page-header .nav-item.dropdown.show').forEach(function (dropdown) {
-                dropdown.classList.remove('show');
-                dropdown.querySelector('.dropdown-menu')?.classList.remove('show');
-                dropdown.querySelector('.header-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
-            });
-        });
-    </script>
+    <style>
+        .header-notifications-menu {
+            width: min(24rem, calc(100vw - 1rem));
+            max-width: calc(100vw - 1rem);
+            max-height: calc(100vh - 5rem);
+            overflow-y: auto;
+        }
+    </style>
     @if(($systemSettings['demoMode'] ?? false))
         <div class="alert alert-danger alert-dismissible m-3 text-danger" role="alert">
             <div class="alert-icon">
