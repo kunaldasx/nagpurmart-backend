@@ -1,4 +1,3 @@
-<script src="{{hyperAsset('assets/theme/js/bootstrap.bundle.min.js')}}" defer></script>
 <!-- include jQuery library -->
 <script src="{{asset('assets/vendor/axios/axios.min.js')}}"></script>
 <script src="{{asset('assets/vendor/jquery/jquery.js')}}"></script>
