@@ -237,11 +237,32 @@ trait AuthTrait
             }
 
             if ($response = app(SellerUserLoginApprovalService::class)->requestApprovalIfRequired(FacadesAuth::user())) {
+                if ($request->routeIs('seller.login.post')) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Your login request is waiting for seller approval.',
+                        'data' => [
+                            'login_approval_status' => 'pending',
+                            'redirect_url' => route('seller.login.pending'),
+                        ],
+                    ]);
+                }
+
                 FacadesAuth::logout();
                 return $response;
             }
 
             // 5) Finalize login response
+            if ($request->routeIs('seller.login.post')) {
+                $this->storeFcmToken($request, FacadesAuth::user());
+
+                return response()->json([
+                    'success' => true,
+                    'message' => __('labels.login_successful'),
+                    'data' => ['redirect_url' => route('seller.dashboard')],
+                ]);
+            }
+
             return $this->finalizeLogin($request);
         } catch (ValidationException $e) {
             return response()->json([

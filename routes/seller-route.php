@@ -29,6 +29,9 @@ use App\Http\Controllers\TaxRateController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('seller')->name('seller.')->group(function () {
+    Route::get('login/pending-approval', [AuthController::class, 'pendingApproval'])->name('login.pending');
+    Route::get('login/pending-approval/status', [AuthController::class, 'pendingApprovalStatus'])->name('login.pending.status');
+
     Route::middleware(['guest'])->group(function () {
         Route::get('login', [AuthController::class, 'loginSeller'])->name('login');
         Route::post('login', [AuthController::class, 'login'])->name('login.post');

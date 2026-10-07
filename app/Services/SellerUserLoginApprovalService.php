@@ -11,6 +11,38 @@ use Illuminate\Support\Facades\Log;
 
 class SellerUserLoginApprovalService
 {
+    public function getAccessStatus(User $user): array
+    {
+        $membership = SellerUser::where('user_id', $user->id)->first();
+        if (!$membership) {
+            return ['approved' => true, 'status' => 'approved', 'approved_until' => null];
+        }
+
+        $seller = Seller::find($membership->seller_id);
+        if ($seller && (int) $seller->user_id === (int) $user->id) {
+            return ['approved' => true, 'status' => 'approved', 'approved_until' => null];
+        }
+
+        $approved = $membership->login_approval_status === 'approved'
+            && $membership->login_approved_until
+            && $membership->login_approved_until->isFuture();
+
+        if (!$approved && $membership->login_approval_status === 'approved') {
+            $membership->update([
+                'login_approval_status' => 'disapproved',
+                'login_approved_until' => null,
+            ]);
+            $user->tokens()->delete();
+            $membership->refresh();
+        }
+
+        return [
+            'approved' => (bool) $approved,
+            'status' => $approved ? 'approved' : $membership->login_approval_status,
+            'approved_until' => $approved ? $membership->login_approved_until : null,
+        ];
+    }
+
     public function requestApprovalIfRequired(User $user): ?JsonResponse
     {
         $membership = SellerUser::where('user_id', $user->id)->first();
@@ -23,9 +55,7 @@ class SellerUserLoginApprovalService
             return null;
         }
 
-        if ($membership->login_approval_status === 'approved'
-            && $membership->login_approved_until
-            && $membership->login_approved_until->isFuture()) {
+        if ($this->getAccessStatus($user)['approved']) {
             return null;
         }
 

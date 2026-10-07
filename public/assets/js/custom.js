@@ -142,6 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const headers = {
             "X-Requested-With": "XMLHttpRequest",
             Accept: "application/json",
+            "X-CSRF-TOKEN": csrfToken,
         };
 
         // Prepare axios config
@@ -162,6 +163,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         icon: "error",
                         title: data.message,
                     });
+                }
+                if (data.data && data.data.redirect_url) {
+                    window.location.assign(data.data.redirect_url);
+                    return;
                 }
                 setTimeout(function () {
                     location.reload();
