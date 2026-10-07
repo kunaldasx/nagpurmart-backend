@@ -132,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const action = loginForm.getAttribute("action");
         const formData = new FormData(loginForm);
+        const formCsrfToken = formData.get("_token");
         const submitButton = loginForm.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         const originalButtonContent = submitButton.innerHTML;
@@ -142,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const headers = {
             "X-Requested-With": "XMLHttpRequest",
             Accept: "application/json",
-            "X-CSRF-TOKEN": csrfToken,
+            "X-CSRF-TOKEN": formCsrfToken || csrfToken,
         };
 
         // Prepare axios config
@@ -150,6 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
             method: "POST",
             url: action,
             headers: headers,
+            withCredentials: true,
         };
         config.data = formData;
 
