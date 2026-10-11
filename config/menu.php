@@ -160,6 +160,12 @@ return [
                     'sub_title' => 'labels.pending_approval_products',
                     'permission' => 'product.view',
                 ],
+                'product_requests' => [
+                    'sub_active' => 'product_requests',
+                    'sub_route' => 'admin.product-requests.index',
+                    'sub_title' => 'Product Requests',
+                    'permission' => 'product.view',
+                ],
                 'product_faqs' => [
                     'sub_active' => 'product_faqs',
                     'sub_route' => 'admin.product_faqs.index',
@@ -565,6 +571,12 @@ return [
                     'sub_title' => 'labels.bulk_upload',
                     'permission' => 'product.create'
 
+                ],
+                'product_requests' => [
+                    'sub_active' => 'product_requests',
+                    'sub_route' => 'seller.product-requests.index',
+                    'sub_title' => 'Product Requests',
+                    'permission' => 'product.view'
                 ],
                 'product_faqs' => [
                     'sub_active' => 'product_faqs',

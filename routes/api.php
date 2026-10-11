@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\User\UserNotificationApiController;
 use App\Http\Controllers\Api\User\WalletApiController;
 use App\Http\Controllers\Api\User\WishlistApiController;
 use App\Http\Controllers\Api\User\GroceryListApiController;
+use App\Http\Controllers\Api\User\CatalogProductRequestApiController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\Payments\FlutterwaveController;
@@ -79,6 +80,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // users routes
     Route::prefix('user')->name('user.')->group(function () {
+        Route::prefix('product-requests')->name('product-requests.')->group(function () {
+            Route::get('/', [CatalogProductRequestApiController::class, 'index'])->name('index');
+            Route::post('/', [CatalogProductRequestApiController::class, 'store'])->name('store');
+        });
+
         // Grocery list image extraction and history
         Route::prefix('grocery-lists')->name('grocery-lists.')->group(function () {
             Route::get('/', [GroceryListApiController::class, 'index'])->name('index');

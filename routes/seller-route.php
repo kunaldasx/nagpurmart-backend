@@ -11,6 +11,7 @@ use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductConditionController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CatalogProductRequestController;
 use App\Http\Controllers\ProductFaqController;
 use App\Http\Controllers\ProductImageUploadController;
 use App\Http\Controllers\ProfileController;
@@ -58,6 +59,9 @@ Route::prefix('seller')->name('seller.')->group(function () {
         Route::get('bags', [BagController::class, 'sellerIndex'])->name('bags.index');
         Route::get('bags/data', [BagController::class, 'index'])->name('bags.data');
         Route::post('bags/bulk', [BagController::class, 'bulkStore'])->name('bags.bulk-store');
+
+        Route::get('product-requests', [CatalogProductRequestController::class, 'sellerIndex'])->name('product-requests.index');
+        Route::post('product-requests', [CatalogProductRequestController::class, 'sellerStore'])->name('product-requests.store');
         Route::put('bags/{id}', [BagController::class, 'update'])->whereNumber('id')->name('bags.update');
         Route::delete('bags/{id}', [BagController::class, 'destroy'])->whereNumber('id')->name('bags.destroy');
 
