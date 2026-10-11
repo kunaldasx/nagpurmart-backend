@@ -869,8 +869,28 @@ class Product extends Model implements HasMedia
         }
 
         $ids = $ranked->keys()->all();
+        $matchedCandidates = $candidates->whereIn('id', $ids);
+        $categoryIds = $matchedCandidates->pluck('category_id')
+            ->merge($matchedCandidates->flatMap(fn(self $product) => $product->categories->pluck('id')))
+            ->filter()
+            ->unique()
+            ->values();
+
         $products = self::scopeByLocation(zoneInfo: $zoneInfo, query: self::query()->whereIn('id', $ids), filter: $baseFilter)
             ->get()->sortBy(fn(self $product) => array_search($product->id, $ids, true))->values();
+        if ($categoryIds->isNotEmpty()) {
+            $relatedProducts = self::scopeByLocation(
+                zoneInfo: $zoneInfo,
+                query: self::query()->where(function ($query) use ($categoryIds) {
+                    $query->whereIn('category_id', $categoryIds)
+                        ->orWhereHas('categories', fn($categoryQuery) => $categoryQuery->whereIn('categories.id', $categoryIds));
+                })->whereNotIn('id', $products->pluck('id')),
+                filter: $baseFilter
+            )->get();
+
+            $products = $products->concat($relatedProducts)->values();
+        }
+
         $page = request()->integer('page', 1);
         $paginator = new Paginator($products->forPage($page, $perPage)->values(), $products->count(), $perPage, $page, [
             'path' => request()->url(), 'query' => request()->query(),
