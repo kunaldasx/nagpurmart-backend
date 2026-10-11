@@ -857,6 +857,18 @@ class Product extends Model implements HasMedia
             return [$product->id => $score];
         })->filter(fn(float $score) => $score >= 75)->sortDesc();
 
+        $normalizedSearch = self::normalizeSearchText($search);
+        $titleRanked = $candidates->mapWithKeys(function (self $product) use ($queryTerms, $normalizedSearch) {
+            $title = self::normalizeSearchText((string) $product->title);
+            $score = str_contains($title, $normalizedSearch) ? 1000 : 0;
+
+            foreach ($queryTerms as $term) {
+                $score += self::smartSearchTokenScore($term, $title) * 220;
+            }
+
+            return [$product->id => $score];
+        })->filter(fn(float $score) => $score >= 75)->sortDesc();
+
         if ($ranked->isEmpty()) {
             $page = request()->integer('page', 1);
             $paginator = new Paginator(collect(), 0, $perPage, $page, [
@@ -868,7 +880,7 @@ class Product extends Model implements HasMedia
             return $paginator;
         }
 
-        $ids = $ranked->keys()->all();
+        $ids = $titleRanked->keys()->merge($ranked->keys())->unique()->values()->all();
         $matchedCandidates = $candidates->whereIn('id', $ids);
         $categoryIds = $matchedCandidates->pluck('category_id')
             ->merge($matchedCandidates->flatMap(fn(self $product) => $product->categories->pluck('id')))
@@ -888,7 +900,21 @@ class Product extends Model implements HasMedia
                 filter: $baseFilter
             )->get();
 
-            $products = $products->concat($relatedProducts)->values();
+            $relatedTitleRanked = $relatedProducts->mapWithKeys(function (self $product) use ($queryTerms, $normalizedSearch) {
+                $title = self::normalizeSearchText((string) $product->title);
+                $score = str_contains($title, $normalizedSearch) ? 1000 : 0;
+
+                foreach ($queryTerms as $term) {
+                    $score += self::smartSearchTokenScore($term, $title) * 220;
+                }
+
+                return [$product->id => $score];
+            })->filter(fn(float $score) => $score >= 75)->sortDesc();
+            $relatedTitleProducts = $relatedProducts->whereIn('id', $relatedTitleRanked->keys())
+                ->sortBy(fn(self $product) => array_search($product->id, $relatedTitleRanked->keys()->all(), true));
+            $otherRelatedProducts = $relatedProducts->whereNotIn('id', $relatedTitleRanked->keys());
+
+            $products = $products->concat($relatedTitleProducts)->concat($otherRelatedProducts)->values();
         }
 
         $page = request()->integer('page', 1);
