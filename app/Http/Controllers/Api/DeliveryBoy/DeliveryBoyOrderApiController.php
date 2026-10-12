@@ -9,6 +9,7 @@ use App\Events\Order\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DeliveryBoy\UpdateOrderItemStatusRequest;
 use App\Http\Resources\DeliveryBoy\DeliveryBoyOrderResource;
+use App\Models\Bag;
 use App\Models\DeliveryBoyAssignment;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -50,13 +51,18 @@ class DeliveryBoyOrderApiController extends Controller
             // Get orders that are in the delivery boy's zone and are available for delivery
             $orders = Order::where('delivery_zone_id', $deliveryBoy->delivery_zone_id)
                 ->whereNull('delivery_boy_id')
-                ->where('status', OrderStatusEnum::READY_FOR_PICKUP())
+                ->whereHas('sellerOrders', fn ($query) => $query
+                    ->whereHas('bag')
+                    ->whereHas('items.orderItem', fn ($itemQuery) => $itemQuery->where('status', OrderItemStatusEnum::PREPARING())))
                 ->when(in_array($orderMode, ['regular', 'wholesale'], true), fn ($query) => $query->where('order_mode', $orderMode))
                 ->withDeliveryBoyEarnings() // Use the scope to load relationships for earnings calculation
                 ->with([
                     'items' => function ($query) {
-                        $query->whereNot('status', OrderItemStatusEnum::REJECTED());
-                    }
+                        $query->whereNot('status', OrderItemStatusEnum::REJECTED())->with('store');
+                    },
+                    'sellerOrders.seller.user',
+                    'sellerOrders.items.orderItem.store',
+                    'sellerOrders.bag',
                 ])->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
@@ -121,12 +127,15 @@ class DeliveryBoyOrderApiController extends Controller
             $order = Order::where('id', $orderId)
                 ->where('delivery_zone_id', $deliveryBoy->delivery_zone_id)
                 ->whereNull('delivery_boy_id')
-                ->where('status', OrderStatusEnum::READY_FOR_PICKUP())
+                ->whereHas('sellerOrders', fn ($query) => $query
+                    ->whereHas('bag')
+                    ->whereHas('items.orderItem', fn ($itemQuery) => $itemQuery->where('status', OrderItemStatusEnum::PREPARING())))
+                ->lockForUpdate()
                 ->with([
                     'items' => function ($query) {
-                        $query->whereNot('status', OrderItemStatusEnum::REJECTED());
+                        $query->whereNot('status', OrderItemStatusEnum::REJECTED())->with('store');
                     }
-                    , 'sellerOrders','sellerOrders.seller.user', 'user'])
+                    , 'sellerOrders','sellerOrders.seller.user', 'sellerOrders.items.orderItem.store', 'sellerOrders.bag', 'user'])
                 ->first();
 
             if (!$order) {
@@ -263,8 +272,11 @@ class DeliveryBoyOrderApiController extends Controller
                         $query->where('delivery_boy_id', $deliveryBoy->id);
                     },
                     'items' => function ($query) {
-                        $query->whereNot('status', OrderItemStatusEnum::REJECTED());
-                    }
+                        $query->whereNot('status', OrderItemStatusEnum::REJECTED())->with('store');
+                    },
+                    'sellerOrders.seller.user',
+                    'sellerOrders.items.orderItem.store',
+                    'sellerOrders.bag',
                 ])
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
@@ -331,11 +343,17 @@ class DeliveryBoyOrderApiController extends Controller
             $order = Order::where('id', $orderId)
                 ->where('delivery_boy_id', $deliveryBoy->id)
                 ->withDeliveryBoyEarnings()
-                ->with(['deliveryBoyAssignments' => function ($query) use ($deliveryBoy) {
-                    $query->where('delivery_boy_id', $deliveryBoy->id);
-                }, 'items' => function ($query) {
-                    $query->whereNot('status', OrderItemStatusEnum::REJECTED());
-                }])->orderBy('created_at', 'desc')
+                ->with([
+                    'deliveryBoyAssignments' => function ($query) use ($deliveryBoy) {
+                        $query->where('delivery_boy_id', $deliveryBoy->id);
+                    },
+                    'items' => function ($query) {
+                        $query->whereNot('status', OrderItemStatusEnum::REJECTED())->with('store');
+                    },
+                    'sellerOrders.seller.user',
+                    'sellerOrders.items.orderItem.store',
+                    'sellerOrders.bag',
+                ])->orderBy('created_at', 'desc')
                 ->first();
 
             if (!$order) {
@@ -488,6 +506,109 @@ class DeliveryBoyOrderApiController extends Controller
                 message: __('labels.something_went_wrong') . ":- " . $e->getMessage(),
                 data: ['error' => $e->getMessage()]
             );
+        }
+    }
+
+    /**
+     * Scan pickup bag
+     *
+     * @param Request $request
+     * @param int $orderId
+     * @return JsonResponse
+     */
+    public function scanPickupBag(Request $request, int $orderId): JsonResponse
+    {
+        $validated = $request->validate(['barcode' => ['required', 'string', 'max:255']]);
+        $deliveryBoy = $request->user()->deliveryBoy;
+
+        DB::beginTransaction();
+        try {
+            $order = Order::query()
+                ->where('id', $orderId)
+                ->where('delivery_boy_id', $deliveryBoy->id)
+                ->where('delivery_zone_id', $deliveryBoy->delivery_zone_id)
+                ->first();
+
+            if (!$order) {
+                DB::rollBack();
+                return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found_or_not_available'), [], 404);
+            }
+
+            $bag = \App\Models\Bag::query()
+                ->where('barcode', trim($validated['barcode']))
+                ->lockForUpdate()
+                ->with('sellerOrder.items.orderItem')
+                ->first();
+
+            if (!$bag || !$bag->sellerOrder || (int) $bag->sellerOrder->order_id !== $order->id) {
+                DB::rollBack();
+                return ApiResponseType::sendJsonResponse(false, 'This bag is not assigned to the scanned order.', [
+                    'bag_barcode' => trim($validated['barcode']),
+                ], 422);
+            }
+
+            if ($bag->picked_up_at) {
+                if ((int) $bag->picked_up_by_delivery_boy_id !== $deliveryBoy->id) {
+                    DB::rollBack();
+                    return ApiResponseType::sendJsonResponse(false, 'This bag has already been picked up by another rider.', [], 422);
+                }
+
+                $collectedIds = $bag->sellerOrder->items
+                    ->filter(fn ($item) => in_array($item->orderItem?->status, [
+                        OrderItemStatusEnum::COLLECTED(),
+                        OrderItemStatusEnum::DELIVERED(),
+                    ], true))
+                    ->pluck('order_item_id')
+                    ->values();
+            } else {
+                $itemsToCollect = $bag->sellerOrder->items
+                    ->filter(fn ($item) => $item->orderItem?->status === OrderItemStatusEnum::PREPARING());
+
+                if ($itemsToCollect->isEmpty()) {
+                    DB::rollBack();
+                    return ApiResponseType::sendJsonResponse(false, 'This bag has no preparing items available for pickup.', [], 422);
+                }
+
+                $bag->update([
+                    'picked_up_by_delivery_boy_id' => $deliveryBoy->id,
+                    'picked_up_at' => now(),
+                ]);
+
+                $collectedIds = collect();
+                foreach ($itemsToCollect as $sellerOrderItem) {
+                    $result = $this->orderService->updateOrderItemStatusByDeliveryBoy(
+                        (int) $sellerOrderItem->order_item_id,
+                        'collected',
+                        $deliveryBoy->id
+                    );
+
+                    if (!$result['success']) {
+                        DB::rollBack();
+                        return ApiResponseType::sendJsonResponse(false, $result['message'], $result['data'] ?? [], 422);
+                    }
+
+                    $collectedIds->push((int) $sellerOrderItem->order_item_id);
+                }
+            }
+
+            DB::commit();
+            $order->refresh();
+
+            return ApiResponseType::sendJsonResponse(true, 'Assigned bag scanned and its prepared items were picked up.', [
+                'order_id' => $order->id,
+                'order_status' => $order->status,
+                'bag' => [
+                    'id' => $bag->id,
+                    'seller_order_id' => $bag->seller_order_id,
+                    'barcode' => $bag->barcode,
+                    'pickup_status' => 'picked_up',
+                    'picked_up_at' => $bag->picked_up_at?->toISOString(),
+                ],
+                'collected_order_item_ids' => $collectedIds,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return ApiResponseType::sendJsonResponse(false, __('labels.something_went_wrong'), ['error' => $e->getMessage()], 500);
         }
     }
 }

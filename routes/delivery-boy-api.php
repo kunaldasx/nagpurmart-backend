@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->prefix('delivery-boy')->group(function () {
         Route::middleware('active.delivery.boy')->group(function () {
             Route::get('/orders/available', [DeliveryBoyOrderApiController::class, 'getAvailableOrders'])->name('orders.available');
             Route::post('/orders/{orderId}/accept', [DeliveryBoyOrderApiController::class, 'acceptOrder'])->name('orders.accept');
+            Route::post('/orders/{orderId}/scan-bag', [DeliveryBoyOrderApiController::class, 'scanPickupBag'])->name('orders.scan-bag');
             Route::put('/order-items/{orderItemId}/status', [DeliveryBoyOrderApiController::class, 'updateOrderItemStatus'])->name('order-items.update-status');
             Route::post('/orders/{order}/cancel', [DeliveryBoyOrderApiController::class, 'cancelOrder'])->name('orders.cancel');
 

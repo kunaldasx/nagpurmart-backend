@@ -54,6 +54,7 @@ class DeliveryBoyOrderItemResource extends JsonResource
                 'id' => $this->store->id ?? 0,
                 'name' => $this->store->name ?? "",
                 'slug' => $this->store->slug ?? "",
+                'contact_number' => $this->store->contact_number ?? null,
             ]),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s')
