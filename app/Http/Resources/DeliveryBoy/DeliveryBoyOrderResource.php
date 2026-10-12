@@ -74,6 +74,24 @@ class DeliveryBoyOrderResource extends JsonResource
                     'assigned_at' => $assignment->assigned_at,
                 ];
             }),
+            'pickup_bags' => $this->whenLoaded('sellerOrders', function () {
+                return $this->sellerOrders
+                    ->filter(fn ($sellerOrder) => $sellerOrder->bag !== null)
+                    ->map(function ($sellerOrder) {
+                        $firstItem = $sellerOrder->items->first();
+                        $store = $firstItem?->orderItem?->store;
+
+                        return [
+                            'seller_order_id' => $sellerOrder->id,
+                            'seller_name' => $sellerOrder->seller?->user?->name,
+                            'store_name' => $store?->name,
+                            'contact_phone' => $store?->contact_number,
+                            'pickup_status' => $sellerOrder->bag->picked_up_at ? 'picked_up' : 'awaiting_scan',
+                            'picked_up_at' => $sellerOrder->bag->picked_up_at?->toISOString(),
+                        ];
+                    })
+                    ->values();
+            }),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

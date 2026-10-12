@@ -2279,6 +2279,23 @@ class OrderService
                 ];
             }
 
+            if ($status === 'collected') {
+                $bagScanned = SellerOrderItem::query()
+                    ->where('order_item_id', $orderItemId)
+                    ->whereHas('sellerOrder.bag', fn ($query) => $query
+                        ->where('picked_up_by_delivery_boy_id', $deliveryBoyId)
+                        ->whereNotNull('picked_up_at'))
+                    ->exists();
+
+                if (!$bagScanned) {
+                    return [
+                        'success' => false,
+                        'message' => 'Scan the bag assigned to this seller order before confirming pickup.',
+                        'data' => ['order_item_id' => $orderItemId, 'bag_scan_required' => true],
+                    ];
+                }
+            }
+
             // Check if OTP verification is required for this product when delivering
             if ($status === OrderItemStatusEnum::DELIVERED() && $orderItem->product->requires_otp) {
 
