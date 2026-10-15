@@ -26,6 +26,7 @@ use App\Models\DeliveryBoyCashTransaction;
 use App\Models\DeliveryTimeSlot;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderPaymentTransaction;
 use App\Models\OrderItemReturn;
 use App\Models\OrderPromoLine;
 use App\Models\Promo;
@@ -522,7 +523,7 @@ class OrderService
             'slug' => Str::slug('order-' . time() . '-' . $user->id),
             'email' => $this->resolveOrderEmail($user),
             'ip_address' => request()->ip(),
-            'currency_code' => 'USD', // This should be dynamic based on settings
+            'currency_code' => app(CurrencyService::class)->getCode(),
             'currency_rate' => 1, // This should be dynamic based on settings
             'payment_method' => $data['payment_type'],
             'order_mode' => $orderMode,
@@ -1096,11 +1097,83 @@ class OrderService
         string    $newStatus,
         string    $oldStatus,
         string    $userType,
-        ?int      $userId = null
+        ?int      $userId = null,
+        ?array    $paymentCollection = null
     ): array
     {
         try {
             DB::beginTransaction();
+
+            if ($userType === 'delivery_boy') {
+                $lockedOrder = Order::query()
+                    ->whereKey($orderItem->order_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                $orderItem = OrderItem::query()
+                    ->whereKey($orderItem->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                $orderItem->setRelation('order', $lockedOrder);
+                $orderItem->load(['product', 'store.seller.user']);
+
+                $transition = $this->validateStatusTransition($orderItem->status, $newStatus, $userType);
+                if (!$transition['success']) {
+                    DB::rollBack();
+                    return ['success' => false, 'message' => $transition['message'], 'data' => []];
+                }
+                $oldStatus = $orderItem->status;
+
+                if (
+                    $newStatus === OrderItemStatusEnum::DELIVERED()
+                    && $lockedOrder->payment_method === PaymentTypeEnum::COD()
+                    && $lockedOrder->payment_status !== PaymentStatusEnum::COMPLETED()
+                ) {
+                    $method = $paymentCollection['method'] ?? null;
+                    if (!$method) {
+                        DB::rollBack();
+                        return [
+                            'success' => false,
+                            'message' => 'Confirm COD payment before marking the order item delivered.',
+                            'data' => [
+                                'payment_required' => true,
+                                'order_id' => $lockedOrder->id,
+                                'amount' => number_format((float) $lockedOrder->total_payable, 2, '.', ''),
+                                'currency' => $lockedOrder->currency_code,
+                                'payment_instructions_url' => "/api/delivery-boy/order-items/{$orderItem->id}/payment-instructions",
+                            ],
+                        ];
+                    }
+
+                    if (
+                        !in_array($method, ['cash', 'upi'], true)
+                        || ($method === 'upi' && (!config('services.razorpay.cod_qr_enabled') || $lockedOrder->currency_code !== 'INR'))
+                    ) {
+                        DB::rollBack();
+                        return [
+                            'success' => false,
+                            'message' => 'The selected COD payment method is unavailable.',
+                            'data' => ['payment_collection_error' => true],
+                        ];
+                    }
+
+                    if ($method === 'upi') {
+                        DB::rollBack();
+                        return [
+                            'success' => false,
+                            'message' => 'Wait for Razorpay to confirm the UPI payment before completing delivery.',
+                            'data' => ['payment_required' => true, 'upi_payment_verification_required' => true],
+                        ];
+                    }
+
+                    $this->recordCodPaymentCollection(
+                        $orderItem,
+                        (int) $userId,
+                        $method,
+                        $paymentCollection['transaction_reference'] ?? null
+                    );
+                }
+            }
+
             $oldOrderStatus = $orderItem->order?->status;
 
             $returnDeadline = null;
@@ -1252,14 +1325,9 @@ class OrderService
             : DeliveryBoyAssignmentStatusEnum::COMPLETED();
 
         if ($orderStatus === OrderStatusEnum::DELIVERED()) {
-            if ($orderItem->order->payment_method === PaymentTypeEnum::COD()) {
-                $orderData['payment_status'] = PaymentStatusEnum::COMPLETED();
-            }
-
             $orderItem->order->update($orderData);
 
             event(new OrderDelivered($orderItem->order));
-            $this->handleCashCollection($orderItem, $userId);
         }
 
         DeliveryBoyAssignment::where('order_id', $orderItem->order_id)
@@ -1291,6 +1359,40 @@ class OrderService
             'transaction_type' => 'collected',
             'transaction_date' => now()
         ]);
+    }
+
+    private function recordCodPaymentCollection(
+        OrderItem $orderItem,
+        int $deliveryBoyId,
+        string $method,
+        ?string $transactionReference
+    ): void {
+        $order = $orderItem->order;
+
+        OrderPaymentTransaction::create([
+            'uuid' => Str::uuid()->toString(),
+            'order_id' => $order->id,
+            'user_id' => $order->user_id,
+            'transaction_id' => 'cod-collection-' . $order->id . '-' . Str::uuid()->toString(),
+            'amount' => $order->total_payable,
+            'currency' => $order->currency_code,
+            'payment_method' => $method,
+            'payment_status' => PaymentStatusEnum::COMPLETED(),
+            'message' => 'COD payment collected by delivery boy',
+            'payment_details' => [
+                'source' => 'delivery_boy_cod_collection',
+                'delivery_boy_id' => $deliveryBoyId,
+                'order_item_id' => $orderItem->id,
+                'transaction_reference' => $transactionReference,
+                'collected_at' => now()->toIso8601String(),
+            ],
+        ]);
+
+        $order->update(['payment_status' => PaymentStatusEnum::COMPLETED()]);
+
+        if ($method === 'cash') {
+            $this->handleCashCollection($orderItem, $deliveryBoyId);
+        }
     }
 
 
@@ -2251,7 +2353,7 @@ class OrderService
      * @return array Result containing success status, message, and order data
      */
     public
-    function updateOrderItemStatusByDeliveryBoy(int $orderItemId, string $status, int $deliveryBoyId, ?string $otp = null): array
+    function updateOrderItemStatusByDeliveryBoy(int $orderItemId, string $status, int $deliveryBoyId, ?string $otp = null, ?array $paymentCollection = null): array
     {
         try {
             // Validate status parameter
@@ -2354,13 +2456,38 @@ class OrderService
             }
 
             // Update the order status and related entities
-            return $this->updateOrderStatusAndRelatedEntities(
+            $result = $this->updateOrderStatusAndRelatedEntities(
                 $orderItem,
                 $updateStatus,
                 $currentStatus,
                 'delivery_boy',
-                $deliveryBoyId
+                $deliveryBoyId,
+                $paymentCollection
             );
+
+            if (
+                $result['success']
+                && $status === 'delivered'
+                && $orderItem->order->payment_method === PaymentTypeEnum::COD()
+            ) {
+                $collection = OrderPaymentTransaction::query()
+                    ->where('order_id', $orderItem->order_id)
+                    ->where('message', 'COD payment collected by delivery boy')
+                    ->where('payment_status', PaymentStatusEnum::COMPLETED())
+                    ->latest('id')
+                    ->first();
+
+                $result['data']['payment_collection'] = [
+                    'status' => $orderItem->order->fresh()->payment_status,
+                    'method' => $collection?->payment_method,
+                    'amount' => number_format((float) $orderItem->order->total_payable, 2, '.', ''),
+                    'currency' => $orderItem->order->currency_code,
+                    'transaction_reference' => $collection?->payment_details['transaction_reference'] ?? null,
+                    'confirmed_at' => $collection?->created_at?->toIso8601String(),
+                ];
+            }
+
+            return $result;
         } catch (Exception $e) {
             Log::error('Error in updateOrderItemStatusByDeliveryBoy', [
                 'order_item_id' => $orderItemId,
@@ -2375,6 +2502,11 @@ class OrderService
                 'data' => ['error' => $e->getMessage()]
             ];
         }
+    }
+
+    public function getDeliveryBoyPaymentInstructions(int $orderItemId, int $deliveryBoyId): array
+    {
+        return app(DeliveryBoyCodPaymentService::class)->getPaymentInstructions($orderItemId, $deliveryBoyId);
     }
 
     /**

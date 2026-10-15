@@ -14,6 +14,7 @@ use App\Models\DeliveryBoyAssignment;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\DeliveryZoneService;
+use App\Services\DeliveryBoyCodPaymentService;
 use App\Services\OrderService;
 use App\Types\Api\ApiResponseType;
 use Dedoc\Scramble\Attributes\Group;
@@ -420,20 +421,23 @@ class DeliveryBoyOrderApiController extends Controller
             $deliveryBoy = $user->deliveryBoy;
             $status = $request->input('status');
             $otp = $request->input('otp');
+            $paymentCollection = $request->input('payment_collection');
 
             // Update the order item status
             $result = $this->orderService->updateOrderItemStatusByDeliveryBoy(
                 $orderItemId,
                 $status,
                 $deliveryBoy->id,
-                $otp ?? null
+                $otp ?? null,
+                $paymentCollection
             );
 
             if (!$result['success']) {
                 return ApiResponseType::sendJsonResponse(
                     success: false,
                     message: $result['message'],
-                    data: $result['data']
+                    data: $result['data'],
+                    status: (!empty($result['data']['payment_required']) || !empty($result['data']['payment_collection_error'])) ? 422 : 200
                 );
             }
 
@@ -455,6 +459,32 @@ class DeliveryBoyOrderApiController extends Controller
                 data: ['error' => $e->getMessage()]
             );
         }
+    }
+
+    public function getOrderItemPaymentInstructions(Request $request, int $orderItemId): JsonResponse
+    {
+        $deliveryBoy = $request->user()->deliveryBoy;
+        $result = $this->orderService->getDeliveryBoyPaymentInstructions($orderItemId, $deliveryBoy->id);
+
+        return ApiResponseType::sendJsonResponse(
+            success: $result['success'],
+            message: $result['message'],
+            data: $result['data'],
+            status: $result['success'] ? 200 : 404
+        );
+    }
+
+    public function createOrderItemPaymentQr(Request $request, int $orderItemId): JsonResponse
+    {
+        $deliveryBoy = $request->user()->deliveryBoy;
+        $result = app(DeliveryBoyCodPaymentService::class)->createQrCode($orderItemId, $deliveryBoy->id);
+
+        return ApiResponseType::sendJsonResponse(
+            success: $result['success'],
+            message: $result['message'],
+            data: $result['data'],
+            status: $result['http_status'] ?? ($result['success'] ? 200 : 422)
+        );
     }
 
     /**
