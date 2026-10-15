@@ -27,6 +27,9 @@ class UpdateOrderItemStatusRequest extends FormRequest
         return [
             'status' => 'required|string|in:collected,delivered',
             'otp' => 'sometimes|required|string|min:6|max:6',
+            'payment_collection' => 'sometimes|array',
+            'payment_collection.method' => 'required_with:payment_collection|string|in:cash,upi',
+            'payment_collection.transaction_reference' => 'nullable|string|max:255',
         ];
     }
 

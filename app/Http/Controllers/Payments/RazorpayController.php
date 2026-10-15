@@ -44,6 +44,16 @@ class RazorpayController extends Controller
         $this->razorpayApi = new Api($this->keyId, $this->secretKey);
     }
 
+    public function isConfigured(): bool
+    {
+        return $this->keyId !== '' && $this->secretKey !== '';
+    }
+
+    public function createUpiQrCode(array $data): array
+    {
+        return $this->razorpayApi->qrCode->create($data)->toArray();
+    }
+
     /**
      * Render a web view for paying a subscription transaction via Razorpay Checkout
      */
@@ -103,17 +113,24 @@ class RazorpayController extends Controller
         try {
             if (!$this->isValidSignature($payload, $signature)) {
                 Log::error("Invalid Razorpay Webhook signature.");
+                DB::rollBack();
                 return response()->json(['error' => 'Invalid signature'], 400);
             }
 
-            $data = json_decode($payload, true);
+            $data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
             $event = $data['event'] ?? null;
             $paymentEntity = $data['payload']['payment']['entity'] ?? [];
-            $paymentType = $paymentEntity['notes']['type'] ?? 'order_payment';
-
-            $transaction = $this->findTransaction($paymentType, $paymentEntity);
-
-            $this->processEvent($event, $paymentType, $paymentEntity, $transaction);
+            if ($event === 'qr_code.credited') {
+                $qrCodeEntity = $data['payload']['qr_code']['entity'] ?? [];
+                app(\App\Services\DeliveryBoyCodPaymentService::class)
+                    ->handleQrCodeCredited($paymentEntity, $qrCodeEntity);
+            } elseif (($paymentEntity['notes']['type'] ?? null) === 'delivery_boy_cod_qr') {
+                // The QR-specific credited event is authoritative for rider COD payments.
+            } else {
+                $paymentType = $paymentEntity['notes']['type'] ?? 'order_payment';
+                $transaction = $this->findTransaction($paymentType, $paymentEntity);
+                $this->processEvent($event, $paymentType, $paymentEntity, $transaction);
+            }
 
             DB::commit();
             return response()->json(['status' => 'success'], 200);
@@ -162,6 +179,7 @@ class RazorpayController extends Controller
             );
         }
     }
+
 
     /**
      * Create a Razorpay order for wallet recharge

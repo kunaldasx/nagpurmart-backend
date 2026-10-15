@@ -44,6 +44,15 @@ return [
     'default_otp_mobile' => env('DEFAULT_OTP_MOBILE', '+911000000000'),
     'default_otp_code' => env('DEFAULT_OTP_CODE', '123456'),
 
+    'upi' => [
+        'vpa' => env('UPI_MERCHANT_VPA'),
+        'merchant_name' => env('UPI_MERCHANT_NAME', env('APP_NAME', 'Nagpurmart')),
+    ],
+
+    'razorpay' => [
+        'cod_qr_enabled' => (bool) env('RAZORPAY_COD_QR_ENABLED', false),
+    ],
+
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
                'model' => env('GEMINI_MODEL', 'gemini-3.5-flash'),

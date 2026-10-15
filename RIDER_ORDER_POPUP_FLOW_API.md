@@ -274,6 +274,8 @@ If the bag scan was not completed first, the request fails:
 
 HTTP status: `422`
 
+For COD orders, fetch payment instructions and collect payment before setting an item to `delivered`. Razorpay UPI QR payments must reach `completed` through backend confirmation; include `payment_collection.method: "cash"` only for cash. See [DELIVERY_BOY_COD_PAYMENT_API.md](DELIVERY_BOY_COD_PAYMENT_API.md) for the rider app flow and complete request and response structures.
+
 ## 6. Get order detail after pickup
 
 ```http
