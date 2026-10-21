@@ -52,6 +52,10 @@ class DeliveryBoyOrderApiController extends Controller
             // Get orders that are in the delivery boy's zone and are available for delivery
             $orders = Order::where('delivery_zone_id', $deliveryBoy->delivery_zone_id)
                 ->whereNull('delivery_boy_id')
+                ->whereHas('deliveryBoyOrderOffers', fn ($query) => $query
+                    ->where('delivery_boy_id', $deliveryBoy->id)
+                    ->where('status', 'pending')
+                    ->where('expires_at', '>', now()))
                 ->whereHas('sellerOrders', fn ($query) => $query
                     ->whereHas('bag')
                     ->whereHas('items.orderItem', fn ($itemQuery) => $itemQuery->where('status', OrderItemStatusEnum::PREPARING())))
@@ -124,7 +128,25 @@ class DeliveryBoyOrderApiController extends Controller
             $user = $request->user();
             $deliveryBoy = $user->deliveryBoy;
 
-            // Find the order
+            $offer = \App\Models\DeliveryBoyOrderOffer::query()
+                ->where('order_id', $orderId)
+                ->where('delivery_boy_id', $deliveryBoy->id)
+                ->where('status', 'pending')
+                ->where('expires_at', '>', now())
+                ->lockForUpdate()
+                ->first();
+
+            if (!$offer) {
+                DB::rollBack();
+                return ApiResponseType::sendJsonResponse(
+                    success: false,
+                    message: 'This order offer is no longer assigned to you or has expired.',
+                    data: ['order_id' => (int) $orderId],
+                    status: 409
+                );
+            }
+
+            // Confirm this rider still owns the active offer before accepting.
             $order = Order::where('id', $orderId)
                 ->where('delivery_zone_id', $deliveryBoy->delivery_zone_id)
                 ->whereNull('delivery_boy_id')
@@ -140,12 +162,18 @@ class DeliveryBoyOrderApiController extends Controller
                 ->first();
 
             if (!$order) {
+                $offer->update(['status' => 'reassigned', 'responded_at' => now()]);
+                DB::commit();
                 return ApiResponseType::sendJsonResponse(
                     success: false,
-                    message: __('labels.order_not_found_or_not_available'),
-                    data: []
+                    message: 'This order is no longer assigned to you or is not available.',
+                    data: ['order_id' => (int) $orderId],
+                    status: 409
                 );
             }
+            $previousOrderStatus = $order->status;
+            $offer->update(['status' => 'accepted', 'responded_at' => now()]);
+
             // Update the order with the delivery boy's ID and change status to ASSIGNED
             $order->update([
                 'delivery_boy_id' => $deliveryBoy->id,
@@ -201,7 +229,7 @@ class DeliveryBoyOrderApiController extends Controller
             $orderItem->store->seller->user = $order->user;
             event(new OrderStatusUpdated(
                 orderItem: $orderItem,
-                oldStatus: $order->status,
+                oldStatus: $previousOrderStatus,
                 newStatus: DeliveryBoyAssignmentStatusEnum::ASSIGNED()
             ));
             DB::commit();

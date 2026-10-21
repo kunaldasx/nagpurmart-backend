@@ -128,6 +128,11 @@ class Order extends Model
         return $this->hasMany(DeliveryBoyAssignment::class);
     }
 
+    public function deliveryBoyOrderOffers(): HasMany
+    {
+        return $this->hasMany(DeliveryBoyOrderOffer::class);
+    }
+
     public function paymentTransactions(): HasMany
     {
         return $this->hasMany(OrderPaymentTransaction::class);
