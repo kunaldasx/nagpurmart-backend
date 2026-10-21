@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Factory;
+use Kreait\Firebase\Messaging\AndroidConfig;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 
@@ -90,6 +91,34 @@ class FirebaseService
                 'success' => false,
                 'error' => $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Send a data-only message, used by the rider order alert popup.
+     */
+    public function sendDataMessage(string $token, array $data, string $androidPriority = 'high'): array
+    {
+        if ($this->messaging === null) {
+            return ['success' => false, 'error' => 'Firebase is not configured'];
+        }
+
+        try {
+            $message = CloudMessage::new()
+                ->withData(array_map(static fn ($value) => (string) $value, $data))
+                ->withAndroidConfig(AndroidConfig::fromArray(['priority' => $androidPriority]))
+                ->toToken($token);
+
+            $this->messaging->send($message);
+
+            return ['success' => true];
+        } catch (\Throwable $e) {
+            Log::error('Firebase sendDataMessage failed', [
+                'error' => $e->getMessage(),
+                'token' => $token,
+            ]);
+
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 

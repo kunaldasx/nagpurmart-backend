@@ -1771,6 +1771,7 @@ class OrderService
             }
 
             DB::commit();
+            app(DeliveryBoyOrderOfferService::class)->offerNextRider((int) $sellerOrder->order_id);
             return [
                 'success' => true,
                 'message' => $acceptedItems->isEmpty()
