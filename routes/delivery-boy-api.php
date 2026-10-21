@@ -21,6 +21,9 @@ Route::prefix('delivery-boy')->name('delivery-boy.')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->prefix('delivery-boy')->group(function () {
+    Route::post('fcm-token', [\App\Http\Controllers\Api\User\AuthApiController::class, 'registerFcmToken'])
+        ->name('delivery-boy.fcm-token');
+
 // delivery boy routes (requires a verified delivery boy)
     Route::middleware('verified.delivery.boy')->group(function () {
         // Add delivery boy-specific routes here
