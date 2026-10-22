@@ -4,14 +4,13 @@ This flow mirrors the seller popup pattern but applies to the rider.
 
 ## Incoming order push alerts
 
-When a seller finishes preparing a bagged order, the backend creates a time-limited offer for one active rider in the order's delivery zone. The rider must have a registered FCM token. Android receives a high-priority, data-only message with no `notification` block:
+When a seller finishes preparing a bagged order, the backend creates an offer for one active rider in the order's delivery zone. The rider must have a registered FCM token. The alert keeps ringing until a person accepts, cancels, or reassigns the order. Android receives a high-priority, data-only message with no `notification` block:
 
 ```json
 {
     "data": {
         "type": "new_order",
         "order_id": "48213",
-        "expires_at": "2026-10-20T10:43:30Z",
         "pickup": "Sharma Kirana",
         "drop": "Dharampeth",
         "distance_km": "3.2",
@@ -20,7 +19,7 @@ When a seller finishes preparing a bagged order, the backend creates a time-limi
 }
 ```
 
-Only the rider holding the unexpired offer may see the order from `GET /api/delivery-boy/orders/available` or accept it. A stale offer, another rider's offer, or an already-claimed order returns HTTP `409` with a message that the order is no longer assigned to this rider.
+Only the rider holding the pending offer may see the order from `GET /api/delivery-boy/orders/available` or accept it. Another rider's offer or an already-claimed order returns HTTP `409` with a message that the order is no longer assigned to this rider.
 
 If the rider's alert should stop, the backend sends this data-only message to the same rider:
 
@@ -34,9 +33,7 @@ If the rider's alert should stop, the backend sends this data-only message to th
 }
 ```
 
-`reason` is `reassigned`, `cancelled`, or `expired`. The default offer timeout is 30 seconds and can be changed with `DELIVERY_BOY_ORDER_OFFER_TIMEOUT_SECONDS`. On expiry, the backend sends the stop message and offers the order to the next eligible active rider. If no eligible active rider with an FCM token remains, it writes a Laravel alert log entry for dispatcher attention.
-
-Run a Laravel queue worker for delayed expiry jobs to fire at the configured timeout.
+`reason` is `reassigned` or `cancelled`. No timer sends a stop alert, reassigns the order, or makes it available to another rider.
 
 The rider should only see orders that already have a valid seller-assigned bag and at least one item in `preparing` state. Once the rider accepts the order, they must scan the same assigned bag before the order items can move to `collected`.
 
