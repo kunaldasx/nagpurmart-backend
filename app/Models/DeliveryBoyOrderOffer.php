@@ -11,13 +11,12 @@ class DeliveryBoyOrderOffer extends Model
         'order_id',
         'delivery_boy_id',
         'status',
-        'expires_at',
         'responded_at',
     ];
 
     protected function casts(): array
     {
-        return ['expires_at' => 'datetime', 'responded_at' => 'datetime'];
+        return ['responded_at' => 'datetime'];
     }
 
     public function order(): BelongsTo

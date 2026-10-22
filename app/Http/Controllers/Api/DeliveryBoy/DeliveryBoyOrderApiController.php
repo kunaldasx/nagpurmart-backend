@@ -54,8 +54,7 @@ class DeliveryBoyOrderApiController extends Controller
                 ->whereNull('delivery_boy_id')
                 ->whereHas('deliveryBoyOrderOffers', fn ($query) => $query
                     ->where('delivery_boy_id', $deliveryBoy->id)
-                    ->where('status', 'pending')
-                    ->where('expires_at', '>', now()))
+                    ->where('status', 'pending'))
                 ->whereHas('sellerOrders', fn ($query) => $query
                     ->whereHas('bag')
                     ->whereHas('items.orderItem', fn ($itemQuery) => $itemQuery->where('status', OrderItemStatusEnum::PREPARING())))
@@ -132,7 +131,6 @@ class DeliveryBoyOrderApiController extends Controller
                 ->where('order_id', $orderId)
                 ->where('delivery_boy_id', $deliveryBoy->id)
                 ->where('status', 'pending')
-                ->where('expires_at', '>', now())
                 ->lockForUpdate()
                 ->first();
 

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\ActiveInactiveStatusEnum;
 use App\Enums\Order\OrderItemStatusEnum;
-use App\Jobs\ExpireDeliveryBoyOrderOffer;
 use App\Models\DeliveryBoy;
 use App\Models\DeliveryBoyOrderOffer;
 use App\Models\Order;
@@ -28,7 +27,6 @@ class DeliveryBoyOrderOfferService
             $pendingOffer = DeliveryBoyOrderOffer::query()
                 ->where('order_id', $order->id)
                 ->where('status', 'pending')
-                ->where('expires_at', '>', now())
                 ->first();
             if ($pendingOffer) {
                 return null;
@@ -62,13 +60,10 @@ class DeliveryBoyOrderOfferService
                 return null;
             }
 
-            $timeout = max(1, (int) config('delivery_boy.order_offer_timeout_seconds', 30));
-            $expiresAt = now()->addSeconds($timeout);
             $offer = DeliveryBoyOrderOffer::create([
                 'order_id' => $order->id,
                 'delivery_boy_id' => $rider->id,
                 'status' => 'pending',
-                'expires_at' => $expiresAt,
             ]);
 
             $storeIds = $order->items()->whereNot('status', OrderItemStatusEnum::REJECTED())->pluck('store_id')->unique()->all();
@@ -84,12 +79,10 @@ class DeliveryBoyOrderOfferService
 
             return [
                 'offer_id' => $offer->id,
-                'expires_at' => $expiresAt,
                 'tokens' => $rider->user->fcmTokens()->pluck('fcm_token')->filter()->all(),
                 'payload' => [
                     'type' => 'new_order',
                     'order_id' => (string) $order->id,
-                    'expires_at' => $expiresAt->copy()->utc()->toISOString(),
                     'pickup' => (string) ($pickupItem?->orderItem?->store?->name ?? 'Store'),
                     'drop' => (string) ($order->shipping_landmark ?: $order->shipping_city ?: ''),
                     'distance_km' => (string) ($route['total_distance'] ?? 0),
@@ -105,47 +98,11 @@ class DeliveryBoyOrderOfferService
         foreach ($offerData['tokens'] as $token) {
             $this->firebase->sendDataMessage($token, $offerData['payload']);
         }
-
-        ExpireDeliveryBoyOrderOffer::dispatch($offerData['offer_id'])->delay($offerData['expires_at']);
     }
 
     public function expire(int $offerId): void
     {
-        $expired = DB::transaction(function () use ($offerId) {
-            $offer = DeliveryBoyOrderOffer::query()->whereKey($offerId)->lockForUpdate()->first();
-            if (!$offer || $offer->status !== 'pending' || $offer->expires_at->isFuture()) {
-                return null;
-            }
-
-            $order = Order::query()->whereKey($offer->order_id)->first();
-            $reason = !$order || in_array($order->status, ['cancelled', 'canceled'], true)
-                ? 'cancelled'
-                : ($order->delivery_boy_id !== null ? 'reassigned' : 'expired');
-            $offer->update(['status' => $reason, 'responded_at' => now()]);
-
-            return [
-                'order_id' => $offer->order_id,
-                'rider' => $offer->deliveryBoy()->with('user.fcmTokens')->first(),
-                'reason' => $reason,
-                'should_reoffer' => $reason === 'expired',
-            ];
-        });
-
-        if (!$expired) {
-            return;
-        }
-
-        foreach ($expired['rider']?->user?->fcmTokens ?? [] as $token) {
-            $this->firebase->sendDataMessage($token->fcm_token, [
-                'type' => 'order_alert_cancel',
-                'order_id' => (string) $expired['order_id'],
-                'reason' => $expired['reason'],
-            ]);
-        }
-
-        if ($expired['should_reoffer']) {
-            $this->offerNextRider((int) $expired['order_id']);
-        }
+        // Keep previously queued delayed jobs harmless during deployment.
     }
 
     public function cancelPendingForOrder(int $orderId, string $reason): void
