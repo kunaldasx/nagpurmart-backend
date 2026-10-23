@@ -231,7 +231,72 @@ To immediately invalidate an exposed QR:
 
 `POST /api/seller/delivery-boys/{rider_id}/rotate-login-qr`
 
-No request body is required. The endpoint returns the same response structure as the GET endpoint with a new `qr_token`, `qr_payload`, and `expires_at`. It invalidates the previous QR and any sessions authenticated with that QR. The seller panel's **Regenerate QR** button uses this endpoint.
+Request body:
+
+```json
+{
+  "duration_hours": 6
+}
+```
+
+`duration_hours` is required and must be an integer from 1 through the platform-configured `riderLoginDurationHours` limit (1–720 hours). The endpoint returns the same response structure as the GET endpoint with a new `qr_token`, `qr_payload`, and `expires_at`. It invalidates the previous QR and any sessions authenticated with that QR. The seller panel's **Regenerate QR** button uses this endpoint and allows the seller to choose any validity up to the platform limit.
+
+Seller rider management also supports:
+
+- `POST /api/seller/delivery-boys/{rider_id}` to update `full_name`, `email`, `mobile`, `delivery_zone_id`, and optionally `password`. The email must remain unique; an omitted or empty password is left unchanged. The zone must be active. Changing the password revokes all existing rider access tokens.
+
+Request:
+
+```json
+{
+  "full_name": "Updated Rider Name",
+  "email": "updated-rider@example.com",
+  "mobile": "9876543210",
+  "delivery_zone_id": 3,
+  "password": "optional-new-password"
+}
+```
+
+`full_name`, `email`, and `delivery_zone_id` are required. `mobile` and `password` are optional; an omitted mobile is unchanged, and an omitted or empty password is unchanged.
+
+HTTP `200`:
+
+```json
+{
+  "success": true,
+  "message": "Delivery boy updated.",
+  "data": {
+    "rider": {
+      "id": 17,
+      "user_id": 42,
+      "name": "Updated Rider Name",
+      "email": "updated-rider@example.com",
+      "mobile": "9876543210",
+      "delivery_zone_id": 3,
+      "status": "active",
+      "verification_status": "verified",
+      "login_approval_status": "approved",
+      "login_approval_requested_at": null,
+      "login_approved_until": "2026-10-24T08:00:00.000000Z",
+      "qr_login_expires_at": "2026-10-24T08:00:00.000000Z"
+    }
+  }
+}
+```
+
+- `DELETE /api/seller/delivery-boys/{rider_id}` soft-deletes the seller-owned rider and user accounts and revokes all their active access tokens.
+
+HTTP `200`:
+
+```json
+{
+  "success": true,
+  "message": "Delivery boy deleted.",
+  "data": []
+}
+```
+
+Both operations require `delivery_boy.manage` and are scoped to the authenticated seller. Update returns HTTP `200` with `data.rider` in the same shape as a listed rider; delete returns HTTP `200` with an empty `data` value. Validation errors return HTTP `422`.
 
 ## 6. Errors
 
@@ -239,4 +304,4 @@ Validation errors return HTTP `422`. Missing seller context returns HTTP `404`. 
 
 ## 7. Platform duration setting
 
-The main platform admin configures `riderLoginDurationHours` in **Admin → Settings → Delivery Boy** (integer, 1–720; default 24). The value controls both the duration of a password approval grant and newly generated QR credentials. It is not seller-editable. The seller web panel uses the same API and displays the configured duration.
+The main platform admin configures `riderLoginDurationHours` in **Admin → Settings → Delivery Boy** (integer, 1–720; default 24). The value sets the duration of a password approval grant and the maximum seller-selected QR lifetime. It is not seller-editable. The seller web panel uses the same API and displays this maximum.

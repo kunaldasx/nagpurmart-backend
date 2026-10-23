@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class SellerDeliveryBoyApiController extends Controller
 {
@@ -156,8 +157,11 @@ class SellerDeliveryBoyApiController extends Controller
         ]);
     }
 
-    public function rotateQr(int $id, DeliveryBoyLoginService $loginService): JsonResponse
+    public function rotateQr(Request $request, int $id, DeliveryBoyLoginService $loginService): JsonResponse
     {
+        $validated = $request->validate([
+            'duration_hours' => 'required|integer|min:1|max:' . $loginService->durationHours(),
+        ]);
         $rider = $this->findSellerRider($id, 'delivery_boy.manage');
         if ($rider->verification_status !== DeliveryBoyVerificationStatusEnum::VERIFIED) {
             return ApiResponseType::sendJsonResponse(false, 'Rider must be verified before QR login can be enabled.', [
@@ -165,7 +169,7 @@ class SellerDeliveryBoyApiController extends Controller
             ], 422);
         }
 
-        $qr = $loginService->rotateQr($rider);
+        $qr = $loginService->rotateQr($rider, (int) $validated['duration_hours']);
 
         return ApiResponseType::sendJsonResponse(true, 'Rider QR credential rotated.', [
             'rider_id' => $rider->id,
@@ -173,6 +177,51 @@ class SellerDeliveryBoyApiController extends Controller
             'qr_payload' => $qr['token'],
             'expires_at' => $qr['expires_at'],
         ]);
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $rider = $this->findSellerRider($id, 'delivery_boy.manage');
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($rider->user_id)],
+            'mobile' => 'nullable|string|max:30',
+            'password' => 'nullable|string|min:8',
+            'delivery_zone_id' => 'required|integer|exists:delivery_zones,id,status,active',
+        ]);
+
+        DB::transaction(function () use ($rider, $validated): void {
+            $rider->user->update([
+                'name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'mobile' => array_key_exists('mobile', $validated) ? $validated['mobile'] : $rider->user->mobile,
+                ...(!empty($validated['password']) ? ['password' => Hash::make($validated['password'])] : []),
+            ]);
+            if (!empty($validated['password'])) {
+                $rider->user->tokens()->delete();
+            }
+            $rider->update([
+                'full_name' => $validated['full_name'],
+                'delivery_zone_id' => $validated['delivery_zone_id'],
+            ]);
+        });
+
+        return ApiResponseType::sendJsonResponse(true, 'Delivery boy updated.', [
+            'rider' => $this->riderData($rider->fresh(['user:id,name,email,mobile', 'deliveryZone:id,name'])),
+        ]);
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $rider = $this->findSellerRider($id, 'delivery_boy.manage');
+        DB::transaction(function () use ($rider): void {
+            $rider->user?->tokens()->delete();
+            $user = $rider->user;
+            $rider->delete();
+            $user?->delete();
+        });
+
+        return ApiResponseType::sendJsonResponse(true, 'Delivery boy deleted.', []);
     }
 
     public function approveLogin(int $id, DeliveryBoyLoginService $loginService): JsonResponse
