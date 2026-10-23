@@ -171,14 +171,14 @@
                                         @if ($canManageRiders)
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="badge {{ $approvalBadge }}">{{ $approvalLabel }}</span>
-                                                <button type="button" class="btn btn-icon btn-sm btn-outline-primary js-rider-approval"
+                                                <button type="button" class="btn btn-sm btn-outline-primary js-rider-approval"
                                                         title="Edit password login approval" aria-label="Edit approval for {{ $rider->full_name }}"
                                                         data-name="{{ $rider->user?->name ?? $rider->full_name }}"
                                                         data-status="{{ $approvalStatus }}"
                                                         data-approved-until="{{ $rider->login_approved_until?->format('Y-m-d H:i') ?? '' }}"
                                                         data-approve-url="{{ route('seller.delivery-boys.approve-login', $rider->id) }}"
                                                         data-disapprove-url="{{ route('seller.delivery-boys.reject-login', $rider->id) }}">
-                                                    <i class="ti ti-edit" aria-hidden="true"></i>
+                                                    <i class="ti ti-edit me-1" aria-hidden="true"></i>Manage
                                                 </button>
                                             </div>
                                         @else
@@ -187,45 +187,41 @@
                                     </td>
                                     <td>{{ $rider->login_approved_until?->toDateTimeString() ?? '—' }}</td>
                                     <td>{{ $rider->qr_login_expires_at?->toDateTimeString() ?? '—' }}</td>
-                                    <td>
+                                    <td class="text-nowrap" style="min-width: 360px">
                                         @if ($canManageRiders)
-                                            <button
-                                                class="btn btn-icon btn-sm btn-outline-primary js-rider-qr"
-                                                type="button"
-                                                data-show-url="{{ route('seller.delivery-boys.login-qr', $rider->id) }}"
-                                                data-rotate-url="{{ route('seller.delivery-boys.rotate-login-qr', $rider->id) }}"
-                                                data-mode="show"
-                                                data-name="{{ $rider->user?->name ?? $rider->full_name }}"
-                                                title="Show rider login QR"
-                                                aria-label="Show QR for {{ $rider->full_name }}"
-                                                @disabled($rider->verification_status !== \App\Enums\DeliveryBoy\DeliveryBoyVerificationStatusEnum::VERIFIED)
-                                            ><i class="ti ti-qrcode" aria-hidden="true"></i></button>
-                                            <button
-                                                class="btn btn-icon btn-sm btn-outline-secondary js-rider-qr"
-                                                type="button"
-                                                data-show-url="{{ route('seller.delivery-boys.login-qr', $rider->id) }}"
-                                                data-rotate-url="{{ route('seller.delivery-boys.rotate-login-qr', $rider->id) }}"
-                                                data-mode="regenerate"
-                                                data-name="{{ $rider->user?->name ?? $rider->full_name }}"
-                                                title="Regenerate rider login QR"
-                                                aria-label="Regenerate QR for {{ $rider->full_name }}"
-                                                @disabled($rider->verification_status !== \App\Enums\DeliveryBoy\DeliveryBoyVerificationStatusEnum::VERIFIED)
-                                            ><i class="ti ti-refresh" aria-hidden="true"></i></button>
-                                            <button type="button" class="btn btn-icon btn-sm btn-outline-primary js-rider-edit"
-                                                    title="Edit delivery boy" aria-label="Edit {{ $rider->full_name }}"
-                                                    data-update-url="{{ route('seller.delivery-boys.update', $rider->id) }}"
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <button
+                                                    class="btn btn-outline-primary js-rider-qr"
+                                                    type="button"
+                                                    data-show-url="{{ route('seller.delivery-boys.login-qr', $rider->id) }}"
+                                                    data-rotate-url="{{ route('seller.delivery-boys.rotate-login-qr', $rider->id) }}"
+                                                    data-mode="show"
                                                     data-name="{{ $rider->user?->name ?? $rider->full_name }}"
-                                                    data-email="{{ $rider->user?->email }}"
-                                                    data-mobile="{{ $rider->user?->mobile }}"
-                                                    data-zone="{{ $rider->delivery_zone_id }}">
-                                                <i class="ti ti-pencil" aria-hidden="true"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-icon btn-sm btn-outline-danger js-rider-delete"
-                                                    title="Delete delivery boy" aria-label="Delete {{ $rider->full_name }}"
-                                                    data-delete-url="{{ route('seller.delivery-boys.destroy', $rider->id) }}"
-                                                    data-name="{{ $rider->user?->name ?? $rider->full_name }}">
-                                                <i class="ti ti-trash" aria-hidden="true"></i>
-                                            </button>
+                                                    @disabled($rider->verification_status !== \App\Enums\DeliveryBoy\DeliveryBoyVerificationStatusEnum::VERIFIED)
+                                                ><i class="ti ti-qrcode me-1" aria-hidden="true"></i>Show QR</button>
+                                                <button
+                                                    class="btn btn-outline-secondary js-rider-qr"
+                                                    type="button"
+                                                    data-show-url="{{ route('seller.delivery-boys.login-qr', $rider->id) }}"
+                                                    data-rotate-url="{{ route('seller.delivery-boys.rotate-login-qr', $rider->id) }}"
+                                                    data-mode="regenerate"
+                                                    data-name="{{ $rider->user?->name ?? $rider->full_name }}"
+                                                    @disabled($rider->verification_status !== \App\Enums\DeliveryBoy\DeliveryBoyVerificationStatusEnum::VERIFIED)
+                                                ><i class="ti ti-refresh me-1" aria-hidden="true"></i>Regenerate QR</button>
+                                                <button type="button" class="btn btn-outline-primary js-rider-edit"
+                                                        data-update-url="{{ route('seller.delivery-boys.update', $rider->id) }}"
+                                                        data-name="{{ $rider->user?->name ?? $rider->full_name }}"
+                                                        data-email="{{ $rider->user?->email }}"
+                                                        data-mobile="{{ $rider->user?->mobile }}"
+                                                        data-zone="{{ $rider->delivery_zone_id }}">
+                                                    <i class="ti ti-pencil me-1" aria-hidden="true"></i>Edit
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger js-rider-delete"
+                                                        data-delete-url="{{ route('seller.delivery-boys.destroy', $rider->id) }}"
+                                                        data-name="{{ $rider->user?->name ?? $rider->full_name }}">
+                                                    <i class="ti ti-trash me-1" aria-hidden="true"></i>Delete
+                                                </button>
+                                            </div>
                                         @endif
                                     </td>
                                 </tr>
