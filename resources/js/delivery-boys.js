@@ -1,7 +1,15 @@
-import { Modal } from 'bootstrap';
 import QRCode from 'qrcode';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+function showModal(element) {
+    const Modal = window.tabler?.bootstrap?.Modal;
+    if (!Modal) {
+        throw new Error('The page modal controls are unavailable. Reload the page and try again.');
+    }
+
+    Modal.getOrCreateInstance(element).show();
+}
 
 document.querySelectorAll('.js-password-toggle').forEach((button) => {
     button.addEventListener('click', () => {
@@ -43,7 +51,7 @@ document.querySelectorAll('.js-rider-approval').forEach((button) => {
         form.action = button.dataset.disapproveUrl;
         approveButton.formAction = button.dataset.approveUrl;
         disapproveButton.formAction = button.dataset.disapproveUrl;
-        Modal.getOrCreateInstance(document.getElementById('riderApprovalModal')).show();
+        showModal(document.getElementById('riderApprovalModal'));
     });
 });
 
@@ -62,7 +70,7 @@ document.querySelectorAll('.js-rider-edit').forEach((button) => {
         passwordToggle.textContent = 'Show';
         passwordToggle.setAttribute('aria-pressed', 'false');
         passwordToggle.setAttribute('aria-label', 'Show password');
-        Modal.getOrCreateInstance(document.getElementById('editRiderModal')).show();
+        showModal(document.getElementById('editRiderModal'));
     });
 });
 
@@ -70,12 +78,11 @@ document.querySelectorAll('.js-rider-delete').forEach((button) => {
     button.addEventListener('click', () => {
         document.getElementById('deleteRiderForm').action = button.dataset.deleteUrl;
         document.getElementById('deleteRiderName').textContent = button.dataset.name || '';
-        Modal.getOrCreateInstance(document.getElementById('deleteRiderModal')).show();
+        showModal(document.getElementById('deleteRiderModal'));
     });
 });
 
 const qrModalElement = document.getElementById('riderQrModal');
-const qrModal = qrModalElement ? Modal.getOrCreateInstance(qrModalElement) : null;
 const qrCanvas = document.getElementById('riderQrCanvas');
 const qrLoading = document.getElementById('riderQrLoading');
 const qrExpiry = document.getElementById('riderQrExpiry');
@@ -148,7 +155,7 @@ document.querySelectorAll('.js-rider-qr').forEach((button) => {
         document.getElementById('riderQrTitle').textContent = `${button.dataset.name} — rider login QR`;
         qrDuration.value = qrDuration.max;
         qrError.textContent = '';
-        qrModal.show();
+        showModal(qrModalElement);
         loadCurrentQr();
     });
 });
