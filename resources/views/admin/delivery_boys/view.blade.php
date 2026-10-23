@@ -126,6 +126,32 @@
                                 </table>
                             </div>
                         </div>
+                        @if($editPermission ?? false)
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h4 class="card-title">Seller account</h4>
+                                </div>
+                                <form method="POST" action="{{ route('admin.delivery-boys.assign-seller', $deliveryBoy->id) }}" class="form-submit">
+                                    @csrf
+                                    <div class="card-body">
+                                        <label class="form-label" for="seller_id">Assign rider to seller</label>
+                                        <select class="form-select" id="seller_id" name="seller_id">
+                                            <option value="">Platform managed (no seller approval)</option>
+                                            @foreach($sellers as $seller)
+                                                <option value="{{ $seller->id }}" @selected((int) $deliveryBoy->seller_id === (int) $seller->id)>
+                                                    {{ $seller->user?->name ?? 'Seller' }} (ID {{ $seller->id }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="form-hint">Assigning a rider resets login approvals, revokes existing sessions, and gives the selected seller control of password approval and QR credentials.</div>
+                                    </div>
+                                    <div class="card-footer text-end">
+                                        <button class="btn btn-primary" type="submit">Save assignment</button>
+                                    </div>
+                                </form>
+                            </div>
+                        @endif
+
                     </div>
                 </div>
 

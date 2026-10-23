@@ -50,6 +50,20 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="mb-3">
+                                            <label class="form-label" for="riderLoginDurationHours">Rider QR and password approval duration (hours)</label>
+                                            <input
+                                                id="riderLoginDurationHours"
+                                                class="form-control"
+                                                type="number"
+                                                name="riderLoginDurationHours"
+                                                min="1"
+                                                max="720"
+                                                required
+                                                value="{{ $settings['riderLoginDurationHours'] ?? 24 }}"
+                                            >
+                                            <div class="form-hint">The platform admin controls the maximum session duration (1–720 hours). Password approvals and newly issued rider QR credentials use this duration.</div>
+                                        </div>
+                                        <div class="mb-3">
                                             <label
                                                 class="form-label">{{ __('labels.delivery_boy_terms_condition') }}
                                                 <a href="{{ route('policies.show', PoliciesEnum::DELIVERY_TERMS()) }}"

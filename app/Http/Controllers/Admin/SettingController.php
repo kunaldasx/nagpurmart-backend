@@ -63,6 +63,13 @@ class SettingController extends Controller
 
             $type = $request->input('type');
 
+            if ($type === SettingTypeEnum::DELIVERY_BOY() && !$request->has('riderLoginDurationHours')) {
+                $currentDeliveryBoySettings = Setting::find('delivery_boy')?->value ?? [];
+                $request->merge([
+                    'riderLoginDurationHours' => $currentDeliveryBoySettings['riderLoginDurationHours'] ?? 24,
+                ]);
+            }
+
             // Map setting type to the corresponding class
             $method = match ($type) {
                 SettingTypeEnum::SYSTEM() => SystemSettingType::class,

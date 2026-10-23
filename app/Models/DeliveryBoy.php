@@ -24,6 +24,7 @@ class DeliveryBoy extends Model implements HasMedia
      */
     protected $fillable = [
         'user_id',
+        'seller_id',
         'delivery_zone_id',
         'status',
         'full_name',
@@ -34,6 +35,13 @@ class DeliveryBoy extends Model implements HasMedia
         'vehicle_registration',
         'verification_status',
         'verification_remark',
+        'login_approval_status',
+        'login_approval_requested_at',
+        'login_approved_at',
+        'login_approved_until',
+        'qr_login_token_hash',
+        'qr_login_token_encrypted',
+        'qr_login_expires_at',
     ];
 
     /**
@@ -45,9 +53,19 @@ class DeliveryBoy extends Model implements HasMedia
     {
         return [
             'user_id' => 'integer',
+            'seller_id' => 'integer',
             'verification_status' => DeliveryBoyVerificationStatusEnum::class,
+            'login_approval_requested_at' => 'datetime',
+            'login_approved_at' => 'datetime',
+            'login_approved_until' => 'datetime',
+            'qr_login_expires_at' => 'datetime',
         ];
     }
+
+    protected $hidden = [
+        'qr_login_token_hash',
+        'qr_login_token_encrypted',
+    ];
 
     public function getDriverLicenseAttribute(): ?array
     {
@@ -76,6 +94,11 @@ class DeliveryBoy extends Model implements HasMedia
     public function deliveryZone(): BelongsTo
     {
         return $this->belongsTo(DeliveryZone::class);
+    }
+
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(Seller::class);
     }
 
     public function assignments():HasMany

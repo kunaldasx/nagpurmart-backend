@@ -9,6 +9,7 @@ use App\Events\DeliveryBoy\DeliveryBoyVerificationStatusUpdated;
 use App\Models\DeliveryBoy;
 use App\Models\DeliveryBoyAssignment;
 use App\Models\DeliveryFeedback;
+use App\Models\Seller;
 use App\Traits\ChecksPermissions;
 use App\Traits\PanelAware;
 use App\Types\Api\ApiResponseType;
@@ -94,14 +95,48 @@ class DeliveryBoyController extends Controller
             : null;
 
         $verificationStatuses = DeliveryBoyVerificationStatusEnum::values();
+        $sellers = Seller::with('user:id,name')->orderBy('id')->get(['id', 'user_id']);
         $editPermission = $this->editPermission;
         $deletePermission = $this->deletePermission;
         $successDelivery = $deliveryBoy->assignments->where('status', DeliveryBoyAssignmentStatusEnum::COMPLETED())->count();
         $reviewData = DeliveryFeedback::getDeliveryFeedbackStatistics($deliveryBoy->id);
 
         return view($this->panelView('delivery_boys.view'), compact(
-            'deliveryBoy', 'driverLicenseUrl', 'vehicleRegistrationUrl', 'verificationStatuses', 'editPermission', 'deletePermission', 'successDelivery', 'reviewData'
+            'deliveryBoy', 'driverLicenseUrl', 'vehicleRegistrationUrl', 'verificationStatuses', 'editPermission', 'deletePermission', 'successDelivery', 'reviewData', 'sellers'
         ));
+    }
+
+    public function assignSeller(Request $request, int $id): JsonResponse
+    {
+        try {
+            $deliveryBoy = DeliveryBoy::with('user')->findOrFail($id);
+            $this->authorize('update', $deliveryBoy);
+        } catch (AuthorizationException) {
+            return ApiResponseType::sendJsonResponse(false, 'labels.permission_denied', [], 403);
+        }
+
+        $validated = $request->validate([
+            'seller_id' => 'nullable|integer|exists:sellers,id',
+        ]);
+
+        if ((int) $deliveryBoy->seller_id !== (int) ($validated['seller_id'] ?? 0)) {
+            $deliveryBoy->update([
+                'seller_id' => $validated['seller_id'] ?? null,
+                'login_approval_status' => 'disapproved',
+                'login_approval_requested_at' => null,
+                'login_approved_at' => null,
+                'login_approved_until' => null,
+                'qr_login_token_hash' => null,
+                'qr_login_token_encrypted' => null,
+                'qr_login_expires_at' => null,
+            ]);
+            $deliveryBoy->user?->tokens()->delete();
+        }
+
+        return ApiResponseType::sendJsonResponse(true, 'Rider seller assignment updated.', [
+            'delivery_boy_id' => $deliveryBoy->id,
+            'seller_id' => $deliveryBoy->fresh()->seller_id,
+        ]);
     }
 
     /**

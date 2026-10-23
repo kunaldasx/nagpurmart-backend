@@ -17,10 +17,14 @@ use Illuminate\Support\Facades\Route;
 // Delivery Boy Auth Routes
 Route::prefix('delivery-boy')->name('delivery-boy.')->group(function () {
     Route::post('register', [DeliveryBoyAuthApiController::class, 'register'])->name('register');
-    Route::post('login', [DeliveryBoyAuthApiController::class, 'login'])->name('login');
+    Route::post('login', [DeliveryBoyAuthApiController::class, 'login'])->middleware('throttle:10,1')->name('login');
+    Route::post('login/qr', [DeliveryBoyAuthApiController::class, 'loginWithQr'])
+        ->middleware('throttle:10,1')
+        ->name('login.qr');
 });
 
 Route::middleware('auth:sanctum')->prefix('delivery-boy')->group(function () {
+    Route::post('logout', [DeliveryBoyAuthApiController::class, 'logout'])->name('logout');
     Route::post('fcm-token', [\App\Http\Controllers\Api\User\AuthApiController::class, 'registerFcmToken'])
         ->name('delivery-boy.fcm-token');
 

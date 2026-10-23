@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Seller\SellerRoleApiController;
 use App\Http\Controllers\Api\Seller\SellerPermissionApiController;
 use App\Http\Controllers\Api\Seller\SubscriptionPlanApiController as SellerSubscriptionPlanApiController;
 use App\Http\Controllers\Api\Seller\SellerSystemUserApiController;
+use App\Http\Controllers\Api\Seller\SellerDeliveryBoyApiController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Api\Seller\SellerNotificationApiController;
 use Illuminate\Support\Facades\Route;
@@ -175,6 +176,16 @@ Route::middleware(['auth:sanctum', 'seller.user.approval',
         Route::post('/', [SellerSystemUserApiController::class, 'store'])->name('store');
         Route::post('/{id}', [SellerSystemUserApiController::class, 'update'])->name('update');
         Route::delete('/{id}', [SellerSystemUserApiController::class, 'destroy'])->name('destroy');
+    });
+
+    // Delivery boys (seller-scoped)
+    Route::prefix('delivery-boys')->name('delivery_boys.')->group(function () {
+        Route::get('/', [SellerDeliveryBoyApiController::class, 'index'])->name('index');
+        Route::post('/', [SellerDeliveryBoyApiController::class, 'store'])->name('store');
+        Route::get('/{id}/login-qr', [SellerDeliveryBoyApiController::class, 'showQr'])->whereNumber('id')->name('login_qr');
+        Route::post('/{id}/rotate-login-qr', [SellerDeliveryBoyApiController::class, 'rotateQr'])->whereNumber('id')->name('rotate_login_qr');
+        Route::post('/{id}/approve-login', [SellerDeliveryBoyApiController::class, 'approveLogin'])->whereNumber('id')->name('approve_login');
+        Route::post('/{id}/reject-login', [SellerDeliveryBoyApiController::class, 'rejectLogin'])->whereNumber('id')->name('reject_login');
     });
 
     // Subscription usage (seller-scoped)

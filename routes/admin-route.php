@@ -401,6 +401,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Delivery Boys Routes
         Route::prefix('delivery-boys')->name('delivery-boys.')->group(function () {
             Route::get('/', [DeliveryBoyController::class, 'index'])->name('index');
+            Route::post('/{id}/seller', [DeliveryBoyController::class, 'assignSeller'])->whereNumber('id')->name('assign-seller');
             Route::get('/datatable', [DeliveryBoyController::class, 'getDeliveryBoys'])->name('datatable');
             Route::get('search', [DeliveryBoyController::class, 'search'])->name('search');
             Route::get('/{id}', [DeliveryBoyController::class, 'show'])->name('show');

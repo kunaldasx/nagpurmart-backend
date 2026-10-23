@@ -16,6 +16,7 @@ use App\Models\DeliveryBoy;
 use App\Models\DeliveryBoyLocation;
 use App\Models\User;
 use App\Services\DeliveryBoyService;
+use App\Services\DeliveryBoyLoginService;
 use App\Services\DeliveryZoneService;
 use App\Services\SpatieMediaService;
 use App\Traits\AuthTrait;
@@ -23,7 +24,6 @@ use App\Types\Api\ApiResponseType;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth as FacadesAuth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Enum;
@@ -119,74 +119,122 @@ class DeliveryBoyAuthApiController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
-        try {
-            $credentials = $request->validate([
-                'email' => 'required|email',
-                'password' => 'required'
-            ]);
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+            'fcm_token' => 'nullable|string',
+            'device_type' => 'nullable|string',
+        ]);
 
-            // Check if user exists and has a delivery boy profile
-            if (!FacadesAuth::attempt($credentials)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => __('labels.invalid_credentials'),
-                    'data' => []
-                ]);
-            }
-
-            $user = $request->user();
-            if (!$user) {
-                return ApiResponseType::sendJsonResponse(
-                    success: false,
-                    message: __('labels.invalid_credentials'),
-                    data: []
-                );
-            }
-            $deliveryBoy = DeliveryBoy::where('user_id', $user->id)->first();
-
-            if (!$deliveryBoy) {
-                return ApiResponseType::sendJsonResponse(
-                    success: false,
-                    message: __('labels.not_a_delivery_boy'),
-                    data: []
-                );
-            }
-
-            // Check if delivery boy is verified
-            if ($deliveryBoy->verification_status !== DeliveryBoyVerificationStatusEnum::VERIFIED) {
-                return ApiResponseType::sendJsonResponse(
-                    success: false,
-                    message: __('labels.account_not_verified'),
-                    data: [
-                        'verification_status' => $deliveryBoy->verification_status,
-                        'verification_remark' => $deliveryBoy->verification_remark
-                    ]
-                );
-            }
-            $this->storeFcmToken($request, $user);
-
-            // Revoke all existing tokens
-            $user->tokens()->delete();
-
-            $token = $user->createToken($user->email)->plainTextToken;
-
-            return ApiResponseType::sendJsonResponse(
-                success: true,
-                message: __('labels.login_successful'),
-                data: [
-                    'access_token' => $token,
-                    'token_type' => 'Bearer',
-                    'user' => $user,
-                    'delivery_boy' => $deliveryBoy
-                ]
-            );
-        } catch (\Exception $e) {
+        $user = User::where('email', $credentials['email'])->first();
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return ApiResponseType::sendJsonResponse(
                 success: false,
-                message: __('labels.login_failed', ['error' => $e->getMessage()]),
-                data: []
+                message: __('labels.invalid_credentials'),
+                data: [],
+                status: 401
             );
         }
+
+        $deliveryBoy = DeliveryBoy::with('user')->where('user_id', $user->id)->first();
+        if (!$deliveryBoy) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.not_a_delivery_boy'), [], 403);
+        }
+
+        if ($deliveryBoy->verification_status !== DeliveryBoyVerificationStatusEnum::VERIFIED) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                __('labels.account_not_verified'),
+                [
+                    'verification_status' => $deliveryBoy->verification_status,
+                    'verification_remark' => $deliveryBoy->verification_remark,
+                ],
+                403
+            );
+        }
+
+        if ($deliveryBoy->seller_id
+            && ($deliveryBoy->login_approval_status !== 'approved'
+                || !$deliveryBoy->login_approved_until?->isFuture())) {
+            app(DeliveryBoyLoginService::class)->requestPasswordApproval($deliveryBoy);
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'Your rider login request is waiting for seller approval.',
+                [
+                    'login_approval_status' => 'pending',
+                    'approval_requested_at' => $deliveryBoy->fresh()->login_approval_requested_at,
+                ],
+                403
+            );
+        }
+
+        $this->storeFcmToken($request, $user);
+        $user->tokens()->delete();
+        $expiresAt = $deliveryBoy->seller_id ? $deliveryBoy->login_approved_until : null;
+        $token = $user->createToken(
+            'rider-password',
+            ['*'],
+            $expiresAt
+        )->plainTextToken;
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            __('labels.login_successful'),
+            [
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'expires_at' => $expiresAt,
+                'user' => $user,
+                'delivery_boy' => $deliveryBoy,
+            ]
+        );
+    }
+
+    public function loginWithQr(Request $request, DeliveryBoyLoginService $loginService): JsonResponse
+    {
+        $validated = $request->validate([
+            'qr_token' => 'required|string|min:32|max:128',
+            'fcm_token' => 'nullable|string',
+            'device_type' => 'nullable|string',
+        ]);
+
+        $deliveryBoy = $loginService->findValidQrRider($validated['qr_token']);
+        if (!$deliveryBoy) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'The rider QR code is invalid or expired.',
+                ['code' => 'invalid_or_expired_qr'],
+                401
+            );
+        }
+
+        $user = $deliveryBoy->user;
+        $this->storeFcmToken($request, $user);
+        $user->tokens()->delete();
+        $token = $user->createToken(
+            'rider-qr',
+            ['*'],
+            $deliveryBoy->qr_login_expires_at
+        )->plainTextToken;
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            __('labels.login_successful'),
+            [
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'expires_at' => $deliveryBoy->qr_login_expires_at,
+                'user' => $user,
+                'delivery_boy' => $deliveryBoy,
+            ]
+        );
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()?->currentAccessToken()?->delete();
+
+        return ApiResponseType::sendJsonResponse(true, 'Rider logged out.', []);
     }
 
     /**
