@@ -16,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DeliveryBoyController extends Controller
@@ -25,7 +26,7 @@ class DeliveryBoyController extends Controller
         $seller = $this->sellerForPermission('delivery_boy.view');
         $canManageRiders = $this->hasPermission('delivery_boy.manage', $seller);
         $riders = DeliveryBoy::query()
-            ->with('user:id,name,email,mobile')
+            ->with(['user:id,name,email,mobile', 'deliveryZone:id,name'])
             ->where('seller_id', $seller->id)
             ->orderByDesc('id')
             ->paginate(15);
@@ -139,8 +140,11 @@ class DeliveryBoyController extends Controller
         ]);
     }
 
-    public function rotateQr(int $id, DeliveryBoyLoginService $loginService): JsonResponse
+    public function rotateQr(Request $request, int $id, DeliveryBoyLoginService $loginService): JsonResponse
     {
+        $validated = $request->validate([
+            'duration_hours' => 'required|integer|min:1|max:' . $loginService->durationHours(),
+        ]);
         $rider = $this->findSellerRider($id, 'delivery_boy.manage');
         if ($rider->verification_status !== DeliveryBoyVerificationStatusEnum::VERIFIED) {
             return response()->json([
@@ -149,7 +153,7 @@ class DeliveryBoyController extends Controller
             ], 422);
         }
 
-        $qr = $loginService->rotateQr($rider);
+        $qr = $loginService->rotateQr($rider, (int) $validated['duration_hours']);
 
         return response()->json([
             'success' => true,
@@ -158,6 +162,51 @@ class DeliveryBoyController extends Controller
                 'expires_at' => $qr['expires_at'],
             ],
         ]);
+    }
+
+    public function update(Request $request, int $id): RedirectResponse
+    {
+        $rider = $this->findSellerRider($id, 'delivery_boy.manage');
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($rider->user_id)],
+            'mobile' => 'nullable|string|max:30',
+            'password' => 'nullable|string|min:8',
+            'delivery_zone_id' => 'required|integer|exists:delivery_zones,id,status,active',
+        ]);
+
+        DB::transaction(function () use ($rider, $validated): void {
+            $rider->user->update([
+                'name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'mobile' => array_key_exists('mobile', $validated) ? $validated['mobile'] : $rider->user->mobile,
+                ...(!empty($validated['password']) ? ['password' => Hash::make($validated['password'])] : []),
+            ]);
+            if (!empty($validated['password'])) {
+                $rider->user->tokens()->delete();
+            }
+            $rider->update([
+                'full_name' => $validated['full_name'],
+                'delivery_zone_id' => $validated['delivery_zone_id'],
+            ]);
+        });
+
+        return redirect()->route('seller.delivery-boys.index')
+            ->with('success', 'Delivery boy details updated.');
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $rider = $this->findSellerRider($id, 'delivery_boy.manage');
+        DB::transaction(function () use ($rider): void {
+            $rider->user?->tokens()->delete();
+            $user = $rider->user;
+            $rider->delete();
+            $user?->delete();
+        });
+
+        return redirect()->route('seller.delivery-boys.index')
+            ->with('success', 'Delivery boy deleted.');
     }
 
     public function approveLogin(int $id, DeliveryBoyLoginService $loginService): RedirectResponse

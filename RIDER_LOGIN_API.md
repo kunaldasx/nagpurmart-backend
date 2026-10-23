@@ -1,6 +1,6 @@
 # Rider App Login API
 
-These endpoints implement rider login in the delivery app. The QR credential and password approval duration are configured by the platform admin under **Admin → Settings → Delivery Boy** (`riderLoginDurationHours`, 1–720 hours; default 24).
+These endpoints implement rider login in the delivery app. The platform admin configures the password approval duration and maximum QR lifetime under **Admin → Settings → Delivery Boy** (`riderLoginDurationHours`, 1–720 hours; default 24). Sellers may choose a shorter QR lifetime per rider.
 
 Base URL examples use `https://api.example.com`. Send `Accept: application/json`; JSON requests use `Content-Type: application/json`.
 
@@ -132,7 +132,7 @@ HTTP `200`:
 }
 ```
 
-QR-issued rider tokens expire at the QR's `expires_at`. An invalid, revoked, or expired QR returns HTTP `401`:
+QR-issued rider tokens expire at the QR's `expires_at`. The seller can set an individual QR lifetime from 1 hour up to the platform-configured maximum when creating or rotating it. An invalid, revoked, or expired QR returns HTTP `401`:
 
 ```json
 {

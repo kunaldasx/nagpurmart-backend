@@ -183,6 +183,8 @@ Route::middleware(['auth:sanctum', 'seller.user.approval',
         Route::get('/', [SellerDeliveryBoyApiController::class, 'index'])->name('index');
         Route::post('/', [SellerDeliveryBoyApiController::class, 'store'])->name('store');
         Route::post('/{id}/claim', [SellerDeliveryBoyApiController::class, 'claim'])->whereNumber('id')->name('claim');
+        Route::post('/{id}', [SellerDeliveryBoyApiController::class, 'update'])->whereNumber('id')->name('update');
+        Route::delete('/{id}', [SellerDeliveryBoyApiController::class, 'destroy'])->whereNumber('id')->name('destroy');
         Route::get('/{id}/login-qr', [SellerDeliveryBoyApiController::class, 'showQr'])->whereNumber('id')->name('login_qr');
         Route::post('/{id}/rotate-login-qr', [SellerDeliveryBoyApiController::class, 'rotateQr'])->whereNumber('id')->name('rotate_login_qr');
         Route::post('/{id}/approve-login', [SellerDeliveryBoyApiController::class, 'approveLogin'])->whereNumber('id')->name('approve_login');

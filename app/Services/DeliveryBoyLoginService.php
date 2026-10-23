@@ -45,12 +45,17 @@ class DeliveryBoyLoginService
         });
     }
 
-    public function rotateQr(DeliveryBoy $deliveryBoy): array
+    public function rotateQr(DeliveryBoy $deliveryBoy, ?int $durationHours = null): array
     {
-        return DB::transaction(function () use ($deliveryBoy): array {
+        $durationHours ??= $this->durationHours();
+        if ($durationHours < 1 || $durationHours > $this->durationHours()) {
+            throw new \InvalidArgumentException('QR duration must be within the platform-configured limit.');
+        }
+
+        return DB::transaction(function () use ($deliveryBoy, $durationHours): array {
             $locked = DeliveryBoy::query()->lockForUpdate()->findOrFail($deliveryBoy->id);
             $token = Str::random(64);
-            $expiresAt = now()->addHours($this->durationHours());
+            $expiresAt = now()->addHours($durationHours);
 
             $locked->update([
                 'qr_login_token_hash' => hash('sha256', $token),

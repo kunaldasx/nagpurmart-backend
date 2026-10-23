@@ -124,6 +124,31 @@ class DeliveryBoyLoginFlowTest extends TestCase
             ->assertJsonPath('data.available_riders.total', 0);
     }
 
+    public function test_seller_can_set_a_custom_qr_duration_within_the_platform_limit(): void
+    {
+        [, $rider, $owner] = $this->createSellerAndRider();
+        $this->setLoginDuration(12);
+        $deliveryBoy = DeliveryBoy::where('user_id', $rider->id)->firstOrFail();
+
+        $response = $this->actingAs($owner, 'sanctum')
+            ->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/rotate-login-qr', [
+                'duration_hours' => 6,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+        $this->assertEqualsWithDelta(
+            now()->addHours(6)->timestamp,
+            \Illuminate\Support\Carbon::parse($response->json('data.expires_at'))->timestamp,
+            2
+        );
+
+        $this->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/rotate-login-qr', [
+            'duration_hours' => 13,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('duration_hours');
+    }
+
     private function createSellerAndRider(): array
     {
         $owner = User::create([
