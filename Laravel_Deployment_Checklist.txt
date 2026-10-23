@@ -45,7 +45,7 @@ sudo systemctl restart php8.3-fpm
 sudo systemctl reload nginx
 
 **Quick Deployment Commands:**
-git pull
+git pull origin main
 composer install --no-dev --optimize-autoloader
 npm install
 npm run build
