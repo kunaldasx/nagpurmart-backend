@@ -79,6 +79,55 @@
                     </div>
                 @endif
 
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title">Existing delivery boys available to add</h3>
+                    </div>
+                    <div class="card-body border-bottom text-secondary">
+                        These delivery boys were created in the platform admin and are not yet assigned to a seller. Add one to your team to manage their password approval and QR login.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Delivery zone</th>
+                                <th>Verification</th>
+                                <th class="w-1">Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @forelse ($availableRiders as $rider)
+                                <tr>
+                                    <td>{{ $rider->user?->name ?? $rider->full_name }}</td>
+                                    <td>{{ $rider->user?->email }}</td>
+                                    <td>{{ $rider->deliveryZone?->name ?? '—' }}</td>
+                                    <td>{{ str_replace('_', ' ', $rider->verification_status->value) }}</td>
+                                    <td>
+                                        @if ($canManageRiders)
+                                            <form method="POST" action="{{ route('seller.delivery-boys.claim', $rider->id) }}">
+                                                @csrf
+                                                <button class="btn btn-sm btn-primary" type="submit">Add to my team</button>
+                                            </form>
+                                        @else
+                                            <span class="text-secondary">Manager permission required</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center text-secondary py-4">No unassigned platform delivery boys are available.</td>
+                                </tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    @if ($availableRiders->hasPages())
+                        <div class="card-footer">{{ $availableRiders->links() }}</div>
+                    @endif
+                </div>
+
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Your delivery boys</h3>

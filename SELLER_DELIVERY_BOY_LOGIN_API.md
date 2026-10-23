@@ -9,16 +9,19 @@ Authorization: Bearer <seller-access-token>
 Accept: application/json
 ```
 
-System-user roles need `delivery_boy.view` to list riders and `delivery_boy.manage` to create riders, approve/disapprove password login, and retrieve QR credentials. All records are scoped to the authenticated seller; an ID belonging to another seller is not accessible.
+System-user roles need `delivery_boy.view` to list riders and `delivery_boy.manage` to claim/create riders, approve/disapprove password login, and retrieve QR credentials. Assigned riders are scoped to the authenticated seller. Unassigned legacy platform riders are exposed in a separate available list so a seller can explicitly claim one; an ID already assigned to another seller is not accessible.
 
 ## 1. List seller riders and approval state
 
-`GET /api/seller/delivery-boys?search=&per_page=15`
+`GET /api/seller/delivery-boys?search=&per_page=15&available_page=1`
 
 Optional query parameters:
 
 - `search`: matches rider name, email, or mobile.
 - `per_page`: 1–100; default 15.
+- `available_page`: page number for unassigned platform riders available to claim (default 1).
+
+`available_riders` contains unassigned legacy riders only for users who have the `delivery_boy.manage` permission; other users receive an empty available-rider page. The seller web panel has the same **Add to my team** action.
 
 HTTP `200`:
 
@@ -27,11 +30,12 @@ HTTP `200`:
   "success": true,
   "message": "Riders retrieved.",
   "data": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 1,
-    "data": [
+    "assigned_riders": {
+      "current_page": 1,
+      "last_page": 1,
+      "per_page": 15,
+      "total": 1,
+      "data": [
       {
         "id": 17,
         "user_id": 42,
@@ -46,12 +50,68 @@ HTTP `200`:
         "login_approved_until": null,
         "qr_login_expires_at": "2026-10-24T08:00:00.000000Z"
       }
-    ]
+      ]
+    },
+    "available_riders": {
+      "current_page": 1,
+      "last_page": 1,
+      "per_page": 15,
+      "total": 1,
+      "data": [
+        {
+          "id": 21,
+          "user_id": 64,
+          "name": "Existing Rider",
+          "email": "existing-rider@example.com",
+          "mobile": "9876500000",
+          "delivery_zone_id": 3,
+          "status": "active",
+          "verification_status": "verified",
+          "login_approval_status": "disapproved",
+          "login_approval_requested_at": null,
+          "login_approved_until": null,
+          "qr_login_expires_at": null
+        }
+      ]
+    }
   }
 }
 ```
 
 `login_approval_status` is `disapproved`, `pending`, or `approved`. A grant is active only while `login_approved_until` is in the future. `qr_login_expires_at` can be null until a QR is first requested.
+
+### Claim an existing platform rider
+
+`POST /api/seller/delivery-boys/{rider_id}/claim`
+
+No request body is required. The operation only succeeds if the rider is still unassigned. It assigns the rider to the authenticated seller, resets password approval and QR credentials, and revokes existing access tokens. Rider profile and platform verification details are preserved.
+
+HTTP `200`:
+
+```json
+{
+  "success": true,
+  "message": "Existing delivery boy added to your seller account.",
+  "data": {
+    "rider": {
+      "id": 21,
+      "user_id": 64,
+      "name": "Existing Rider",
+      "email": "existing-rider@example.com",
+      "mobile": "9876500000",
+      "delivery_zone_id": 3,
+      "status": "active",
+      "verification_status": "verified",
+      "login_approval_status": "disapproved",
+      "login_approval_requested_at": null,
+      "login_approved_until": null,
+      "qr_login_expires_at": null
+    }
+  }
+}
+```
+
+If another seller claims the rider first, the response is HTTP `409` with `data.code = "rider_already_assigned"`. After claiming, the rider appears in `assigned_riders` and seller login controls apply.
 
 ## 2. Create a rider account
 
@@ -96,7 +156,7 @@ HTTP `201`:
 }
 ```
 
-The platform admin must verify and activate the rider before rider login is available. Existing platform riders can be assigned to a seller from the platform admin's rider detail page; changing ownership revokes existing tokens and resets approval/QR state.
+The platform admin must verify and activate the rider before rider login is available. Existing platform riders can be assigned to a seller from the platform admin's rider detail page or claimed from `available_riders`; either ownership change revokes existing tokens and resets approval/QR state.
 
 ## 3. Approve password login
 

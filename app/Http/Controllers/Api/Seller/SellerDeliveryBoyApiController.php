@@ -34,13 +34,69 @@ class SellerDeliveryBoyApiController extends Controller
         }
 
         $riders = $query->paginate(min(max((int) $request->input('per_page', 15), 1), 100));
+        $availableQuery = DeliveryBoy::query()->whereRaw('1 = 0');
+        if ($this->sellerHasPermission('delivery_boy.manage', $seller)) {
+            $availableQuery = DeliveryBoy::query()
+                ->with(['user:id,name,email,mobile', 'deliveryZone:id,name'])
+                ->whereNull('seller_id')
+                ->orderByDesc('id');
+
+            if ($search) {
+                $availableQuery->whereHas('user', function ($users) use ($search) {
+                    $users->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%");
+                });
+            }
+        }
+
+        $availableRiders = $availableQuery->paginate(
+            min(max((int) $request->input('per_page', 15), 1), 100),
+            ['*'],
+            'available_page'
+        );
 
         return ApiResponseType::sendJsonResponse(true, 'Riders retrieved.', [
-            'current_page' => $riders->currentPage(),
-            'last_page' => $riders->lastPage(),
-            'per_page' => $riders->perPage(),
-            'total' => $riders->total(),
-            'data' => $riders->getCollection()->map(fn (DeliveryBoy $rider) => $this->riderData($rider)),
+            'assigned_riders' => $this->riderPaginator($riders),
+            'available_riders' => $this->riderPaginator($availableRiders),
+        ]);
+    }
+
+    public function claim(int $id): JsonResponse
+    {
+        $seller = $this->sellerForPermission('delivery_boy.manage');
+        $claimed = DB::transaction(function () use ($id, $seller): ?DeliveryBoy {
+            $rider = DeliveryBoy::query()->with('user')->lockForUpdate()->findOrFail($id);
+            if ($rider->seller_id !== null) {
+                return null;
+            }
+
+            $rider->update([
+                'seller_id' => $seller->id,
+                'login_approval_status' => 'disapproved',
+                'login_approval_requested_at' => null,
+                'login_approved_at' => null,
+                'login_approved_until' => null,
+                'qr_login_token_hash' => null,
+                'qr_login_token_encrypted' => null,
+                'qr_login_expires_at' => null,
+            ]);
+            $rider->user?->tokens()->delete();
+
+            return $rider->fresh(['user:id,name,email,mobile']);
+        });
+
+        if (!$claimed) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'This delivery boy has already been assigned to a seller.',
+                ['code' => 'rider_already_assigned'],
+                409
+            );
+        }
+
+        return ApiResponseType::sendJsonResponse(true, 'Existing delivery boy added to your seller account.', [
+            'rider' => $this->riderData($claimed),
         ]);
     }
 
@@ -149,18 +205,23 @@ class SellerDeliveryBoyApiController extends Controller
         $seller = $user?->seller();
         abort_unless($seller, 404, 'Seller account not found.');
 
-        $isOwner = (int) $seller->user_id === (int) $user->id;
-        $hasPermission = false;
-        if (!$isOwner) {
-            try {
-                $hasPermission = $user->hasPermissionTo($permission);
-            } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist) {
-                $hasPermission = false;
-            }
-        }
-        abort_unless($isOwner || $hasPermission, 403, 'Permission denied.');
+        abort_unless($this->sellerHasPermission($permission, $seller), 403, 'Permission denied.');
 
         return $seller;
+    }
+
+    private function sellerHasPermission(string $permission, Seller $seller): bool
+    {
+        $user = auth()->user();
+        if ((int) $seller->user_id === (int) $user?->id) {
+            return true;
+        }
+
+        try {
+            return (bool) $user?->hasPermissionTo($permission);
+        } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist) {
+            return false;
+        }
     }
 
     private function findSellerRider(int $id, string $permission): DeliveryBoy
@@ -188,6 +249,17 @@ class SellerDeliveryBoyApiController extends Controller
             'login_approval_requested_at' => $rider->login_approval_requested_at,
             'login_approved_until' => $rider->login_approved_until,
             'qr_login_expires_at' => $rider->qr_login_expires_at,
+        ];
+    }
+
+    private function riderPaginator(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator): array
+    {
+        return [
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'data' => $paginator->getCollection()->map(fn (DeliveryBoy $rider) => $this->riderData($rider)),
         ];
     }
 }

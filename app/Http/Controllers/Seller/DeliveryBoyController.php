@@ -23,20 +23,29 @@ class DeliveryBoyController extends Controller
     public function index(): View
     {
         $seller = $this->sellerForPermission('delivery_boy.view');
+        $canManageRiders = $this->hasPermission('delivery_boy.manage', $seller);
         $riders = DeliveryBoy::query()
             ->with('user:id,name,email,mobile')
             ->where('seller_id', $seller->id)
             ->orderByDesc('id')
             ->paginate(15);
+        $availableRiders = $canManageRiders
+            ? DeliveryBoy::query()
+                ->with(['user:id,name,email,mobile', 'deliveryZone:id,name'])
+                ->whereNull('seller_id')
+                ->orderByDesc('id')
+                ->paginate(15, ['*'], 'available_page')
+            : DeliveryBoy::query()->whereRaw('1 = 0')->paginate(15, ['*'], 'available_page');
 
         return view('seller.delivery_boys.index', [
             'riders' => $riders,
+            'availableRiders' => $availableRiders,
             'deliveryZones' => DeliveryZone::query()
                 ->where('status', ActiveInactiveStatusEnum::ACTIVE())
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'loginDurationHours' => app(DeliveryBoyLoginService::class)->durationHours(),
-            'canManageRiders' => $this->hasPermission('delivery_boy.manage', $seller),
+            'canManageRiders' => $canManageRiders,
         ]);
     }
 
@@ -74,6 +83,39 @@ class DeliveryBoyController extends Controller
 
         return redirect()->route('seller.delivery-boys.index')
             ->with('success', 'Rider account created. Platform verification is required before the rider can log in.');
+    }
+
+    public function claim(int $id): RedirectResponse
+    {
+        $seller = $this->sellerForPermission('delivery_boy.manage');
+        $claimed = DB::transaction(function () use ($id, $seller): bool {
+            $rider = DeliveryBoy::query()->lockForUpdate()->findOrFail($id);
+            if ($rider->seller_id !== null) {
+                return false;
+            }
+
+            $rider->update([
+                'seller_id' => $seller->id,
+                'login_approval_status' => 'disapproved',
+                'login_approval_requested_at' => null,
+                'login_approved_at' => null,
+                'login_approved_until' => null,
+                'qr_login_token_hash' => null,
+                'qr_login_token_encrypted' => null,
+                'qr_login_expires_at' => null,
+            ]);
+            $rider->user?->tokens()->delete();
+
+            return true;
+        });
+
+        if (!$claimed) {
+            return redirect()->route('seller.delivery-boys.index')
+                ->withErrors(['rider' => 'This delivery boy has already been assigned to a seller.']);
+        }
+
+        return redirect()->route('seller.delivery-boys.index')
+            ->with('success', 'Existing delivery boy added to your team. You can now manage login approval and QR access.');
     }
 
     public function showQr(int $id, DeliveryBoyLoginService $loginService): JsonResponse
