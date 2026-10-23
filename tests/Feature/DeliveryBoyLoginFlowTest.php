@@ -87,6 +87,43 @@ class DeliveryBoyLoginFlowTest extends TestCase
             ->assertJsonPath('data.expires_at', null);
     }
 
+    public function test_seller_can_list_and_claim_an_existing_unassigned_rider(): void
+    {
+        [$seller, $rider, $owner] = $this->createSellerAndRider();
+        $deliveryBoy = DeliveryBoy::where('user_id', $rider->id)->firstOrFail();
+        $deliveryBoy->update([
+            'seller_id' => null,
+            'login_approval_status' => 'approved',
+            'login_approved_at' => now(),
+            'login_approved_until' => now()->addHours(12),
+        ]);
+        $rider->createToken('rider-password');
+
+        $this->actingAs($owner, 'sanctum')
+            ->getJson('/api/seller/delivery-boys')
+            ->assertOk()
+            ->assertJsonPath('data.available_riders.total', 1)
+            ->assertJsonPath('data.available_riders.data.0.id', $deliveryBoy->id);
+
+        $this->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/claim')
+            ->assertOk()
+            ->assertJsonPath('data.rider.id', $deliveryBoy->id);
+
+        $this->assertDatabaseHas('delivery_boys', [
+            'id' => $deliveryBoy->id,
+            'seller_id' => $seller->id,
+            'login_approval_status' => 'disapproved',
+            'login_approved_until' => null,
+            'qr_login_token_hash' => null,
+        ]);
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+
+        $this->getJson('/api/seller/delivery-boys')
+            ->assertOk()
+            ->assertJsonPath('data.assigned_riders.total', 1)
+            ->assertJsonPath('data.available_riders.total', 0);
+    }
+
     private function createSellerAndRider(): array
     {
         $owner = User::create([

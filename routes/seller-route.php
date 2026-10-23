@@ -60,6 +60,7 @@ Route::prefix('seller')->name('seller.')->group(function () {
         Route::prefix('delivery-boys')->name('delivery-boys.')->group(function () {
             Route::get('/', [SellerDeliveryBoyController::class, 'index'])->name('index');
             Route::post('/', [SellerDeliveryBoyController::class, 'store'])->name('store');
+            Route::post('/{id}/claim', [SellerDeliveryBoyController::class, 'claim'])->whereNumber('id')->name('claim');
             Route::get('/{id}/login-qr', [SellerDeliveryBoyController::class, 'showQr'])->whereNumber('id')->name('login-qr');
             Route::post('/{id}/rotate-login-qr', [SellerDeliveryBoyController::class, 'rotateQr'])->whereNumber('id')->name('rotate-login-qr');
             Route::post('/{id}/approve-login', [SellerDeliveryBoyController::class, 'approveLogin'])->whereNumber('id')->name('approve-login');
