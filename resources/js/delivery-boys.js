@@ -3,6 +3,17 @@ import QRCode from 'qrcode';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+document.querySelectorAll('.js-password-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.target);
+        const showPassword = input.type === 'password';
+        input.type = showPassword ? 'text' : 'password';
+        button.textContent = showPassword ? 'Hide' : 'Show';
+        button.setAttribute('aria-pressed', String(showPassword));
+        button.setAttribute('aria-label', `${showPassword ? 'Hide' : 'Show'} password`);
+    });
+});
+
 async function readJsonResponse(response, fallbackMessage) {
     const result = await response.json();
     if (!response.ok || !result.success) {
@@ -44,7 +55,13 @@ document.querySelectorAll('.js-rider-edit').forEach((button) => {
         document.getElementById('edit_rider_email').value = button.dataset.email || '';
         document.getElementById('edit_rider_mobile').value = button.dataset.mobile || '';
         document.getElementById('edit_rider_zone').value = button.dataset.zone || '';
-        document.getElementById('edit_rider_password').value = '';
+        const passwordInput = document.getElementById('edit_rider_password');
+        passwordInput.value = '';
+        passwordInput.type = 'password';
+        const passwordToggle = document.querySelector('[data-target="edit_rider_password"]');
+        passwordToggle.textContent = 'Show';
+        passwordToggle.setAttribute('aria-pressed', 'false');
+        passwordToggle.setAttribute('aria-label', 'Show password');
         Modal.getOrCreateInstance(document.getElementById('editRiderModal')).show();
     });
 });

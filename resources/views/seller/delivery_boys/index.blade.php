@@ -71,7 +71,10 @@
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label" for="create_rider_password">Temporary password</label>
-                                                <input id="create_rider_password" name="password" type="password" minlength="8" class="form-control" required>
+                                                <div class="input-group">
+                                                    <input id="create_rider_password" name="password" type="password" minlength="8" class="form-control" required>
+                                                    <button class="btn btn-outline-secondary js-password-toggle" type="button" data-target="create_rider_password" aria-pressed="false">Show</button>
+                                                </div>
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label" for="create_rider_zone">Delivery zone</label>
@@ -294,8 +297,11 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label" for="edit_rider_password">New password</label>
-                                <input id="edit_rider_password" name="password" type="password" minlength="8" class="form-control" autocomplete="new-password">
-                                <div class="form-hint">Leave blank to keep the current password.</div>
+                                <div class="input-group">
+                                    <input id="edit_rider_password" name="password" type="password" minlength="8" class="form-control" autocomplete="new-password">
+                                    <button class="btn btn-outline-secondary js-password-toggle" type="button" data-target="edit_rider_password" aria-pressed="false">Show</button>
+                                </div>
+                                <div class="form-hint">For security, the saved password cannot be viewed. Leave blank to keep it, or enter a new password and select Show to verify it.</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label" for="edit_rider_zone">Delivery zone</label>
