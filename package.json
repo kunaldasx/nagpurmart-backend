@@ -25,7 +25,6 @@
         "ansi-regex": "^5.0.1",
         "ansi-styles": "^4.3.0",
         "asynckit": "^0.4.0",
-        "bootstrap": "^5.3.8",
         "call-bind-apply-helpers": "^1.0.2",
         "chalk": "^4.1.2",
         "cliui": "^8.0.1",
