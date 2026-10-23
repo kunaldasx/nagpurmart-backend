@@ -653,6 +653,13 @@ return [
                 ]
             ],
         ],
+        'delivery_boys' => [
+            'icon' => 'ti-truck-delivery',
+            'route' => 'seller.delivery-boys.index',
+            'title' => 'Delivery Boys',
+            'active' => 'delivery_boys',
+            'permission' => 'delivery_boy.view',
+        ],
         'logout' => [
             'icon' => 'ti-logout-2',
             'route' => 'seller.logout',

@@ -84,6 +84,22 @@ class NotificationService
         ]);
     }
 
+    public function notifySellerRiderLoginRequest(User $sellerOwner, User $rider, int $sellerId, int $riderId): void
+    {
+        $this->createNotification([
+            'user_id' => $sellerOwner->id,
+            'type' => NotificationTypeEnum::SYSTEM(),
+            'sent_to' => 'seller',
+            'title' => 'Rider login approval required',
+            'message' => $rider->name . ' is requesting password login access.',
+            'metadata' => [
+                'event' => 'seller_rider_login_approval',
+                'seller_id' => $sellerId,
+                'rider_id' => $riderId,
+            ],
+        ]);
+    }
+
     /**
      * Get paginated notifications for a specific user.
      *

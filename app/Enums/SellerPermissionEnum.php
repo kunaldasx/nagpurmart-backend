@@ -64,6 +64,8 @@ use ArchTech\Enums\Values;
  * @method static SUBSCRIPTION_VIEW()
  * @method static SUBSCRIPTION_BUY()
  * @method static DASHBOARD_VIEW()
+ * @method static DELIVERY_BOY_VIEW()
+ * @method static DELIVERY_BOY_MANAGE()
  */
 enum SellerPermissionEnum: string
 {
@@ -81,6 +83,8 @@ enum SellerPermissionEnum: string
     case SYSTEM_USER_EDIT = 'system_user.edit';
     case SYSTEM_USER_DELETE = 'system_user.delete';
     case SYSTEM_USER_VIEW = 'system_user.view';
+    case DELIVERY_BOY_VIEW = 'delivery_boy.view';
+    case DELIVERY_BOY_MANAGE = 'delivery_boy.manage';
     case STORE_VIEW = 'store.view';
     case STORE_CREATE = 'store.create';
     case STORE_EDIT = 'store.edit';
@@ -277,6 +281,13 @@ enum SellerPermissionEnum: string
                     self::SYSTEM_USER_EDIT(),
                     self::SYSTEM_USER_DELETE(),
                     self::SYSTEM_USER_VIEW(),
+                ],
+            ],
+            'delivery_boy' => [
+                'name' => 'Delivery Boys',
+                'permissions' => [
+                    self::DELIVERY_BOY_VIEW(),
+                    self::DELIVERY_BOY_MANAGE(),
                 ],
             ],
 

@@ -41,6 +41,34 @@ class VerifiedDeliveryBoy
             ], 403);
         }
 
+        $token = $user->currentAccessToken();
+        if ($token?->name === 'rider-password'
+            && ($deliveryBoy->login_approval_status !== 'approved'
+                || !$deliveryBoy->login_approved_until?->isFuture())) {
+            $token->delete();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Seller approval is required to continue using password login.',
+                'data' => [
+                    'login_approval_status' => $deliveryBoy->login_approval_status,
+                    'login_approved_until' => $deliveryBoy->login_approved_until,
+                ],
+            ], 403);
+        }
+
+        if ($token?->name === 'rider-qr'
+            && (!$deliveryBoy->qr_login_expires_at?->isFuture()
+                || !$token->expires_at?->isFuture())) {
+            $token->delete();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Rider QR login has expired. Scan the current QR code to sign in again.',
+                'data' => ['code' => 'qr_login_expired'],
+            ], 403);
+        }
+
         // Check if delivery boy is verified
         if ($deliveryBoy->verification_status !== DeliveryBoyVerificationStatusEnum::VERIFIED) {
             return response()->json([

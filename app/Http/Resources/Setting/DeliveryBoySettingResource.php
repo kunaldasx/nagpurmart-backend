@@ -19,6 +19,7 @@ class   DeliveryBoySettingResource extends JsonResource
             'value' => [
                 'termsCondition' => $this->value['termsCondition'] ?? '',
                 'privacyPolicy' => $this->value['privacyPolicy'] ?? '',
+                'riderLoginDurationHours' => $this->value['riderLoginDurationHours'] ?? 24,
             ]
         ];
     }

@@ -18,6 +18,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReturnRequestController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Seller\AuthController;
+use App\Http\Controllers\Seller\DeliveryBoyController as SellerDeliveryBoyController;
 use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\WalletController;
 use App\Http\Controllers\Seller\WithdrawalController;
@@ -55,6 +56,15 @@ Route::prefix('seller')->name('seller.')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('dashboard.chart-data');
         Route::get('dashboard/data', [DashboardController::class, 'getDashboardData'])->name('dashboard.data');
+
+        Route::prefix('delivery-boys')->name('delivery-boys.')->group(function () {
+            Route::get('/', [SellerDeliveryBoyController::class, 'index'])->name('index');
+            Route::post('/', [SellerDeliveryBoyController::class, 'store'])->name('store');
+            Route::get('/{id}/login-qr', [SellerDeliveryBoyController::class, 'showQr'])->whereNumber('id')->name('login-qr');
+            Route::post('/{id}/rotate-login-qr', [SellerDeliveryBoyController::class, 'rotateQr'])->whereNumber('id')->name('rotate-login-qr');
+            Route::post('/{id}/approve-login', [SellerDeliveryBoyController::class, 'approveLogin'])->whereNumber('id')->name('approve-login');
+            Route::post('/{id}/reject-login', [SellerDeliveryBoyController::class, 'rejectLogin'])->whereNumber('id')->name('reject-login');
+        });
 
         Route::get('bags', [BagController::class, 'sellerIndex'])->name('bags.index');
         Route::get('bags/data', [BagController::class, 'index'])->name('bags.data');

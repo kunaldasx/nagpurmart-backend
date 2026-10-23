@@ -15,6 +15,7 @@ class DeliveryBoyResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
+            'seller_id' => $this->seller_id,
             'delivery_zone_id' => $this->delivery_zone_id,
             // Include full delivery zone details when relation is loaded
             'delivery_zone' => new DeliveryZoneResource($this->whenLoaded('deliveryZone')),
@@ -27,6 +28,9 @@ class DeliveryBoyResource extends JsonResource
             'vehicle_registration' => $this->vehicle_registration,
             'verification_status' => $this->verification_status,
             'verification_remark' => $this->verification_remark,
+            'login_approval_status' => $this->login_approval_status,
+            'login_approved_until' => $this->login_approved_until,
+            'qr_login_expires_at' => $this->qr_login_expires_at,
             'created_at' => $this->created_at,
         ];
     }
