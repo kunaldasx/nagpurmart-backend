@@ -50,7 +50,7 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="mb-3">
-                                            <label class="form-label" for="riderLoginDurationHours">Rider QR and password approval duration (hours)</label>
+                                            <label class="form-label" for="riderLoginDurationHours">Maximum rider login session duration (hours)</label>
                                             <input
                                                 id="riderLoginDurationHours"
                                                 class="form-control"
@@ -61,7 +61,7 @@
                                                 required
                                                 value="{{ $settings['riderLoginDurationHours'] ?? 24 }}"
                                             >
-                                            <div class="form-hint">The platform admin controls the maximum session duration (1–720 hours). Password approvals and newly issued rider QR credentials use this duration.</div>
+                                            <div class="form-hint">Sets the maximum duration (1–720 hours) sellers can select for password approvals and QR credentials. Newly created QR credentials use this value by default.</div>
                                         </div>
                                         <div class="mb-3">
                                             <label

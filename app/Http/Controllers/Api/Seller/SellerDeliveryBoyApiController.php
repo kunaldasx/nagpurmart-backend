@@ -224,15 +224,20 @@ class SellerDeliveryBoyApiController extends Controller
         return ApiResponseType::sendJsonResponse(true, 'Delivery boy deleted.', []);
     }
 
-    public function approveLogin(int $id, DeliveryBoyLoginService $loginService): JsonResponse
+    public function approveLogin(Request $request, int $id, DeliveryBoyLoginService $loginService): JsonResponse
     {
+        $validated = $request->validate([
+            'duration_hours' => 'nullable|integer|min:1|max:' . $loginService->durationHours(),
+        ]);
+        $durationHours = (int) ($validated['duration_hours'] ?? min(12, $loginService->durationHours()));
         $rider = $this->findSellerRider($id, 'delivery_boy.manage');
-        $loginService->approvePasswordLogin($rider);
+        $loginService->approvePasswordLogin($rider, $durationHours);
 
         return ApiResponseType::sendJsonResponse(true, 'Rider password login approved.', [
             'rider_id' => $rider->id,
             'login_approval_status' => $rider->fresh()->login_approval_status,
             'login_approved_until' => $rider->fresh()->login_approved_until,
+            'duration_hours' => $durationHours,
         ]);
     }
 

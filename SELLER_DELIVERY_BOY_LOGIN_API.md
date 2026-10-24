@@ -162,7 +162,15 @@ The platform admin must verify and activate the rider before rider login is avai
 
 `POST /api/seller/delivery-boys/{rider_id}/approve-login`
 
-No request body is required. The platform-configured duration is applied (default 24 hours).
+Optional JSON body:
+
+```json
+{
+  "duration_hours": 6
+}
+```
+
+`duration_hours` must be an integer from 1 through the platform-configured `riderLoginDurationHours` maximum (1–720 hours). If omitted, the default is 12 hours, or the platform maximum when it is below 12.
 
 HTTP `200`:
 
@@ -173,7 +181,8 @@ HTTP `200`:
   "data": {
     "rider_id": 17,
     "login_approval_status": "approved",
-    "login_approved_until": "2026-10-24T08:00:00.000000Z"
+    "login_approved_until": "2026-10-24T08:00:00.000000Z",
+    "duration_hours": 6
   }
 }
 ```
@@ -304,4 +313,4 @@ Validation errors return HTTP `422`. Missing seller context returns HTTP `404`. 
 
 ## 7. Platform duration setting
 
-The main platform admin configures `riderLoginDurationHours` in **Admin → Settings → Delivery Boy** (integer, 1–720; default 24). The value sets the duration of a password approval grant and the maximum seller-selected QR lifetime. It is not seller-editable. The seller web panel uses the same API and displays this maximum.
+The main platform admin configures `riderLoginDurationHours` in **Admin → Settings → Delivery Boy** (integer, 1–720; default 24). The value is the maximum seller-selected duration for password approvals and QR credentials. Sellers choose each password approval duration; its default is 12 hours, capped at the platform maximum when that is lower. The platform maximum is not seller-editable.

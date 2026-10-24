@@ -17,7 +17,7 @@
                     <div class="col">
                         <h2 class="page-title">Delivery Boys</h2>
                         <div class="text-secondary mt-1">
-                            Password access is approved for {{ $loginDurationHours }} hours. QR validity can be set up to {{ $loginDurationHours }} hours.
+                            Choose password approval duration per rider (default 12 hours). QR validity can be set up to {{ $loginDurationHours }} hours.
                         </div>
                     </div>
                     @if ($canManageRiders)
@@ -25,9 +25,6 @@
                             <div class="btn-list">
                                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#availableRidersModal">
                                     Existing delivery boys <span class="badge bg-primary-lt ms-1">{{ $availableRiders->total() }}</span>
-                                </button>
-                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRiderModal">
-                                    <i class="ti ti-plus me-1" aria-hidden="true"></i>Add delivery boy
                                 </button>
                             </div>
                         </div>
@@ -46,57 +43,6 @@
                 @endif
 
                 @if ($canManageRiders)
-                    <div class="modal modal-blur fade" id="createRiderModal" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                            <div class="modal-content">
-                                <form method="POST" action="{{ route('seller.delivery-boys.store') }}">
-                                    @csrf
-                                    <div class="modal-header">
-                                        <h3 class="modal-title">Add a delivery boy</h3>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="create_rider_name">Full name</label>
-                                                <input id="create_rider_name" name="full_name" class="form-control" required>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="create_rider_email">Email</label>
-                                                <input id="create_rider_email" name="email" type="email" class="form-control" required>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="create_rider_mobile">Mobile</label>
-                                                <input id="create_rider_mobile" name="mobile" class="form-control">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="create_rider_password">Temporary password</label>
-                                                <div class="input-group">
-                                                    <input id="create_rider_password" name="password" type="password" minlength="8" class="form-control" required>
-                                                    <button class="btn btn-outline-secondary js-password-toggle" type="button" data-target="create_rider_password" aria-pressed="false">Show</button>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="create_rider_zone">Delivery zone</label>
-                                                <select id="create_rider_zone" name="delivery_zone_id" class="form-select" required>
-                                                    <option value="">Select a delivery zone</option>
-                                                    @foreach($deliveryZones as $zone)
-                                                        <option value="{{ $zone->id }}">{{ $zone->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <p class="text-secondary mb-0">New accounts remain inactive until verified by the platform admin.</p>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
-                                        <button class="btn btn-primary" type="submit">Create delivery boy</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="modal modal-blur fade" id="availableRidersModal" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                             <div class="modal-content">
@@ -154,7 +100,7 @@
                                 <th>Verification</th>
                                 <th>Password login approval</th>
                                 <th>Approval expires</th>
-                                <th>QR expires</th>
+                                <th class="text-nowrap">QR expires</th>
                                 <th class="w-1">Actions</th>
                             </tr>
                             </thead>
@@ -188,8 +134,16 @@
                                             <span class="badge {{ $approvalBadge }}">{{ $approvalLabel }}</span>
                                         @endif
                                     </td>
-                                    <td>{{ $rider->login_approved_until?->toDateTimeString() ?? '—' }}</td>
-                                    <td>{{ $rider->qr_login_expires_at?->toDateTimeString() ?? '—' }}</td>
+                                    <td class="text-nowrap">{{ $rider->login_approved_until?->format('M j, Y H:i') ?? '—' }}</td>
+                                    <td class="text-nowrap">
+                                        @if ($rider->qr_login_expires_at)
+                                            <span class="badge bg-azure-lt" title="{{ $rider->qr_login_expires_at->toDateTimeString() }}">
+                                                <i class="ti ti-clock me-1" aria-hidden="true"></i>{{ $rider->qr_login_expires_at->format('M j, Y H:i') }}
+                                            </span>
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
                                     <td class="text-nowrap" style="min-width: 360px">
                                         @if ($canManageRiders)
                                             <div class="d-flex flex-wrap gap-2">
@@ -259,13 +213,19 @@
                     <div class="modal-body">
                         <div class="mb-3">Current status: <span class="badge" id="riderApprovalStatus"></span></div>
                         <p class="text-secondary mb-0">
-                            Approving allows password login for {{ $loginDurationHours }} hours. QR login is managed separately.
+                            Set how long this rider can use password login. The maximum allowed by the platform is {{ $loginDurationHours }} hours. QR login is managed separately.
                         </p>
+                        <div class="mb-3">
+                            <label class="form-label" for="approvalDurationHours">Approval duration (hours)</label>
+                            <input id="approvalDurationHours" name="duration_hours" type="number" class="form-control"
+                                   min="1" max="{{ $loginDurationHours }}" value="{{ min(12, $loginDurationHours) }}" required>
+                            <div class="form-hint">Default: 12 hours. Choose from 1 to {{ $loginDurationHours }} hours.</div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success" id="riderApproveButton">Approve for {{ $loginDurationHours }} hours</button>
-                        <button type="submit" class="btn btn-outline-danger" id="riderDisapproveButton">Disapprove</button>
+                        <button type="submit" class="btn btn-success" id="riderApproveButton">Approve for {{ min(12, $loginDurationHours) }} hours</button>
+                        <button type="submit" class="btn btn-outline-danger" id="riderDisapproveButton" formnovalidate>Disapprove</button>
                     </div>
                 </form>
             </div>

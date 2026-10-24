@@ -123,13 +123,18 @@ class DeliveryBoyLoginService
         }
     }
 
-    public function approvePasswordLogin(DeliveryBoy $deliveryBoy): void
+    public function approvePasswordLogin(DeliveryBoy $deliveryBoy, ?int $durationHours = null): void
     {
+        $durationHours ??= min(12, $this->durationHours());
+        if ($durationHours < 1 || $durationHours > $this->durationHours()) {
+            throw new \InvalidArgumentException('Approval duration must be within the platform-configured limit.');
+        }
+
         $approvedAt = now();
         $deliveryBoy->update([
             'login_approval_status' => 'approved',
             'login_approved_at' => $approvedAt,
-            'login_approved_until' => $approvedAt->copy()->addHours($this->durationHours()),
+            'login_approved_until' => $approvedAt->copy()->addHours($durationHours),
         ]);
     }
 

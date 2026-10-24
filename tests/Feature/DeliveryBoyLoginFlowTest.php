@@ -149,6 +149,44 @@ class DeliveryBoyLoginFlowTest extends TestCase
             ->assertJsonValidationErrors('duration_hours');
     }
 
+    public function test_seller_can_choose_password_approval_duration_and_defaults_to_twelve_hours(): void
+    {
+        [, $rider, $owner] = $this->createSellerAndRider();
+        $this->setLoginDuration(24);
+        $deliveryBoy = DeliveryBoy::where('user_id', $rider->id)->firstOrFail();
+        $this->actingAs($owner, 'sanctum');
+
+        $customResponse = $this->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/approve-login', [
+            'duration_hours' => 6,
+        ]);
+        $customResponse->assertOk()
+            ->assertJsonPath('data.duration_hours', 6);
+        $this->assertEqualsWithDelta(
+            now()->addHours(6)->timestamp,
+            \Illuminate\Support\Carbon::parse($customResponse->json('data.login_approved_until'))->timestamp,
+            2
+        );
+
+        $defaultResponse = $this->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/approve-login');
+        $defaultResponse->assertOk()
+            ->assertJsonPath('data.duration_hours', 12);
+        $this->assertEqualsWithDelta(
+            now()->addHours(12)->timestamp,
+            \Illuminate\Support\Carbon::parse($defaultResponse->json('data.login_approved_until'))->timestamp,
+            2
+        );
+
+        $this->setLoginDuration(8);
+        $cappedDefaultResponse = $this->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/approve-login');
+        $cappedDefaultResponse->assertOk()
+            ->assertJsonPath('data.duration_hours', 8);
+
+        $this->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/approve-login', [
+            'duration_hours' => 25,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('duration_hours');
+    }
+
     private function createSellerAndRider(): array
     {
         $owner = User::create([

@@ -209,13 +209,17 @@ class DeliveryBoyController extends Controller
             ->with('success', 'Delivery boy deleted.');
     }
 
-    public function approveLogin(int $id, DeliveryBoyLoginService $loginService): RedirectResponse
+    public function approveLogin(Request $request, int $id, DeliveryBoyLoginService $loginService): RedirectResponse
     {
+        $validated = $request->validate([
+            'duration_hours' => 'nullable|integer|min:1|max:' . $loginService->durationHours(),
+        ]);
+        $durationHours = (int) ($validated['duration_hours'] ?? min(12, $loginService->durationHours()));
         $rider = $this->findSellerRider($id, 'delivery_boy.manage');
-        $loginService->approvePasswordLogin($rider);
+        $loginService->approvePasswordLogin($rider, $durationHours);
 
         return redirect()->route('seller.delivery-boys.index')
-            ->with('success', 'Rider password login approved for ' . $loginService->durationHours() . ' hours.');
+            ->with('success', 'Rider password login approved for ' . $durationHours . ' hours.');
     }
 
     public function rejectLogin(int $id, DeliveryBoyLoginService $loginService): RedirectResponse

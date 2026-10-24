@@ -1,6 +1,6 @@
 # Rider App Login API
 
-These endpoints implement rider login in the delivery app. The platform admin configures the password approval duration and maximum QR lifetime under **Admin → Settings → Delivery Boy** (`riderLoginDurationHours`, 1–720 hours; default 24). Sellers may choose a shorter QR lifetime per rider.
+These endpoints implement rider login in the delivery app. The platform admin configures the maximum seller-selected password approval duration and QR lifetime under **Admin → Settings → Delivery Boy** (`riderLoginDurationHours`, 1–720 hours; default 24). Sellers may choose a shorter QR lifetime and password approval duration per rider; password approval defaults to 12 hours.
 
 Base URL examples use `https://api.example.com`. Send `Accept: application/json`; JSON requests use `Content-Type: application/json`.
 
