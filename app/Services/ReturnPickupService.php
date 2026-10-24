@@ -13,13 +13,18 @@ use App\Models\DeliveryBoy;
 use App\Models\DeliveryBoyAssignment;
 use App\Models\OrderItemReturn;
 use App\Models\SellerStatement;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class ReturnPickupService
 {
     protected OrderService $orderService;
-    public function __construct(protected SellerStatementService $sellerStatementService, OrderService $orderService)
-    {
+
+    public function __construct(
+        protected SellerStatementService $sellerStatementService,
+        OrderService $orderService,
+        protected SmsService $smsService
+    ) {
         $this->orderService = $orderService;
     }
     /**
@@ -81,10 +86,44 @@ class ReturnPickupService
      */
     public function acceptPickup(OrderItemReturn $orderReturn, DeliveryBoy $deliveryBoy): array
     {
+        $orderReturn->loadMissing('order');
+        $customerPhone = $orderReturn->order?->shipping_phone;
+
+        if (!$customerPhone) {
+            return [
+                'success' => false,
+                'error' => 'otp_delivery_failed',
+                'status_code' => 422,
+                'message' => 'Customer phone number is unavailable; this return cannot be accepted.',
+            ];
+        }
+
+        $customerOtp = (string) random_int(100000, 999999);
+        $smsResult = $this->smsService->sendSms(
+            $customerPhone,
+            "Your return pickup OTP is {$customerOtp}. Share it with the rider when handing over the package."
+        );
+
+        if (!($smsResult['success'] ?? false)) {
+            Log::warning('Failed to send return pickup OTP to customer', [
+                'return_id' => $orderReturn->id,
+                'error' => $smsResult['message'] ?? 'Unknown SMS error',
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'otp_delivery_failed',
+                'status_code' => 503,
+                'message' => 'Could not send the pickup OTP to the customer. Please try again.',
+            ];
+        }
+
         // assign and mark as assigned
         $orderReturn->update([
             'delivery_boy_id' => $deliveryBoy->id,
             'pickup_status' => OrderItemReturnPickupStatusEnum::ASSIGNED(),
+            'customer_pickup_otp_hash' => Hash::make($customerOtp),
+            'customer_pickup_otp_sent_at' => now(),
         ]);
 
         // compute route + earnings
@@ -133,7 +172,12 @@ class ReturnPickupService
     /**
      * Update pickup status and related assignment; attach computed fields for response
      */
-    public function updatePickupStatus(OrderItemReturn $orderReturn, string $newStatus, DeliveryBoy $deliveryBoy): array
+    public function updatePickupStatus(
+        OrderItemReturn $orderReturn,
+        string $newStatus,
+        string $otp,
+        DeliveryBoy $deliveryBoy
+    ): array
     {
         $current = $orderReturn->pickup_status;
         if (!$this->isValidTransition($current, $newStatus)) {
@@ -147,10 +191,61 @@ class ReturnPickupService
 
         $update = ['pickup_status' => $newStatus ];
         if ($newStatus === OrderItemReturnPickupStatusEnum::PICKED_UP()) {
+            if (!Hash::check($otp, (string) $orderReturn->customer_pickup_otp_hash)) {
+                return [
+                    'success' => false,
+                    'error' => 'invalid_otp',
+                    'message' => __('labels.invalid_otp'),
+                ];
+            }
+
+            $orderReturn->loadMissing('seller.user');
+            $sellerPhone = $orderReturn->seller?->user?->mobile;
+
+            if (!$sellerPhone) {
+                return [
+                    'success' => false,
+                    'error' => 'otp_delivery_failed',
+                    'message' => 'Seller phone number is unavailable; retry after updating seller contact details.',
+                ];
+            }
+
+            $sellerOtp = (string) random_int(100000, 999999);
+            $smsResult = $this->smsService->sendSms(
+                $sellerPhone,
+                "Your return handover OTP is {$sellerOtp}. Share it with the rider when receiving the returned package."
+            );
+
+            if (!($smsResult['success'] ?? false)) {
+                Log::warning('Failed to send return handover OTP to seller', [
+                    'return_id' => $orderReturn->id,
+                    'error' => $smsResult['message'] ?? 'Unknown SMS error',
+                ]);
+
+                return [
+                    'success' => false,
+                    'error' => 'otp_delivery_failed',
+                    'message' => 'Could not send the handover OTP to the seller. Retry this pickup update.',
+                ];
+            }
+
             $update['picked_up_at'] = now();
             $update['return_status'] = OrderItemReturnStatusEnum::PICKED_UP();
+            $update['customer_pickup_otp_hash'] = null;
+            $update['seller_handover_otp_hash'] = Hash::make($sellerOtp);
+            $update['seller_handover_otp_sent_at'] = now();
         }
         if ($newStatus === OrderItemReturnPickupStatusEnum::DELIVERED_TO_SELLER()) {
+            if (!Hash::check($otp, (string) $orderReturn->seller_handover_otp_hash)) {
+                return [
+                    'success' => false,
+                    'error' => 'invalid_otp',
+                    'message' => __('labels.invalid_otp'),
+                ];
+            }
+
+            $update['seller_handover_otp_hash'] = null;
+
             // Process refund to customer wallet and finalize statuses
             try {
                 $orderReturn->loadMissing('orderItem.order');

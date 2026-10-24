@@ -83,6 +83,7 @@ class DeliveryBoyReturnPickupResource extends JsonResource
                     'state' => $this->store->state,
                     'zipcode' => $this->store->zipcode,
                     'country' => $this->store->country,
+                    'contact_number' => $this->store->contact_number,
                     'latitude' => $this->store->latitude,
                     'longitude' => $this->store->longitude,
                 ];
@@ -91,7 +92,7 @@ class DeliveryBoyReturnPickupResource extends JsonResource
                 return [
                     'id' => $this->user->id,
                     'name' => $this->user->name,
-                    'phone' => $this->user->mobile_number,
+                    'phone' => $this->user->mobile,
                     'email' => $this->user->email,
                 ];
             }),

@@ -96,14 +96,26 @@ class DeliveryBoyReturnPickupApiController extends Controller
                 ->whereHas('store.zones', function ($q) use ($deliveryBoy) {
                     $q->where('delivery_zones.id', $deliveryBoy->delivery_zone_id);
                 })
+                ->lockForUpdate()
                 ->first();
 
             if (!$orderReturn) {
+                DB::rollBack();
                 return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found_or_not_available'), []);
             }
 
             // use service to accept pickup and build response payload
             $result = $this->returnPickupService->acceptPickup($orderReturn, $deliveryBoy);
+
+            if (!$result['success']) {
+                DB::rollBack();
+                return ApiResponseType::sendJsonResponse(
+                    false,
+                    $result['message'],
+                    ['error' => $result['error']],
+                    $result['status_code'] ?? 503
+                );
+            }
 
             DB::commit();
 
@@ -112,7 +124,7 @@ class DeliveryBoyReturnPickupApiController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
-            return ApiResponseType::sendJsonResponse(false, __('labels.something_went_wrong'), ['error' => $e->getMessage()]);
+            return ApiResponseType::sendJsonResponse(false, __('labels.something_went_wrong'), ['error' => $e->getMessage()], 500);
         }
     }
 
@@ -204,23 +216,37 @@ class DeliveryBoyReturnPickupApiController extends Controller
             $orderReturn = OrderItemReturn::with(['order', 'orderItem.product', 'orderItem.variant', 'store', 'user'])
                 ->where('id', $returnId)
                 ->where('delivery_boy_id', $deliveryBoy->id)
+                ->lockForUpdate()
                 ->first();
 
             if (!$orderReturn) {
+                DB::rollBack();
                 return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found_or_not_available'), []);
             }
 
             $newStatus = $request->input('status');
 
             // Delegate to service for transition and enrichment
-            $result = $this->returnPickupService->updatePickupStatus($orderReturn, $newStatus, $deliveryBoy);
+            $result = $this->returnPickupService->updatePickupStatus(
+                $orderReturn,
+                $newStatus,
+                $request->input('otp'),
+                $deliveryBoy
+            );
 
             if (!$result['success']) {
                 DB::rollBack();
-                return ApiResponseType::sendJsonResponse(false, __('labels.invalid_status_transition'), [
+                $statusCode = match ($result['error'] ?? null) {
+                    'invalid_otp' => 422,
+                    'otp_delivery_failed' => 503,
+                    default => 409,
+                };
+
+                return ApiResponseType::sendJsonResponse(false, $result['message'] ?? __('labels.invalid_status_transition'), [
+                    'error' => $result['error'] ?? 'invalid_transition',
                     'current' => $result['current'] ?? null,
                     'requested' => $result['requested'] ?? $newStatus,
-                ]);
+                ], $statusCode);
             }
 
             DB::commit();
@@ -230,7 +256,7 @@ class DeliveryBoyReturnPickupApiController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
-            return ApiResponseType::sendJsonResponse(false, __('labels.something_went_wrong'), ['error' => $e->getMessage()]);
+            return ApiResponseType::sendJsonResponse(false, __('labels.something_went_wrong'), ['error' => $e->getMessage()], 500);
         }
     }
 }
