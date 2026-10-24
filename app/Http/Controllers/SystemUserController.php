@@ -301,17 +301,17 @@ class SystemUserController extends Controller
         return ApiResponseType::sendJsonResponse(true, 'labels.user_deleted', []);
     }
 
-    public function approveSystemUserLogin(int $id)
+    public function approveSystemUserLogin(Request $request, int $id)
     {
-        return $this->updateSystemUserLoginApproval($id, 'approved');
+        return $this->updateSystemUserLoginApproval($request, $id, 'approved');
     }
 
     public function rejectSystemUserLogin(int $id)
     {
-        return $this->updateSystemUserLoginApproval($id, 'rejected');
+        return $this->updateSystemUserLoginApproval(request(), $id, 'rejected');
     }
 
-    private function updateSystemUserLoginApproval(int $id, string $status)
+    private function updateSystemUserLoginApproval(Request $request, int $id, string $status)
     {
         $user = User::find($id);
         $seller = auth()->user()?->seller();
@@ -329,10 +329,19 @@ class SystemUserController extends Controller
             abort(403);
         }
 
+        $maxHours = app(\App\Services\DeliveryBoyLoginService::class)->durationHours();
+        $durationHours = $status === 'approved'
+            ? (int) $request->input('duration_hours', min(12, $maxHours))
+            : null;
+
+        if ($status === 'approved') {
+            $durationHours = max(1, min($durationHours, $maxHours));
+        }
+
         $membership->update([
             'login_approval_status' => $status === 'approved' ? 'approved' : 'disapproved',
             'login_approved_at' => $status === 'approved' ? now() : null,
-            'login_approved_until' => $status === 'approved' ? now()->addHours(24) : null,
+            'login_approved_until' => $status === 'approved' ? now()->addHours($durationHours) : null,
         ]);
         if ($status !== 'approved') {
             $user->tokens()->delete();

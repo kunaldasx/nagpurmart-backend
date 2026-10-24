@@ -227,10 +227,15 @@ class SellerSystemUserApiController extends Controller
             return ApiResponseType::sendJsonResponse(false, __('labels.permission_denied'), null, 403);
         }
 
+        $maxHours = app(\App\Services\DeliveryBoyLoginService::class)->durationHours();
+        $durationHours = $status === 'approved'
+            ? max(1, min((int) request('duration_hours', min(12, $maxHours)), $maxHours))
+            : null;
+
         $membership->update([
             'login_approval_status' => $status === 'approved' ? 'approved' : 'disapproved',
             'login_approved_at' => $status === 'approved' ? now() : null,
-            'login_approved_until' => $status === 'approved' ? now()->addHours(24) : null,
+            'login_approved_until' => $status === 'approved' ? now()->addHours($durationHours) : null,
         ]);
         if ($status !== 'approved') {
             $user->tokens()->delete();
@@ -240,6 +245,7 @@ class SellerSystemUserApiController extends Controller
             'user_id' => $user->id,
             'login_approval_status' => $membership->login_approval_status,
             'login_approved_until' => $membership->login_approved_until,
+            'duration_hours' => $durationHours,
         ]);
     }
 

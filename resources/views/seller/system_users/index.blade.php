@@ -121,12 +121,17 @@
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">Current status: <span class="badge" id="seller-user-approval-status"></span></div>
-                        <div class="text-muted" id="seller-user-approval-message"></div>
+                        <div class="text-muted mb-3" id="seller-user-approval-message"></div>
+                        <div class="mb-3">
+                            <label class="form-label" for="seller-user-approval-hours">Approval duration (hours)</label>
+                            <input id="seller-user-approval-hours" name="duration_hours" type="number" class="form-control" min="1" max="{{ min(12, app(\App\Services\DeliveryBoyLoginService::class)->durationHours()) }}" value="{{ min(12, app(\App\Services\DeliveryBoyLoginService::class)->durationHours()) }}" required>
+                            <div class="form-hint">Default: 12 hours. Maximum allowed by platform: {{ app(\App\Services\DeliveryBoyLoginService::class)->durationHours() }} hours.</div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-success" id="seller-user-approve"
-                                formaction="">Approve for 24 hours</button>
+                                formaction="">Approve</button>
                         <button type="submit" class="btn btn-outline-danger" id="seller-user-disapprove"
                                 formaction="">Disapprove</button>
                     </div>
@@ -256,6 +261,7 @@
             const statusElement = document.getElementById('seller-user-approval-status');
             const approveButton = document.getElementById('seller-user-approve');
             const disapproveButton = document.getElementById('seller-user-disapprove');
+            const durationInput = document.getElementById('seller-user-approval-hours');
 
             modalElement.addEventListener('show.bs.modal', function (event) {
                 const trigger = event.relatedTarget;
@@ -263,6 +269,9 @@
 
                 const status = trigger.dataset.status || 'not_requested';
                 const approved = status === 'approved';
+                const maxHours = Number(durationInput.max || 12);
+                const defaultHours = Math.min(12, maxHours || 12);
+                durationInput.value = defaultHours;
                 approvalForm.action = trigger.dataset.disapproveUrl;
                 approveButton.setAttribute('formaction', trigger.dataset.approveUrl);
                 disapproveButton.setAttribute('formaction', trigger.dataset.disapproveUrl);
@@ -273,9 +282,15 @@
                 statusElement.className = `badge ${approved ? 'bg-green-lt' : status === 'pending' ? 'bg-yellow-lt' : 'bg-red-lt'}`;
                 messageElement.textContent = approved
                     ? 'Disapproving will immediately revoke this user’s active API access.'
-                    : 'Approving grants this user access for 24 hours.';
+                    : `Approving grants this user access for ${durationInput.value} hours.`;
                 approveButton.disabled = approved;
                 disapproveButton.disabled = !approved && status === 'disapproved';
+                durationInput.addEventListener('input', () => {
+                    const hours = Number(durationInput.value || defaultHours);
+                    if (Number.isFinite(hours) && hours > 0) {
+                        messageElement.textContent = `Approving grants this user access for ${hours} hours.`;
+                    }
+                }, { once: true });
             });
 
             if (window.jQuery) {
