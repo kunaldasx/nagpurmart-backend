@@ -42,6 +42,7 @@ document.querySelectorAll('.js-rider-approval').forEach((button) => {
         const form = document.getElementById('riderApprovalForm');
         const approveButton = document.getElementById('riderApproveButton');
         const disapproveButton = document.getElementById('riderDisapproveButton');
+        const durationInput = document.getElementById('approvalDurationHours');
 
         document.getElementById('riderApprovalName').textContent = button.dataset.name || '';
         statusElement.textContent = isApproved
@@ -51,8 +52,14 @@ document.querySelectorAll('.js-rider-approval').forEach((button) => {
         form.action = button.dataset.disapproveUrl;
         approveButton.formAction = button.dataset.approveUrl;
         disapproveButton.formAction = button.dataset.disapproveUrl;
+        durationInput.value = Math.min(12, Number(durationInput.max));
+        approveButton.textContent = `Approve for ${durationInput.value} hours`;
         showModal(document.getElementById('riderApprovalModal'));
     });
+});
+
+document.getElementById('approvalDurationHours')?.addEventListener('input', (event) => {
+    document.getElementById('riderApproveButton').textContent = `Approve for ${event.currentTarget.value || 0} hours`;
 });
 
 document.querySelectorAll('.js-rider-edit').forEach((button) => {
