@@ -20,14 +20,14 @@
 @section('seller-content')
     @push('styles')
         <style>
-            .seller-user-approval-control { display: inline-flex; align-items: center; gap: .55rem; white-space: nowrap; }
-            .seller-user-approval-status { padding: .45rem .7rem; border-radius: .55rem; font-size: .9rem; font-weight: 700; letter-spacing: .01em; }
-            .seller-user-approval-edit { width: 2.35rem; height: 2.35rem; flex: 0 0 2.35rem; border: 1px solid #8fb6ff; border-radius: .55rem; color: #206bc4; background: #fff; font-size: 1.15rem; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; }
+            .seller-user-approval-control { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
+            .seller-user-approval-status { padding: .32rem .55rem; border-radius: .45rem; font-size: .8rem; font-weight: 700; letter-spacing: .01em; }
+            .seller-user-approval-edit { width: 1.9rem; height: 1.9rem; flex: 0 0 1.9rem; padding: 0; border: 1px solid #8fb6ff; border-radius: .45rem; color: #206bc4; background: #fff; font-size: 1rem; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; }
             .seller-user-approval-edit:hover, .seller-user-approval-edit:focus-visible { color: #fff; background: #206bc4; box-shadow: 0 0 0 .2rem rgba(32, 107, 196, .15); }
             #seller-user-approval-modal .approval-duration-panel { padding: 1rem; border: 1px solid #dce5ef; border-radius: .75rem; background: #f8fafc; }
             #seller-user-approval-modal .approval-duration-panel .form-control { min-height: 2.8rem; font-size: 1rem; font-weight: 600; }
-            #seller-user-approval-modal .modal-footer .btn { min-width: 8rem; }
-            @media (max-width: 575.98px) { #seller-user-approval-modal .modal-footer { display: grid; grid-template-columns: 1fr 1fr; } #seller-user-approval-modal .modal-footer .btn { width: 100%; } }
+            #seller-user-approval-modal .modal-footer .btn { min-width: 6.5rem; }
+            @media (max-width: 575.98px) { #seller-user-approval-modal .modal-footer { display: flex; flex-wrap: wrap; gap: .5rem; } #seller-user-approval-modal .modal-footer .btn { min-width: 0; flex: 1 1 auto; } }
         </style>
     @endpush
     <div class="row row-cards">
@@ -142,9 +142,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success btn-lg" id="seller-user-approve"
+                        <button type="submit" class="btn btn-success" id="seller-user-approve"
                                 formaction="">Approve</button>
-                        <button type="submit" class="btn btn-outline-danger btn-lg" id="seller-user-disapprove"
+                        <button type="submit" class="btn btn-outline-danger" id="seller-user-disapprove"
                                 formaction="">Disapprove</button>
                     </div>
                 </form>
