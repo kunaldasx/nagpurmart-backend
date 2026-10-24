@@ -18,6 +18,18 @@
 @endphp
 
 @section('seller-content')
+    @push('styles')
+        <style>
+            .seller-user-approval-control { display: inline-flex; align-items: center; gap: .55rem; white-space: nowrap; }
+            .seller-user-approval-status { padding: .45rem .7rem; border-radius: .55rem; font-size: .9rem; font-weight: 700; letter-spacing: .01em; }
+            .seller-user-approval-edit { width: 2.35rem; height: 2.35rem; flex: 0 0 2.35rem; border: 1px solid #8fb6ff; border-radius: .55rem; color: #206bc4; background: #fff; font-size: 1.15rem; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; }
+            .seller-user-approval-edit:hover, .seller-user-approval-edit:focus-visible { color: #fff; background: #206bc4; box-shadow: 0 0 0 .2rem rgba(32, 107, 196, .15); }
+            #seller-user-approval-modal .approval-duration-panel { padding: 1rem; border: 1px solid #dce5ef; border-radius: .75rem; background: #f8fafc; }
+            #seller-user-approval-modal .approval-duration-panel .form-control { min-height: 2.8rem; font-size: 1rem; font-weight: 600; }
+            #seller-user-approval-modal .modal-footer .btn { min-width: 8rem; }
+            @media (max-width: 575.98px) { #seller-user-approval-modal .modal-footer { display: grid; grid-template-columns: 1fr 1fr; } #seller-user-approval-modal .modal-footer .btn { width: 100%; } }
+        </style>
+    @endpush
     <div class="row row-cards">
         <div class="col-12">
             <div class="card">
@@ -122,17 +134,17 @@
                     <div class="modal-body">
                         <div class="mb-3">Current status: <span class="badge" id="seller-user-approval-status"></span></div>
                         <div class="text-muted mb-3" id="seller-user-approval-message"></div>
-                        <div class="mb-3">
+                        <div class="approval-duration-panel mb-3">
                             <label class="form-label" for="seller-user-approval-hours">Approval duration (hours)</label>
-                            <input id="seller-user-approval-hours" name="duration_hours" type="number" class="form-control" min="1" max="{{ min(12, app(\App\Services\DeliveryBoyLoginService::class)->durationHours()) }}" value="{{ min(12, app(\App\Services\DeliveryBoyLoginService::class)->durationHours()) }}" required>
+                            <input id="seller-user-approval-hours" name="duration_hours" type="number" class="form-control" min="1" max="{{ app(\App\Services\DeliveryBoyLoginService::class)->durationHours() }}" value="{{ min(12, app(\App\Services\DeliveryBoyLoginService::class)->durationHours()) }}" required>
                             <div class="form-hint">Default: 12 hours. Maximum allowed by platform: {{ app(\App\Services\DeliveryBoyLoginService::class)->durationHours() }} hours.</div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success" id="seller-user-approve"
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success btn-lg" id="seller-user-approve"
                                 formaction="">Approve</button>
-                        <button type="submit" class="btn btn-outline-danger" id="seller-user-disapprove"
+                        <button type="submit" class="btn btn-outline-danger btn-lg" id="seller-user-disapprove"
                                 formaction="">Disapprove</button>
                     </div>
                 </form>
@@ -262,13 +274,15 @@
             const approveButton = document.getElementById('seller-user-approve');
             const disapproveButton = document.getElementById('seller-user-disapprove');
             const durationInput = document.getElementById('seller-user-approval-hours');
+            let currentApprovalActive = false;
 
             modalElement.addEventListener('show.bs.modal', function (event) {
                 const trigger = event.relatedTarget;
                 if (!trigger) return;
 
                 const status = trigger.dataset.status || 'not_requested';
-                const approved = status === 'approved';
+                const approved = trigger.dataset.approvalActive === 'true';
+                currentApprovalActive = approved;
                 const maxHours = Number(durationInput.max || 12);
                 const defaultHours = Math.min(12, maxHours || 12);
                 durationInput.value = defaultHours;
@@ -278,19 +292,21 @@
                 userElement.textContent = trigger.dataset.userName;
                 statusElement.textContent = approved && trigger.dataset.approvedUntil
                     ? `Approved until ${trigger.dataset.approvedUntil}`
-                    : status.replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase());
+                    : status === 'approved' ? 'Expired' : status.replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase());
                 statusElement.className = `badge ${approved ? 'bg-green-lt' : status === 'pending' ? 'bg-yellow-lt' : 'bg-red-lt'}`;
                 messageElement.textContent = approved
-                    ? 'Disapproving will immediately revoke this user’s active API access.'
+                    ? 'You can extend this approval or disapprove to revoke the user’s active API access immediately.'
                     : `Approving grants this user access for ${durationInput.value} hours.`;
-                approveButton.disabled = approved;
                 disapproveButton.disabled = !approved && status === 'disapproved';
-                durationInput.addEventListener('input', () => {
-                    const hours = Number(durationInput.value || defaultHours);
-                    if (Number.isFinite(hours) && hours > 0) {
-                        messageElement.textContent = `Approving grants this user access for ${hours} hours.`;
-                    }
-                }, { once: true });
+                approveButton.textContent = approved ? `Extend for ${durationInput.value} hours` : `Approve for ${durationInput.value} hours`;
+            });
+
+            durationInput.addEventListener('input', function () {
+                const hours = Number(durationInput.value);
+                if (Number.isInteger(hours) && hours >= 1) {
+                    messageElement.textContent = `${currentApprovalActive ? 'Extending' : 'Approving'} grants this user access for ${hours} hours.`;
+                    approveButton.textContent = `${currentApprovalActive ? 'Extend' : 'Approve'} for ${hours} hours`;
+                }
             });
 
             if (window.jQuery) {
