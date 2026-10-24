@@ -19,6 +19,7 @@ class UpdateReturnPickupStatusRequest extends FormRequest
     {
         return [
             'status' => ['required', 'in:' . OrderItemReturnPickupStatusEnum::PICKED_UP() . ',' . OrderItemReturnPickupStatusEnum::DELIVERED_TO_SELLER()],
+            'otp' => ['required', 'string', 'digits:6'],
         ];
     }
 
@@ -27,6 +28,8 @@ class UpdateReturnPickupStatusRequest extends FormRequest
         return [
             'status.required' => __('validation.status_required'),
             'status.in' => __('validation.status_in'),
+            'otp.required' => __('validation.otp_required'),
+            'otp.digits' => __('validation.otp_min'),
         ];
     }
 
@@ -34,6 +37,7 @@ class UpdateReturnPickupStatusRequest extends FormRequest
     {
         return [
             'status' => 'pickup status',
+            'otp' => 'verification code',
         ];
     }
 }
