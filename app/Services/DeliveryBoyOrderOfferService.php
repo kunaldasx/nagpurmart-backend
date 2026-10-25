@@ -73,7 +73,7 @@ class DeliveryBoyOrderOfferService
                     $lockedRider = DeliveryBoy::query()->whereKey($rider->id)->lockForUpdate()->first();
                     if (!$lockedOrder || $lockedOrder->delivery_boy_id !== null || !$lockedRider
                         || $lockedRider->status !== ActiveInactiveStatusEnum::ACTIVE()
-                        || $lockedRider->verification_status !== DeliveryBoyVerificationStatusEnum::VERIFIED()
+                        || $lockedRider->verification_status !== DeliveryBoyVerificationStatusEnum::VERIFIED
                         || in_array($lockedOrder->status, [OrderStatusEnum::CANCELLED(), OrderStatusEnum::DELIVERED(), OrderStatusEnum::FAILED(), OrderStatusEnum::REJECTED_BY_SELLER()], true)) {
                         return null;
                     }
@@ -185,6 +185,36 @@ class DeliveryBoyOrderOfferService
             }
         }
 
+        $pickupOrders = Order::query()
+            ->whereNotNull('delivery_zone_id')
+            ->whereNotIn('status', [
+                OrderStatusEnum::CANCELLED(),
+                OrderStatusEnum::DELIVERED(),
+                OrderStatusEnum::FAILED(),
+                OrderStatusEnum::REJECTED_BY_SELLER(),
+            ])
+            ->whereHas('sellerOrders', fn ($query) => $query
+                ->where('seller_id', $sellerId)
+                ->whereHas('bag')
+                ->whereHas('items.orderItem', fn ($itemQuery) => $itemQuery->where('status', OrderItemStatusEnum::PREPARING())))
+            ->with(['sellerOrders' => fn ($query) => $query
+                ->where('seller_id', $sellerId)
+                ->whereHas('bag')
+                ->whereHas('items.orderItem', fn ($itemQuery) => $itemQuery->where('status', OrderItemStatusEnum::PREPARING()))
+                ->with('items.orderItem.store')])
+            ->get(['id', 'delivery_zone_id']);
+
+        foreach ($pickupOrders as $order) {
+            $sellerOrder = $order->sellerOrders->first();
+            $pickupItem = $sellerOrder?->items->first(
+                fn ($item) => $item->orderItem?->status === OrderItemStatusEnum::PREPARING()
+            );
+            $store = $pickupItem?->orderItem?->store;
+            if ($store && $store->latitude !== null && $store->longitude !== null) {
+                $storesByZone[$order->delivery_zone_id][] = $store;
+            }
+        }
+
         $orderZoneIds = Order::query()
             ->whereNotNull('delivery_zone_id')
             ->whereHas('sellerOrders', fn ($query) => $query->where('seller_id', $sellerId))
@@ -213,7 +243,7 @@ class DeliveryBoyOrderOfferService
         $now = now();
         $riderRows = $riders->map(function (DeliveryBoy $rider) use ($storesByZone, $now) {
             $active = $rider->status === ActiveInactiveStatusEnum::ACTIVE();
-            $verified = $rider->verification_status === DeliveryBoyVerificationStatusEnum::VERIFIED();
+            $verified = $rider->verification_status === DeliveryBoyVerificationStatusEnum::VERIFIED;
             $hasFcmToken = $rider->user?->fcmTokens?->isNotEmpty() ?? false;
             $hasPendingOffer = $rider->orderOffers->isNotEmpty();
             $hasActiveAssignment = $rider->assignments->isNotEmpty();
@@ -235,6 +265,7 @@ class DeliveryBoyOrderOfferService
             }
 
             $withinRadius = $nearestDistanceKm !== null && $nearestDistanceKm <= 0.2;
+            $hasPickupStore = !empty($storesByZone[$rider->delivery_zone_id]);
             $available = $active && $verified && $hasFcmToken && $locationFresh && $withinRadius
                 && !$hasPendingOffer && !$hasActiveAssignment;
             $unavailableReason = match (true) {
@@ -242,6 +273,7 @@ class DeliveryBoyOrderOfferService
                 !$verified => 'not_verified',
                 !$hasFcmToken => 'no_fcm_token',
                 !$locationFresh => 'location_stale',
+                !$hasPickupStore => 'no_pickup_store',
                 !$withinRadius => 'outside_pickup_radius',
                 $hasPendingOffer => 'pending_offer',
                 $hasActiveAssignment => 'active_delivery',

@@ -165,6 +165,7 @@
                 no_fcm_token: 'App notification token missing',
                 location_stale: 'Location is older than 2 minutes',
                 outside_pickup_radius: 'Outside 200 m pickup radius',
+                no_pickup_store: 'No pickup store mapped in rider zone',
                 pending_offer: 'Has a pending order offer',
                 active_delivery: 'Already on a delivery',
             };
@@ -186,7 +187,11 @@
                         ? '<span class="badge bg-success-lt text-success">Available</span>'
                         : `<span class="text-secondary">${escapeHtml(reasonLabels[rider.unavailable_reason] || 'Unavailable')}</span>`;
                     const distance = rider.nearest_pickup_distance_m === null
-                        ? 'No recent location'
+                        ? (rider.location_age_seconds === null
+                            ? 'No location reported'
+                            : (rider.location_age_seconds > 120
+                                ? 'Location is stale'
+                                : 'No pickup store in rider zone'))
                         : `${escapeHtml(rider.nearest_pickup_distance_m)} m`;
                     const lastSeen = rider.location_age_seconds === null
                         ? 'Never reported'
