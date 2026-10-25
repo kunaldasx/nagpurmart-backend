@@ -15,6 +15,7 @@ use App\Models\Seller;
 use App\Models\SellerOrder;
 use App\Models\SellerOrderItem;
 use App\Services\CurrencyService;
+use App\Services\DeliveryBoyOrderOfferService;
 use App\Services\OrderService;
 use App\Traits\ChecksPermissions;
 use App\Traits\PanelAware;
@@ -65,6 +66,21 @@ class OrderController extends Controller
             ['data' => 'actions', 'name' => 'actions', 'title' => __('labels.actions'), 'orderable' => false, 'searchable' => false],
         ];
         return view($this->panelView('orders.index'), compact('columns'));
+    }
+
+    public function getRiderAvailability(): JsonResponse
+    {
+        $this->authorize('viewAny', SellerOrder::class);
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            'Rider availability fetched successfully.',
+            app(DeliveryBoyOrderOfferService::class)->riderAvailabilityForSeller((int) $seller->id)
+        );
     }
 
     /**
