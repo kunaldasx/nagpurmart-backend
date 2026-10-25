@@ -15,6 +15,14 @@ npm run build
 **Run database migrations**:
 php artisan migrate --force
 
+**Enable the Laravel scheduler (required for automatic rider session expiry):**
+
+Add Laravel's scheduler entry to the server crontab, replacing the path with the application directory:
+
+* * * * * cd /path/to/application && php artisan schedule:run >> /dev/null 2>&1
+
+This runs the scheduled rider session expiry check every minute, which marks riders inactive after their current QR or password login expires.
+
 **Set Gemini model if needed**:
 GEMINI_MODEL=gemini-3.5-flash
 GEMINI_TIMEOUT=120

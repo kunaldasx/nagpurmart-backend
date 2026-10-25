@@ -21,6 +21,7 @@ class SellerDeliveryBoyApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $seller = $this->sellerForPermission('delivery_boy.view');
+        app(DeliveryBoyLoginService::class)->expireLoginSessions();
         $query = DeliveryBoy::query()
             ->with('user:id,name,email,mobile')
             ->where('seller_id', $seller->id)
@@ -74,6 +75,7 @@ class SellerDeliveryBoyApiController extends Controller
 
             $rider->update([
                 'seller_id' => $seller->id,
+                'status' => 'inactive',
                 'login_approval_status' => 'disapproved',
                 'login_approval_requested_at' => null,
                 'login_approved_at' => null,
@@ -199,6 +201,7 @@ class SellerDeliveryBoyApiController extends Controller
             ]);
             if (!empty($validated['password'])) {
                 $rider->user->tokens()->delete();
+                $rider->update(['status' => 'inactive']);
             }
             $rider->update([
                 'full_name' => $validated['full_name'],
@@ -232,11 +235,13 @@ class SellerDeliveryBoyApiController extends Controller
         $durationHours = (int) ($validated['duration_hours'] ?? min(12, $loginService->durationHours()));
         $rider = $this->findSellerRider($id, 'delivery_boy.manage');
         $loginService->approvePasswordLogin($rider, $durationHours);
+        $rider = $rider->fresh();
 
         return ApiResponseType::sendJsonResponse(true, 'Rider password login approved.', [
             'rider_id' => $rider->id,
-            'login_approval_status' => $rider->fresh()->login_approval_status,
-            'login_approved_until' => $rider->fresh()->login_approved_until,
+            'login_approval_status' => $rider->login_approval_status,
+            'login_approved_until' => $rider->login_approved_until,
+            'status' => $rider->status,
             'duration_hours' => $durationHours,
         ]);
     }
@@ -245,11 +250,13 @@ class SellerDeliveryBoyApiController extends Controller
     {
         $rider = $this->findSellerRider($id, 'delivery_boy.manage');
         $loginService->rejectPasswordLogin($rider);
+        $rider = $rider->fresh();
 
         return ApiResponseType::sendJsonResponse(true, 'Rider password login disapproved.', [
             'rider_id' => $rider->id,
-            'login_approval_status' => $rider->fresh()->login_approval_status,
+            'login_approval_status' => $rider->login_approval_status,
             'login_approved_until' => null,
+            'status' => $rider->status,
         ]);
     }
 

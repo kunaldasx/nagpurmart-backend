@@ -44,8 +44,16 @@ class DeliveryBoyLoginFlowTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.token_type', 'Bearer');
+            ->assertJsonPath('data.token_type', 'Bearer')
+            ->assertJsonPath('data.delivery_boy.status', 'active');
         $this->assertSame($approvedUntil, $deliveryBoy->fresh()->login_approved_until->timestamp);
+        $this->assertSame('active', $deliveryBoy->fresh()->status);
+
+        $this->withToken($response->json('data.access_token'))
+            ->postJson('/api/delivery-boy/logout')
+            ->assertOk();
+        $this->assertSame('inactive', $deliveryBoy->fresh()->status);
+        $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
     public function test_qr_login_uses_hashed_expiring_credential_and_rotates_after_expiry(): void
@@ -61,13 +69,19 @@ class DeliveryBoyLoginFlowTest extends TestCase
         $this->assertSame($deliveryBoy->id, $service->findValidQrRider($firstQr['token'])?->id);
 
         $loginResponse = $this->postJson('/api/delivery-boy/login/qr', ['qr_token' => $firstQr['token']]);
-        $loginResponse->assertOk()->assertJsonPath('success', true);
+        $loginResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.delivery_boy.status', 'active');
         $accessToken = $loginResponse->json('data.access_token');
+        $this->assertSame('active', $deliveryBoy->fresh()->status);
 
         $this->travel(13)->hours();
         $this->withToken($accessToken)
             ->getJson('/api/delivery-boy/profile')
             ->assertUnauthorized();
+
+        $this->assertSame(1, $service->expireLoginSessions());
+        $this->assertSame('inactive', $deliveryBoy->fresh()->status);
 
         $secondQr = $service->issueOrGetQr($deliveryBoy);
         $this->assertNotSame($firstQr['token'], $secondQr['token']);
@@ -112,6 +126,7 @@ class DeliveryBoyLoginFlowTest extends TestCase
         $this->assertDatabaseHas('delivery_boys', [
             'id' => $deliveryBoy->id,
             'seller_id' => $seller->id,
+            'status' => 'inactive',
             'login_approval_status' => 'disapproved',
             'login_approved_until' => null,
             'qr_login_token_hash' => null,
@@ -169,7 +184,8 @@ class DeliveryBoyLoginFlowTest extends TestCase
 
         $defaultResponse = $this->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/approve-login');
         $defaultResponse->assertOk()
-            ->assertJsonPath('data.duration_hours', 12);
+            ->assertJsonPath('data.duration_hours', 12)
+            ->assertJsonPath('data.status', 'inactive');
         $this->assertEqualsWithDelta(
             now()->addHours(12)->timestamp,
             \Illuminate\Support\Carbon::parse($defaultResponse->json('data.login_approved_until'))->timestamp,
@@ -185,6 +201,28 @@ class DeliveryBoyLoginFlowTest extends TestCase
             'duration_hours' => 25,
         ])->assertUnprocessable()
             ->assertJsonValidationErrors('duration_hours');
+    }
+
+    public function test_seller_disapproval_marks_rider_inactive_and_revokes_active_login(): void
+    {
+        [, $rider, $owner] = $this->createSellerAndRider();
+        $deliveryBoy = DeliveryBoy::where('user_id', $rider->id)->firstOrFail();
+        app(DeliveryBoyLoginService::class)->approvePasswordLogin($deliveryBoy, 6);
+
+        $login = $this->postJson('/api/delivery-boy/login', [
+            'email' => $rider->email,
+            'password' => 'password123',
+        ]);
+        $login->assertOk();
+        $this->assertSame('active', $deliveryBoy->fresh()->status);
+
+        $this->actingAs($owner, 'sanctum')
+            ->postJson('/api/seller/delivery-boys/' . $deliveryBoy->id . '/reject-login')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'inactive');
+
+        $this->assertSame('inactive', $deliveryBoy->fresh()->status);
+        $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
     private function createSellerAndRider(): array
@@ -225,7 +263,7 @@ class DeliveryBoyLoginFlowTest extends TestCase
         DeliveryBoy::create([
             'user_id' => $rider->id,
             'seller_id' => $seller->id,
-            'status' => 'active',
+            'status' => 'inactive',
             'full_name' => $rider->name,
             'verification_status' => DeliveryBoyVerificationStatusEnum::VERIFIED(),
         ]);

@@ -11,6 +11,15 @@ Accept: application/json
 
 System-user roles need `delivery_boy.view` to list riders and `delivery_boy.manage` to claim/create riders, approve/disapprove password login, and retrieve QR credentials. Assigned riders are scoped to the authenticated seller. Unassigned legacy platform riders are exposed in a separate available list so a seller can explicitly claim one; an ID already assigned to another seller is not accessible.
 
+## Seller app rider list and status UI
+
+Use `GET /api/seller/delivery-boys` to build the seller app's delivery-boys page. Render each item in `data.assigned_riders.data` as a rider row or card with the rider name, email, status, verification status, and login controls. Add a **Status** column or badge sourced from `status`:
+
+- `active`: show a green **ACTIVE** badge.
+- `inactive`: show a neutral/gray **INACTIVE** badge.
+
+Treat `status` as the source of truth; do not infer it from `login_approval_status` or `verification_status`. A rider can be verified and approved but remain inactive until they actually log in. After an approval/disapproval action or QR rotation, refresh the list. Refresh it when the seller opens or returns to the page; the backend reconciles expired sessions at least once per minute.
+
 ## 1. List seller riders and approval state
 
 `GET /api/seller/delivery-boys?search=&per_page=15&available_page=1`
@@ -43,7 +52,7 @@ HTTP `200`:
         "email": "rider@example.com",
         "mobile": "9876543210",
         "delivery_zone_id": 3,
-        "status": "active",
+        "status": "inactive",
         "verification_status": "verified",
         "login_approval_status": "pending",
         "login_approval_requested_at": "2026-10-23T20:00:00.000000Z",
@@ -65,7 +74,7 @@ HTTP `200`:
           "email": "existing-rider@example.com",
           "mobile": "9876500000",
           "delivery_zone_id": 3,
-          "status": "active",
+          "status": "inactive",
           "verification_status": "verified",
           "login_approval_status": "disapproved",
           "login_approval_requested_at": null,
@@ -78,7 +87,9 @@ HTTP `200`:
 }
 ```
 
-`login_approval_status` is `disapproved`, `pending`, or `approved`. A grant is active only while `login_approved_until` is in the future. `qr_login_expires_at` can be null until a QR is first requested.
+`status` is `active` only while the rider has logged in and has not logged out, been disapproved, or had the current login session expire. Otherwise it is `inactive`. Successful QR or approved email/password login sets status to `active`. Logout, seller disapproval, and expiration of the current QR or password login token set it to `inactive`. Expired sessions are reconciled at least once per minute and when an expired token is used.
+
+`login_approval_status` is `disapproved`, `pending`, or `approved`. A password-login grant is valid only while `login_approved_until` is in the future. `qr_login_expires_at` can be null until a QR is first requested. Approval grants permission to use email/password; approval alone does not log the rider in.
 
 ### Claim an existing platform rider
 
@@ -100,7 +111,7 @@ HTTP `200`:
       "email": "existing-rider@example.com",
       "mobile": "9876500000",
       "delivery_zone_id": 3,
-      "status": "active",
+      "status": "inactive",
       "verification_status": "verified",
       "login_approval_status": "disapproved",
       "login_approval_requested_at": null,
@@ -182,18 +193,19 @@ HTTP `200`:
     "rider_id": 17,
     "login_approval_status": "approved",
     "login_approved_until": "2026-10-24T08:00:00.000000Z",
+    "status": "inactive",
     "duration_hours": 6
   }
 }
 ```
 
-After approval, the rider retries the email/password login call and receives an access token expiring at `login_approved_until`.
+Approval does not change `status` to active. After approval, the rider retries the email/password login call and receives an access token expiring at `login_approved_until`; successful login changes `status` to `active`.
 
 ## 4. Disapprove password login
 
 `POST /api/seller/delivery-boys/{rider_id}/reject-login`
 
-No request body is required. This sets `login_approval_status` to `disapproved`, clears `login_approved_until`, and revokes existing password-login tokens.
+No request body is required. This sets `login_approval_status` to `disapproved`, clears `login_approved_until`, marks the rider `inactive`, and revokes all current rider login sessions.
 
 HTTP `200`:
 
@@ -204,12 +216,13 @@ HTTP `200`:
   "data": {
     "rider_id": 17,
     "login_approval_status": "disapproved",
-    "login_approved_until": null
+    "login_approved_until": null,
+    "status": "inactive"
   }
 }
 ```
 
-This approval decision controls password login. QR login is a separate credential and remains valid until its own expiration or until the seller rotates it.
+Disapproval revokes the current session, regardless of which login method created it. The QR credential itself remains separate and can start a new session until it expires or the seller rotates it.
 
 ## 5. Retrieve or refresh the rider QR
 
@@ -236,6 +249,8 @@ Render `qr_payload` as a QR code in the seller app. The rider app scans the QR a
 
 An unexpired request returns the same current QR credential. Once expired, the next request atomically creates a new random credential; the old QR stops working. The seller web panel at `/seller/delivery-boys` displays the QR and refreshes it automatically at expiry.
 
+When a rider is logged in with a QR session, the session ends at `expires_at` and the rider status becomes `inactive`. Refresh the seller rider list after expiry so the status badge updates.
+
 To immediately invalidate an exposed QR:
 
 `POST /api/seller/delivery-boys/{rider_id}/rotate-login-qr`
@@ -248,11 +263,11 @@ Request body:
 }
 ```
 
-`duration_hours` is required and must be an integer from 1 through the platform-configured `riderLoginDurationHours` limit (1–720 hours). The endpoint returns the same response structure as the GET endpoint with a new `qr_token`, `qr_payload`, and `expires_at`. It invalidates the previous QR and any sessions authenticated with that QR. The seller panel's **Regenerate QR** button uses this endpoint and allows the seller to choose any validity up to the platform limit.
+`duration_hours` is required and must be an integer from 1 through the platform-configured `riderLoginDurationHours` limit (1–720 hours). The endpoint returns the same response structure as the GET endpoint with a new `qr_token`, `qr_payload`, and `expires_at`. It invalidates the previous QR and any sessions authenticated with that QR; when that was the rider's active session, the status becomes `inactive`. The seller panel's **Regenerate QR** button uses this endpoint and allows the seller to choose any validity up to the platform limit.
 
 Seller rider management also supports:
 
-- `POST /api/seller/delivery-boys/{rider_id}` to update `full_name`, `email`, `mobile`, `delivery_zone_id`, and optionally `password`. The email must remain unique; an omitted or empty password is left unchanged. The zone must be active. Changing the password revokes all existing rider access tokens.
+- `POST /api/seller/delivery-boys/{rider_id}` to update `full_name`, `email`, `mobile`, `delivery_zone_id`, and optionally `password`. The email must remain unique; an omitted or empty password is left unchanged. The zone must be active. Changing the password revokes all existing rider access tokens and marks the rider inactive.
 
 Request:
 
@@ -282,7 +297,7 @@ HTTP `200`:
       "email": "updated-rider@example.com",
       "mobile": "9876543210",
       "delivery_zone_id": 3,
-      "status": "active",
+      "status": "inactive",
       "verification_status": "verified",
       "login_approval_status": "approved",
       "login_approval_requested_at": null,

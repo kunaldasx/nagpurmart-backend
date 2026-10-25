@@ -55,13 +55,18 @@
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-vcenter card-table">
-                                        <thead><tr><th>Name</th><th>Email</th><th>Delivery zone</th><th>Verification</th><th class="w-1">Action</th></tr></thead>
+                                        <thead><tr><th>Name</th><th>Email</th><th>Delivery zone</th><th>Status</th><th>Verification</th><th class="w-1">Action</th></tr></thead>
                                         <tbody>
                                         @forelse ($availableRiders as $rider)
                                             <tr>
                                                 <td>{{ $rider->user?->name ?? $rider->full_name }}</td>
                                                 <td>{{ $rider->user?->email }}</td>
                                                 <td>{{ $rider->deliveryZone?->name ?? '—' }}</td>
+                                                <td>
+                                                    <span class="badge {{ $rider->status === 'active' ? 'bg-green-lt' : 'bg-secondary-lt' }}">
+                                                        {{ strtoupper($rider->status ?? 'inactive') }}
+                                                    </span>
+                                                </td>
                                                 <td>{{ str_replace('_', ' ', $rider->verification_status->value) }}</td>
                                                 <td>
                                                     <form method="POST" action="{{ route('seller.delivery-boys.claim', $rider->id) }}">
@@ -71,7 +76,7 @@
                                                 </td>
                                             </tr>
                                         @empty
-                                            <tr><td colspan="5" class="text-center text-secondary py-4">No unassigned platform delivery boys are available.</td></tr>
+                                            <tr><td colspan="6" class="text-center text-secondary py-4">No unassigned platform delivery boys are available.</td></tr>
                                         @endforelse
                                         </tbody>
                                     </table>
@@ -97,6 +102,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Email</th>
+                                <th>Status</th>
                                 <th>Verification</th>
                                 <th>Password login approval</th>
                                 <th>Approval expires</th>
@@ -109,6 +115,11 @@
                                 <tr>
                                     <td>{{ $rider->user?->name ?? $rider->full_name }}</td>
                                     <td>{{ $rider->user?->email }}</td>
+                                    <td>
+                                        <span class="badge {{ $rider->status === 'active' ? 'bg-green-lt' : 'bg-secondary-lt' }}">
+                                            {{ strtoupper($rider->status ?? 'inactive') }}
+                                        </span>
+                                    </td>
                                     <td>{{ str_replace('_', ' ', $rider->verification_status->value) }}</td>
                                     <td>
                                         @php
@@ -184,7 +195,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center text-secondary py-4">No delivery boys are assigned to your seller account.</td>
+                                    <td colspan="8" class="text-center text-secondary py-4">No delivery boys are assigned to your seller account.</td>
                                 </tr>
                             @endforelse
                             </tbody>

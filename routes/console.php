@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\SellerSubscription;
 use App\Models\SellerUser;
 use App\Enums\Subscription\SellerSubscriptionStatusEnum;
+use App\Services\DeliveryBoyLoginService;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -72,3 +73,10 @@ Artisan::command('seller-users:expire-login-approvals', function () {
 })->purpose('Expire seller system-user access grants after 24 hours');
 
 Schedule::command('seller-users:expire-login-approvals')->everyMinute();
+
+Artisan::command('delivery-boys:expire-login-sessions', function () {
+    $expiredCount = app(DeliveryBoyLoginService::class)->expireLoginSessions();
+    $this->info("Expired {$expiredCount} rider login session(s).");
+})->purpose('Mark riders inactive when their login session has expired');
+
+Schedule::command('delivery-boys:expire-login-sessions')->everyMinute();

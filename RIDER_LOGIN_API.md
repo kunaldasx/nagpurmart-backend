@@ -61,7 +61,7 @@ Authorization: Bearer 42|sanctum-personal-access-token
 Accept: application/json
 ```
 
-The token expires at the seller approval deadline. At expiry the API rejects it; clear the saved token and show the login screen.
+The token expires at the seller approval deadline. At expiry the API rejects it and the rider status becomes `inactive`; clear the saved token and show the login screen.
 
 ### Approval pending or expired
 
@@ -132,7 +132,7 @@ HTTP `200`:
 }
 ```
 
-QR-issued rider tokens expire at the QR's `expires_at`. The seller can set an individual QR lifetime from 1 hour up to the platform-configured maximum when creating or rotating it. An invalid, revoked, or expired QR returns HTTP `401`:
+QR-issued rider tokens expire at the QR's `expires_at`. The seller can set an individual QR lifetime from 1 hour up to the platform-configured maximum when creating or rotating it. At expiry the rider status becomes `inactive`. An invalid, revoked, or expired QR returns HTTP `401`:
 
 ```json
 {
@@ -144,7 +144,7 @@ QR-issued rider tokens expire at the QR's `expires_at`. The seller can set an in
 }
 ```
 
-Seller QR retrieval returns the existing credential while it is valid. After it expires, retrieving it creates a new random credential and invalidates the previous QR. The seller panel refreshes the displayed QR automatically when its expiration time is reached. The seller can also immediately regenerate the QR, which revokes the old QR and any sessions created with it.
+Seller QR retrieval returns the existing credential while it is valid. After it expires, retrieving it creates a new random credential and invalidates the previous QR. The seller panel refreshes the displayed QR automatically when its expiration time is reached. The seller can also immediately regenerate the QR, which revokes the old QR and any sessions created with it; the rider becomes inactive if the revoked QR session was current.
 
 ## 3. Logout and expiration handling
 
@@ -166,4 +166,4 @@ HTTP `200`:
 }
 ```
 
-Also clear local credentials on any `401` or `403` from protected rider endpoints. The backend rejects password tokens when the approval deadline passes and rejects QR tokens when the QR session expires. Password-login approval is separate from QR login; seller rejection revokes password-login tokens.
+Also clear local credentials on any `401` or `403` from protected rider endpoints. The backend rejects password tokens when the approval deadline passes and rejects QR tokens when the QR session expires. Logging out marks the rider inactive and revokes their active access tokens. Password-login approval is separate from QR login; seller disapproval marks the rider inactive and revokes the current rider session.

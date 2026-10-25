@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ActiveInactiveStatusEnum;
 use App\Enums\DeliveryBoy\DeliveryBoyVerificationStatusEnum;
 use App\Models\DeliveryBoy;
 use App\Models\Setting;
@@ -12,6 +13,54 @@ use Illuminate\Support\Str;
 
 class DeliveryBoyLoginService
 {
+    public function markActive(DeliveryBoy $deliveryBoy): void
+    {
+        if ($deliveryBoy->status !== ActiveInactiveStatusEnum::ACTIVE()) {
+            $deliveryBoy->update(['status' => ActiveInactiveStatusEnum::ACTIVE()]);
+        }
+    }
+
+    public function markInactive(DeliveryBoy $deliveryBoy): void
+    {
+        if ($deliveryBoy->status !== ActiveInactiveStatusEnum::INACTIVE()) {
+            $deliveryBoy->update(['status' => ActiveInactiveStatusEnum::INACTIVE()]);
+        }
+
+        $deliveryBoy->user?->tokens()->delete();
+    }
+
+    public function expireLoginSessions(): int
+    {
+        $now = now();
+        $expiredCount = 0;
+
+        DeliveryBoy::query()
+            ->with('user')
+            ->where('status', ActiveInactiveStatusEnum::ACTIVE())
+            ->where(function ($query) use ($now): void {
+                $query->whereHas('user.tokens', function ($tokens) use ($now): void {
+                    $tokens->whereIn('name', ['rider-password', 'rider-qr'])
+                        ->whereNotNull('expires_at')
+                        ->where('expires_at', '<=', $now);
+                })->orWhere(function ($passwordApproval) use ($now): void {
+                    $passwordApproval
+                        ->where('login_approval_status', 'approved')
+                        ->whereNotNull('login_approved_until')
+                        ->where('login_approved_until', '<=', $now)
+                        ->whereHas('user.tokens', fn ($tokens) => $tokens->where('name', 'rider-password'));
+                });
+            })
+            ->orderBy('id')
+            ->chunkById(500, function ($riders) use (&$expiredCount): void {
+                foreach ($riders as $rider) {
+                    $this->markInactive($rider);
+                    $expiredCount++;
+                }
+            });
+
+        return $expiredCount;
+    }
+
     public function durationHours(): int
     {
         $value = Setting::query()->find('delivery_boy')?->value['riderLoginDurationHours'] ?? 24;
@@ -56,6 +105,13 @@ class DeliveryBoyLoginService
             $locked = DeliveryBoy::query()->lockForUpdate()->findOrFail($deliveryBoy->id);
             $token = Str::random(64);
             $expiresAt = now()->addHours($durationHours);
+            $userTokens = $locked->user?->tokens();
+            $hasActiveQrSession = $userTokens
+                ? (clone $userTokens)->where('name', 'rider-qr')->where('expires_at', '>', now())->exists()
+                : false;
+            $hasOtherActiveSession = $userTokens
+                ? (clone $userTokens)->where('name', 'rider-password')->where('expires_at', '>', now())->exists()
+                : false;
 
             $locked->update([
                 'qr_login_token_hash' => hash('sha256', $token),
@@ -63,6 +119,9 @@ class DeliveryBoyLoginService
                 'qr_login_expires_at' => $expiresAt,
             ]);
             $locked->user?->tokens()->where('name', 'rider-qr')->delete();
+            if ($hasActiveQrSession && !$hasOtherActiveSession) {
+                $locked->update(['status' => ActiveInactiveStatusEnum::INACTIVE()]);
+            }
 
             return [
                 'token' => $token,
@@ -131,11 +190,15 @@ class DeliveryBoyLoginService
         }
 
         $approvedAt = now();
+        $approvedUntil = $approvedAt->copy()->addHours($durationHours);
         $deliveryBoy->update([
             'login_approval_status' => 'approved',
             'login_approved_at' => $approvedAt,
-            'login_approved_until' => $approvedAt->copy()->addHours($durationHours),
+            'login_approved_until' => $approvedUntil,
         ]);
+        $deliveryBoy->user?->tokens()
+            ->where('name', 'rider-password')
+            ->update(['expires_at' => $approvedUntil]);
     }
 
     public function rejectPasswordLogin(DeliveryBoy $deliveryBoy): void
@@ -144,7 +207,8 @@ class DeliveryBoyLoginService
             'login_approval_status' => 'disapproved',
             'login_approved_at' => null,
             'login_approved_until' => null,
+            'status' => ActiveInactiveStatusEnum::INACTIVE(),
         ]);
-        $deliveryBoy->user?->tokens()->where('name', 'rider-password')->delete();
+        $deliveryBoy->user?->tokens()->delete();
     }
 }

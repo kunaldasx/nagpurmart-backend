@@ -24,6 +24,7 @@ class DeliveryBoyController extends Controller
     public function index(): View
     {
         $seller = $this->sellerForPermission('delivery_boy.view');
+        app(DeliveryBoyLoginService::class)->expireLoginSessions();
         $canManageRiders = $this->hasPermission('delivery_boy.manage', $seller);
         $riders = DeliveryBoy::query()
             ->with(['user:id,name,email,mobile', 'deliveryZone:id,name'])
@@ -97,6 +98,7 @@ class DeliveryBoyController extends Controller
 
             $rider->update([
                 'seller_id' => $seller->id,
+                'status' => 'inactive',
                 'login_approval_status' => 'disapproved',
                 'login_approval_requested_at' => null,
                 'login_approved_at' => null,
@@ -184,6 +186,7 @@ class DeliveryBoyController extends Controller
             ]);
             if (!empty($validated['password'])) {
                 $rider->user->tokens()->delete();
+                $rider->update(['status' => 'inactive']);
             }
             $rider->update([
                 'full_name' => $validated['full_name'],

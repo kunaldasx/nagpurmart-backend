@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\DeliveryBoy\DeliveryBoyVerificationStatusEnum;
+use App\Services\DeliveryBoyLoginService;
 use App\Models\DeliveryBoy;
 use Closure;
 use Illuminate\Http\Request;
@@ -45,7 +46,7 @@ class VerifiedDeliveryBoy
         if ($token?->name === 'rider-password'
             && ($deliveryBoy->login_approval_status !== 'approved'
                 || !$deliveryBoy->login_approved_until?->isFuture())) {
-            $token->delete();
+            app(DeliveryBoyLoginService::class)->markInactive($deliveryBoy);
 
             return response()->json([
                 'success' => false,
@@ -60,7 +61,7 @@ class VerifiedDeliveryBoy
         if ($token?->name === 'rider-qr'
             && (!$deliveryBoy->qr_login_expires_at?->isFuture()
                 || !$token->expires_at?->isFuture())) {
-            $token->delete();
+            app(DeliveryBoyLoginService::class)->markInactive($deliveryBoy);
 
             return response()->json([
                 'success' => false,

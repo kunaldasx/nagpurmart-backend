@@ -122,6 +122,7 @@ class DeliveryBoyController extends Controller
         if ((int) $deliveryBoy->seller_id !== (int) ($validated['seller_id'] ?? 0)) {
             $deliveryBoy->update([
                 'seller_id' => $validated['seller_id'] ?? null,
+                'status' => 'inactive',
                 'login_approval_status' => 'disapproved',
                 'login_approval_requested_at' => null,
                 'login_approved_at' => null,

@@ -176,6 +176,8 @@ class DeliveryBoyAuthApiController extends Controller
             ['*'],
             $expiresAt
         )->plainTextToken;
+        $loginService = app(DeliveryBoyLoginService::class);
+        $loginService->markActive($deliveryBoy);
 
         return ApiResponseType::sendJsonResponse(
             true,
@@ -185,7 +187,7 @@ class DeliveryBoyAuthApiController extends Controller
                 'token_type' => 'Bearer',
                 'expires_at' => $expiresAt,
                 'user' => $user,
-                'delivery_boy' => $deliveryBoy,
+                'delivery_boy' => $deliveryBoy->fresh(),
             ]
         );
     }
@@ -216,6 +218,7 @@ class DeliveryBoyAuthApiController extends Controller
             ['*'],
             $deliveryBoy->qr_login_expires_at
         )->plainTextToken;
+        $loginService->markActive($deliveryBoy);
 
         return ApiResponseType::sendJsonResponse(
             true,
@@ -225,14 +228,23 @@ class DeliveryBoyAuthApiController extends Controller
                 'token_type' => 'Bearer',
                 'expires_at' => $deliveryBoy->qr_login_expires_at,
                 'user' => $user,
-                'delivery_boy' => $deliveryBoy,
+                'delivery_boy' => $deliveryBoy->fresh(),
             ]
         );
     }
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()?->currentAccessToken()?->delete();
+        $user = $request->user();
+        $deliveryBoy = $user
+            ? DeliveryBoy::where('user_id', $user->id)->first()
+            : null;
+
+        if ($deliveryBoy) {
+            app(DeliveryBoyLoginService::class)->markInactive($deliveryBoy);
+        } else {
+            $user?->currentAccessToken()?->delete();
+        }
 
         return ApiResponseType::sendJsonResponse(true, 'Rider logged out.', []);
     }
