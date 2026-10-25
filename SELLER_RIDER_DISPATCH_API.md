@@ -14,6 +14,61 @@ The backend owns rider selection. It reserves each prepared, bagged order to one
 
 All `/api/seller` endpoints below require `Authorization: Bearer <seller_sanctum_token>` and `Accept: application/json`.
 
+## Seller orders page: rider availability
+
+The seller web orders page displays active, available-within-radius, and inactive rider counts, plus an expandable rider details table. It refreshes this snapshot every 30 seconds.
+
+```http
+GET /seller/orders/rider-availability
+Accept: application/json
+```
+
+This is a seller-panel session route protected by the existing seller middleware and the seller-order `viewAny` authorization. It is not an `/api/seller` bearer-token route.
+
+Success (`200`):
+
+```json
+{
+    "success": true,
+    "message": "Rider availability fetched successfully.",
+    "data": {
+        "summary": {
+            "active_riders": 4,
+            "available_riders_in_radius": 2,
+            "inactive_riders": 3
+        },
+        "riders": [
+            {
+                "id": 5,
+                "name": "Rider Name",
+                "status": "active",
+                "verification_status": "verified",
+                "delivery_zone": "Dharampeth",
+                "is_available_in_radius": true,
+                "nearest_pickup_distance_m": 84,
+                "location_reported_at": "2026-10-25T10:00:00+00:00",
+                "location_age_seconds": 18,
+                "unavailable_reason": null
+            },
+            {
+                "id": 6,
+                "name": "Another Rider",
+                "status": "active",
+                "verification_status": "verified",
+                "delivery_zone": "Dharampeth",
+                "is_available_in_radius": false,
+                "nearest_pickup_distance_m": null,
+                "location_reported_at": "2026-10-25T09:54:00+00:00",
+                "location_age_seconds": 378,
+                "unavailable_reason": "location_stale"
+            }
+        ]
+    }
+}
+```
+
+`available_riders_in_radius` uses the dispatch eligibility rules: active and verified, registered FCM token, location report within 2 minutes, within 200 m of a seller pickup store, no pending offer, and no `assigned`/`in_progress` delivery. Rider rows do not expose exact GPS coordinates. `unavailable_reason` values are `inactive`, `not_verified`, `no_fcm_token`, `location_stale`, `outside_pickup_radius`, `pending_offer`, and `active_delivery`.
+
 ## 1. Seller dispatch dashboard
 
 ```http

@@ -153,6 +153,105 @@ class DeliveryBoyOrderOfferService
         }
     }
 
+    public function riderAvailabilityForSeller(int $sellerId): array
+    {
+        $stores = Store::query()
+            ->where('seller_id', $sellerId)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->with('zones:id,name')
+            ->get(['id', 'name', 'latitude', 'longitude']);
+
+        $storesByZone = [];
+        foreach ($stores as $store) {
+            foreach ($store->zones as $zone) {
+                $storesByZone[$zone->id][] = $store;
+            }
+        }
+
+        $orderZoneIds = Order::query()
+            ->whereNotNull('delivery_zone_id')
+            ->whereHas('sellerOrders', fn ($query) => $query->where('seller_id', $sellerId))
+            ->distinct()
+            ->pluck('delivery_zone_id')
+            ->all();
+        $zoneIds = collect(array_keys($storesByZone))->merge($orderZoneIds)->unique()->values()->all();
+        $riders = empty($zoneIds)
+            ? collect()
+            : DeliveryBoy::query()
+                ->whereIn('delivery_zone_id', $zoneIds)
+                ->with([
+                    'user:id,name',
+                    'user.fcmTokens:id,user_id,device_type',
+                    'deliveryZone:id,name',
+                    'location',
+                    'orderOffers' => fn ($query) => $query->where('status', 'pending'),
+                    'assignments' => fn ($query) => $query->whereIn('status', ['assigned', 'in_progress']),
+                ])
+                ->get();
+
+        $now = now();
+        $riderRows = $riders->map(function (DeliveryBoy $rider) use ($storesByZone, $now) {
+            $active = $rider->status === ActiveInactiveStatusEnum::ACTIVE();
+            $verified = $rider->verification_status === DeliveryBoyVerificationStatusEnum::VERIFIED();
+            $hasFcmToken = $rider->user?->fcmTokens?->isNotEmpty() ?? false;
+            $hasPendingOffer = $rider->orderOffers->isNotEmpty();
+            $hasActiveAssignment = $rider->assignments->isNotEmpty();
+            $recordedAt = $rider->location?->getRawOriginal('recorded_at');
+            $lastSeen = $recordedAt ? Carbon::parse($recordedAt) : null;
+            $locationFresh = $lastSeen?->greaterThanOrEqualTo($now->copy()->subMinutes(2)) ?? false;
+            $nearestDistanceKm = null;
+
+            if ($locationFresh) {
+                foreach ($storesByZone[$rider->delivery_zone_id] ?? [] as $store) {
+                    $distance = DeliveryZoneService::calculateDistance(
+                        (float) $rider->location->latitude,
+                        (float) $rider->location->longitude,
+                        (float) $store->latitude,
+                        (float) $store->longitude
+                    );
+                    $nearestDistanceKm = $nearestDistanceKm === null ? $distance : min($nearestDistanceKm, $distance);
+                }
+            }
+
+            $withinRadius = $nearestDistanceKm !== null && $nearestDistanceKm <= 0.2;
+            $available = $active && $verified && $hasFcmToken && $locationFresh && $withinRadius
+                && !$hasPendingOffer && !$hasActiveAssignment;
+            $unavailableReason = match (true) {
+                !$active => 'inactive',
+                !$verified => 'not_verified',
+                !$hasFcmToken => 'no_fcm_token',
+                !$locationFresh => 'location_stale',
+                !$withinRadius => 'outside_pickup_radius',
+                $hasPendingOffer => 'pending_offer',
+                $hasActiveAssignment => 'active_delivery',
+                default => null,
+            };
+
+            return [
+                'id' => $rider->id,
+                'name' => $rider->full_name ?: $rider->user?->name,
+                'status' => $active ? 'active' : 'inactive',
+                'verification_status' => $rider->verification_status?->value,
+                'delivery_zone' => $rider->deliveryZone?->name,
+                'is_available_in_radius' => $available,
+                'nearest_pickup_distance_m' => $nearestDistanceKm === null ? null : (int) round($nearestDistanceKm * 1000),
+                'location_reported_at' => $lastSeen?->toIso8601String(),
+                'location_age_seconds' => $lastSeen ? max(0, $lastSeen->diffInSeconds($now)) : null,
+                'unavailable_reason' => $unavailableReason,
+            ];
+        })->values();
+
+        return [
+            'summary' => [
+                'active_riders' => $riderRows->where('status', 'active')->count(),
+                'available_riders_in_radius' => $riderRows->where('is_available_in_radius', true)->count(),
+                'inactive_riders' => $riderRows->where('status', 'inactive')->count(),
+            ],
+            'riders' => $riderRows,
+        ];
+    }
+
     public function sellerDispatchDashboard(int $sellerId): array
     {
         $orders = Order::query()
