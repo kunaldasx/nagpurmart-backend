@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\SellerOrder;
 use App\Models\SellerOrderItem;
 use App\Services\CurrencyService;
+use App\Services\DeliveryBoyOrderOfferService;
 use App\Services\OrderService;
 use App\Types\Api\ApiResponseType;
 use Carbon\Carbon;
@@ -33,6 +34,37 @@ class SellerOrderApiController extends Controller
         protected CurrencyService $currencyService
     )
     {
+    }
+
+    public function dispatchDashboard(): JsonResponse
+    {
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            'Dispatch dashboard fetched successfully.',
+            app(DeliveryBoyOrderOfferService::class)->sellerDispatchDashboard((int) $seller->id)
+        );
+    }
+
+    public function selfDeliver(int $id): JsonResponse
+    {
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        $result = app(DeliveryBoyOrderOfferService::class)->selfDeliver($id, (int) $seller->id);
+
+        return ApiResponseType::sendJsonResponse(
+            $result['success'],
+            $result['message'],
+            $result['success'] ? ['order_id' => $result['order_id']] : [],
+            $result['status']
+        );
     }
 
     /**

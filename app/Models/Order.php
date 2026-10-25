@@ -35,6 +35,7 @@ class Order extends Model
         'delivery_time_slot_id',
         'delivery_date',
         'delivery_boy_id',
+        'delivery_assignment_type',
         'delivery_zone_id',
         'wallet_balance',
         'promo_code',

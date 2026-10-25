@@ -7,6 +7,7 @@ use App\Http\Controllers\GlobalAttributeController;
 use App\Http\Controllers\GlobalAttributeValueController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Seller\DispatchCenterController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductConditionController;
@@ -273,6 +274,9 @@ Route::prefix('seller')->name('seller.')->group(function () {
 
         // orders
         Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/dispatch-center', [DispatchCenterController::class, 'index'])->name('dispatch-center');
+            Route::get('/dispatch-center/data', [DispatchCenterController::class, 'data'])->name('dispatch-center.data');
+            Route::post('/{id}/self-deliver', [DispatchCenterController::class, 'selfDeliver'])->whereNumber('id')->name('self-deliver');
             Route::get('/', [OrderController::class, 'index'])->name('index');
             Route::get('/datatable', [OrderController::class, 'getOrders'])->name('datatable');
             Route::get('/pending-regular', [OrderController::class, 'getPendingRegularOrders'])->name('pending-regular');

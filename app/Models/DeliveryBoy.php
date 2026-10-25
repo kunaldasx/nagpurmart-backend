@@ -106,6 +106,11 @@ class DeliveryBoy extends Model implements HasMedia
         return $this->hasMany(DeliveryBoyAssignment::class);
     }
 
+    public function orderOffers(): HasMany
+    {
+        return $this->hasMany(DeliveryBoyOrderOffer::class);
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(SpatieMediaCollectionName::DRIVER_LICENSE());

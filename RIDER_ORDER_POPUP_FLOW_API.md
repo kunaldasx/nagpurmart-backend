@@ -4,7 +4,7 @@ This flow mirrors the seller popup pattern but applies to the rider.
 
 ## Incoming order push alerts
 
-When a seller finishes preparing a bagged order, the backend creates an offer for one active rider in the order's delivery zone. The rider must have a registered FCM token. The alert keeps ringing until a person accepts, cancels, or reassigns the order. Android receives a high-priority, data-only message with no `notification` block:
+When a seller finishes preparing a bagged order, the backend reserves it to one random eligible rider and stores that rider ID in `orders.delivery_boy_id` before sending the alert. Eligible means active, a fresh location report (within 2 minutes), within 200 m of the pickup store, registered FCM token, and no pending offer or active delivery. A rider can hold only one pending offer at a time. The alert keeps ringing until a person accepts, cancels, or reassigns the order. Android receives a high-priority, data-only message with no `notification` block:
 
 ```json
 {
@@ -19,7 +19,7 @@ When a seller finishes preparing a bagged order, the backend creates an offer fo
 }
 ```
 
-Only the rider holding the pending offer may see the order from `GET /api/delivery-boy/orders/available` or accept it. Another rider's offer or an already-claimed order returns HTTP `409` with a message that the order is no longer assigned to this rider.
+Only the rider whose ID matches `orders.delivery_boy_id` and holds the pending offer may see the order from `GET /api/delivery-boy/orders/available` or accept it. Another rider's offer or an order already accepted/reassigned returns HTTP `409` with a message that the order is no longer assigned to this rider. A rider becomes eligible for another order when their active delivery is completed and a fresh location report places them near a pickup store.
 
 If the rider's alert should stop, the backend sends this data-only message to the same rider:
 
@@ -33,7 +33,47 @@ If the rider's alert should stop, the backend sends this data-only message to th
 }
 ```
 
-`reason` is `reassigned` or `cancelled`. No timer sends a stop alert, reassigns the order, or makes it available to another rider.
+`reason` is `reassigned` or `cancelled`. No timer sends a stop alert, clears `delivery_boy_id`, or reassigns the order. Dispatch is retried when a bagged order becomes ready, a rider goes active, or an active rider reports a new location.
+
+Rider location heartbeat:
+
+```http
+POST /api/delivery-boy/update-current-location
+Authorization: Bearer <sanctum_token>
+Content-Type: application/json
+```
+
+```json
+{ "latitude": 21.1458, "longitude": 79.0882 }
+```
+
+The response includes the saved location and `recorded_at`. Active riders should keep this endpoint updated while on duty so the dispatcher can use fresh coordinates.
+
+### Frontend location tracking requirements
+
+The backend cannot read the device GPS itself. The rider app must request location permission, obtain coordinates from the device location provider, and call the endpoint above. Do not ask the rider to enter coordinates manually.
+
+Use this duty lifecycle:
+
+1. When the rider goes online, obtain a fresh device location and call `POST /api/delivery-boy/status/update` with `status: "active"`, `latitude`, and `longitude`. This records the initial location and updates the rider's delivery zone.
+2. While the rider remains active, run a platform location subscription and send the latest coordinate to `POST /api/delivery-boy/update-current-location` at least once every 60 seconds. Also send sooner when the rider has moved at least 50 m. This keeps reports comfortably inside the backend's 2-minute freshness limit without continuously requesting high-accuracy GPS fixes.
+3. Continue location updates while the app is backgrounded if the rider remains online. Use the platform's approved background-location mode/foreground service and user-visible permission disclosures. If background location is unavailable or denied, show that the rider may not receive nearby offers while the app is not reporting location.
+4. When the rider goes offline, call `POST /api/delivery-boy/status/update` with `status: "inactive"`, then stop the location subscription. Stop tracking on logout as well.
+
+The request body for each location heartbeat is:
+
+```json
+{
+    "latitude": 21.1458,
+    "longitude": 79.0882
+}
+```
+
+The endpoint requires the rider's Sanctum bearer token and returns the saved location in `data`, including its `recorded_at` timestamp. Send coordinates as numeric latitude/longitude values and handle `401` by stopping tracking and requiring login again; handle validation errors without retrying the same invalid coordinates.
+
+For battery and network efficiency, reuse one native location subscription while online rather than starting a new GPS request for every API call. Prefer balanced-power accuracy with an expected horizontal accuracy of 50 m or better near a pickup store. Coalesce movement updates, and on network failure retain only the newest coordinate: retry it with bounded backoff and immediately on connectivity restoration instead of uploading a backlog of stale points. Send an initial heartbeat immediately after activating duty and resume one immediately when the app returns to the foreground.
+
+`active`/`inactive` remains an explicit duty status; the backend does not change it merely because GPS moves or becomes stale. The backend combines active status with verification, a registered FCM token, a location report no older than 2 minutes, distance within 200 m of the pickup store, and no pending offer/active delivery to decide whether the rider can receive the next order. Location updates from an active rider trigger dispatch evaluation, so keep the heartbeat running after an order is completed while the rider remains online.
 
 The rider should only see orders that already have a valid seller-assigned bag and at least one item in `preparing` state. Once the rider accepts the order, they must scan the same assigned bag before the order items can move to `collected`.
 
@@ -45,9 +85,10 @@ Accept: application/json
 Authorization: Bearer <sanctum_token>
 ```
 
-The endpoint returns only orders in the rider's delivery zone where:
+The endpoint returns only orders reserved to the authenticated rider in their delivery zone where:
 
-- `delivery_boy_id` is null
+- `delivery_boy_id` equals the authenticated rider's ID
+- a pending `delivery_boy_order_offers` row exists for that rider
 - `sellerOrders` contains a bag
 - at least one seller-order item is `preparing`
 
