@@ -117,6 +117,7 @@ Route::middleware(['auth:sanctum', 'seller.user.approval',
     // Orders (seller-managed)
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/dispatch-dashboard', [SellerOrderApiController::class, 'dispatchDashboard'])->name('dispatch-dashboard');
+        Route::get('/rider-availability', [SellerOrderApiController::class, 'riderAvailability'])->name('rider-availability');
         Route::post('/{id}/self-deliver', [SellerOrderApiController::class, 'selfDeliver'])->whereNumber('id')->name('self-deliver');
         Route::get('/', [SellerOrderApiController::class, 'index'])->name('index');
         Route::get('/enums', [SellerOrderApiController::class, 'enums'])->name('enums');

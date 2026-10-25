@@ -50,6 +50,20 @@ class SellerOrderApiController extends Controller
         );
     }
 
+    public function riderAvailability(): JsonResponse
+    {
+        $seller = auth()->user()?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            'Rider availability fetched successfully.',
+            app(DeliveryBoyOrderOfferService::class)->riderAvailabilityForSeller((int) $seller->id)
+        );
+    }
+
     public function selfDeliver(int $id): JsonResponse
     {
         $seller = auth()->user()?->seller();

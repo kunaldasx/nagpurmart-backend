@@ -10,7 +10,7 @@ The backend owns rider selection. It reserves each prepared, bagged order to one
 - Candidate riders and ready orders are randomized; each rider receives at most one pending order.
 - Reservation sets `orders.delivery_boy_id` and `orders.delivery_assignment_type = rider` before sending the push.
 - Dispatch is retried when an order becomes ready, a rider goes active, or an active rider reports a location update. The rider app should heartbeat `POST /api/delivery-boy/update-current-location` while on duty and after returning to a pickup area.
-- There is no timeout. An offer remains assigned until accepted, cancelled, or manually handled. A missing nearby rider appears as a seller alert.
+- There is no timeout. An offer remains assigned until accepted, cancelled, or manually handled. A missing nearby rider appears in the dispatch dashboard; no seller push event is currently sent.
 
 All `/api/seller` endpoints below require `Authorization: Bearer <seller_sanctum_token>` and `Accept: application/json`.
 
@@ -19,11 +19,12 @@ All `/api/seller` endpoints below require `Authorization: Bearer <seller_sanctum
 The seller web orders page displays active, available-within-radius, and inactive rider counts, plus an expandable rider details table. It refreshes this snapshot every 30 seconds.
 
 ```http
-GET /seller/orders/rider-availability
+GET /api/seller/orders/rider-availability
+Authorization: Bearer <seller_access_token>
 Accept: application/json
 ```
 
-This is a seller-panel session route protected by the existing seller middleware and the seller-order `viewAny` authorization. It is not an `/api/seller` bearer-token route.
+This bearer-token endpoint is protected by seller authentication and seller approval middleware. It returns data only for the authenticated seller's pickup stores and delivery zones.
 
 Success (`200`):
 
@@ -67,7 +68,7 @@ Success (`200`):
 }
 ```
 
-`available_riders_in_radius` uses the dispatch eligibility rules: active and verified, registered FCM token, location report within 2 minutes, within 200 m of a seller pickup store, no pending offer, and no `assigned`/`in_progress` delivery. Rider rows do not expose exact GPS coordinates. `unavailable_reason` values are `inactive`, `not_verified`, `no_fcm_token`, `location_stale`, `outside_pickup_radius`, `pending_offer`, and `active_delivery`.
+`available_riders_in_radius` uses the dispatch eligibility rules: active and verified, registered FCM token, location report within 2 minutes, within 200 m of a seller pickup store, no pending offer, and no `assigned`/`in_progress` delivery. Rider rows do not expose exact GPS coordinates. `unavailable_reason` values are `inactive`, `not_verified`, `no_fcm_token`, `location_stale`, `no_pickup_store`, `outside_pickup_radius`, `pending_offer`, and `active_delivery`.
 
 ## 1. Seller dispatch dashboard
 
@@ -170,6 +171,13 @@ Not found (`404`) when the order is not owned by the seller:
 ```
 
 The panel-only session routes are `GET /seller/orders/dispatch-center`, `GET /seller/orders/dispatch-center/data`, and `POST /seller/orders/{orderId}/self-deliver`. The dispatch page refreshes the dashboard every 15 seconds and exposes the same self-delivery action.
+
+This action only assigns delivery responsibility to the seller. It does not mark order items delivered. The existing seller order status API (`POST /api/seller/orders/{orderItemId}/{status}`) does not support `delivered`; that transition is restricted to the delivery-boy flow. A dedicated seller self-delivery completion endpoint is not implemented. Do not use the seller status API to simulate delivery; completion must be added with the same OTP and COD-payment safeguards required by the existing delivery flow.
+
+## Backend gaps: notifications and re-dispatch
+
+- There is no seller FCM event for `no_nearby_riders`. The seller app can currently discover this state by polling `GET /api/seller/orders/dispatch-dashboard`. A seller-side `dispatch_alert` event should be added before relying on push delivery while the app is backgrounded or closed.
+- There is no seller API to cancel a pending rider offer and re-dispatch the order. `POST /api/seller/orders/{orderId}/self-deliver` is currently the available fallback. A manual retry endpoint should cancel and notify the rider only when the offer is still pending, then retry normal dispatch; it must reject offers already accepted by a rider.
 
 ## 3. Rider app integration
 
