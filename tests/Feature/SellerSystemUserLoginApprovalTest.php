@@ -8,6 +8,7 @@ use App\Models\SellerUser;
 use App\Models\User;
 use App\Services\SellerUserLoginApprovalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 class SellerSystemUserLoginApprovalTest extends TestCase
@@ -42,6 +43,26 @@ class SellerSystemUserLoginApprovalTest extends TestCase
         $this->assertNull($response);
     }
 
+    public function test_successful_login_and_logout_update_system_user_status(): void
+    {
+        [, $systemUser, $membership] = $this->createSellerSystemUser('approved');
+        $membership->update(['login_approved_until' => now()->addHours(12)]);
+
+        $loginResponse = $this->postJson('/api/seller/login', [
+            'email' => $systemUser->email,
+            'password' => 'password123',
+        ]);
+
+        $loginResponse->assertOk()->assertJsonPath('success', true);
+        $this->assertSame('active', $membership->fresh()->status);
+
+        $this->withToken($loginResponse->json('access_token'))
+            ->postJson('/api/seller/logout')
+            ->assertOk();
+
+        $this->assertSame('inactive', $membership->fresh()->status);
+    }
+
     public function test_expired_approval_requests_a_new_seller_approval(): void
     {
         [, $systemUser, $membership] = $this->createSellerSystemUser('approved');
@@ -60,7 +81,10 @@ class SellerSystemUserLoginApprovalTest extends TestCase
     public function test_access_status_marks_expired_approval_disapproved(): void
     {
         [, $systemUser, $membership] = $this->createSellerSystemUser('approved');
-        $membership->update(['login_approved_until' => now()->subSecond()]);
+        $membership->update([
+            'login_approved_until' => now()->subSecond(),
+            'status' => 'active',
+        ]);
 
         $status = app(SellerUserLoginApprovalService::class)->getAccessStatus($systemUser);
 
@@ -70,7 +94,27 @@ class SellerSystemUserLoginApprovalTest extends TestCase
             'user_id' => $systemUser->id,
             'login_approval_status' => 'disapproved',
             'login_approved_until' => null,
+            'status' => 'inactive',
         ]);
+    }
+
+    public function test_expiration_command_marks_active_system_user_inactive(): void
+    {
+        [, $systemUser, $membership] = $this->createSellerSystemUser('approved');
+        $membership->update([
+            'login_approved_until' => now()->subSecond(),
+            'status' => 'active',
+        ]);
+        $systemUser->createToken('test-token');
+
+        Artisan::call('seller-users:expire-login-approvals');
+
+        $this->assertDatabaseHas('seller_user', [
+            'user_id' => $systemUser->id,
+            'login_approval_status' => 'disapproved',
+            'status' => 'inactive',
+        ]);
+        $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
     public function test_main_seller_owner_does_not_require_system_user_login_approval(): void

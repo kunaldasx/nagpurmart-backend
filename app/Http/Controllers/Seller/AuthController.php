@@ -63,6 +63,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
+            app(SellerUserLoginApprovalService::class)->markInactive($request->user());
             Auth::logout(); // Log the user out
             $request->session()->invalidate(); // Invalidate the session
             return redirect(route('seller.login'));

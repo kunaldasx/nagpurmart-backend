@@ -32,6 +32,7 @@ class SellerUser extends Model
         'login_approval_requested_at',
         'login_approved_at',
         'login_approved_until',
+        'status',
     ];
 
     protected function casts(): array

@@ -83,7 +83,8 @@ class SystemUserController extends Controller
             ['data' => 'created_at', 'name' => 'created_at', 'title' => __('labels.created_at')],
         ];
         if ($this->getPanel() === 'seller') {
-            $columns[] = ['data' => 'login_approval_status', 'name' => 'login_approval_status', 'title' => 'Login approval', 'orderable' => false, 'searchable' => false];
+            $columns[] = ['data' => 'login_approval_status', 'name' => 'login_approval_status', 'title' => 'Login approval', 'label' => 'Login approval', 'orderable' => false, 'searchable' => false];
+            $columns[] = ['data' => 'system_user_status', 'name' => 'system_user_status', 'title' => 'User status', 'label' => 'User status', 'orderable' => false, 'searchable' => false];
         }
         $columns[] = ['data' => 'action', 'name' => 'action', 'title' => __('labels.action'), 'orderable' => false, 'searchable' => false];
         $editPermission = $this->editPermission;
@@ -342,6 +343,7 @@ class SystemUserController extends Controller
             'login_approval_status' => $status === 'approved' ? 'approved' : 'disapproved',
             'login_approved_at' => $status === 'approved' ? now() : null,
             'login_approved_until' => $status === 'approved' ? now()->addHours($durationHours) : null,
+            ...($status === 'approved' ? [] : ['status' => 'inactive']),
         ]);
         if ($status !== 'approved') {
             $user->tokens()->delete();
@@ -373,7 +375,7 @@ class SystemUserController extends Controller
             }
             $query = User::query()
                 ->join('seller_user', 'users.id', '=', 'seller_user.user_id') // Join pivot table
-                ->select('users.*', 'seller_user.seller_id', 'seller_user.login_approval_status', 'seller_user.login_approved_until')
+                ->select('users.*', 'seller_user.seller_id', 'seller_user.login_approval_status', 'seller_user.login_approved_until', 'seller_user.status as system_user_status')
                 ->where('seller_user.seller_id', '=', $seller->id)
                 ->whereDoesntHave('roles', function ($q) {
                     $q->where('name', DefaultSystemRolesEnum::SUPER_ADMIN());
@@ -428,6 +430,9 @@ class SystemUserController extends Controller
                             'userName' => $user->name,
                             'autoOpen' => (int) request()->input('approval_user_id') === (int) $user->id,
                         ])->render()
+                        : null,
+                    'system_user_status' => $this->getPanel() === 'seller'
+                        ? view('partials.seller_system_user_status', ['status' => $user->system_user_status])->render()
                         : null,
                     'action' => view('partials.actions', [
                         'modelName' => 'system-user',
