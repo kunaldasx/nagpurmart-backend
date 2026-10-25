@@ -52,6 +52,12 @@
                                         </select>
                                     </div>
                                     <div class="col-auto">
+                                        <a class="btn btn-outline-success" href="{{ route('seller.orders.dispatch-center') }}">
+                                            <i class="ti ti-route" aria-hidden="true"></i>
+                                            Rider dispatch
+                                        </a>
+                                    </div>
+                                    <div class="col-auto">
                                         <button class="btn btn-outline-primary" id="refresh">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
