@@ -2,6 +2,8 @@
 
 namespace App\Observers;
 
+use App\Enums\DeliveryBoy\DeliveryBoyAssignmentStatusEnum;
+use App\Enums\DeliveryBoy\DeliveryBoyAssignmentTypeEnum;
 use App\Enums\Order\OrderStatusEnum;
 use App\Models\Order;
 use App\Services\DeliveryBoyOrderOfferService;
@@ -21,7 +23,17 @@ class OrderObserver
             }
 
             if ($order->wasChanged('status') && $order->status === OrderStatusEnum::CANCELLED()) {
-                DB::afterCommit(fn () => app(DeliveryBoyOrderOfferService::class)->cancelPendingForOrder((int) $order->id, 'cancelled'));
+                DB::afterCommit(function () use ($order): void {
+                    $order->deliveryBoyAssignments()
+                        ->where('assignment_type', DeliveryBoyAssignmentTypeEnum::DELIVERY())
+                        ->whereIn('status', [
+                            DeliveryBoyAssignmentStatusEnum::ASSIGNED(),
+                            DeliveryBoyAssignmentStatusEnum::IN_PROGRESS(),
+                        ])
+                        ->update(['status' => DeliveryBoyAssignmentStatusEnum::CANCELED()]);
+
+                    app(DeliveryBoyOrderOfferService::class)->cancelPendingForOrder((int) $order->id, 'cancelled');
+                });
             }
         } catch (\Throwable $e) {
             Log::warning('OrderObserver rider offer update failed: ' . $e->getMessage(), [
