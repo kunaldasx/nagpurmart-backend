@@ -22,8 +22,6 @@ class OrderObserver
 
             if ($order->wasChanged('status') && $order->status === OrderStatusEnum::CANCELLED()) {
                 DB::afterCommit(fn () => app(DeliveryBoyOrderOfferService::class)->cancelPendingForOrder((int) $order->id, 'cancelled'));
-            } elseif ($order->wasChanged('delivery_boy_id') && $order->delivery_boy_id !== null) {
-                DB::afterCommit(fn () => app(DeliveryBoyOrderOfferService::class)->cancelPendingForOrder((int) $order->id, 'reassigned'));
             }
         } catch (\Throwable $e) {
             Log::warning('OrderObserver rider offer update failed: ' . $e->getMessage(), [

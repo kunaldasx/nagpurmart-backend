@@ -17,6 +17,7 @@ use App\Models\DeliveryBoyLocation;
 use App\Models\User;
 use App\Services\DeliveryBoyService;
 use App\Services\DeliveryBoyLoginService;
+use App\Services\DeliveryBoyOrderOfferService;
 use App\Services\DeliveryZoneService;
 use App\Services\SpatieMediaService;
 use App\Traits\AuthTrait;
@@ -483,6 +484,9 @@ class DeliveryBoyAuthApiController extends Controller
                 longitude: $validated['longitude'] ?? null
             ));
             DB::commit();
+            if ($validated['status'] === ActiveInactiveStatusEnum::ACTIVE()) {
+                app(DeliveryBoyOrderOfferService::class)->dispatchReadyOrders((int) $user->deliveryBoy->delivery_zone_id);
+            }
 
             return ApiResponseType::sendJsonResponse(
                 success: true,
@@ -583,6 +587,9 @@ class DeliveryBoyAuthApiController extends Controller
                     'recorded_at' => now(),
                 ]
             );
+            if ($user->deliveryBoy->status === ActiveInactiveStatusEnum::ACTIVE()) {
+                app(DeliveryBoyOrderOfferService::class)->dispatchReadyOrders((int) $user->deliveryBoy->delivery_zone_id);
+            }
             return ApiResponseType::sendJsonResponse(
                 success: true,
                 message: __('labels.current_location_updated_successfully'),
