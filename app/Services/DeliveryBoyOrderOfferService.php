@@ -22,18 +22,16 @@ class DeliveryBoyOrderOfferService
 
     public function offerNextRider(int $orderId): void
     {
-        $order = Order::query()->find($orderId);
-        if ($order) {
-            $this->dispatchReadyOrders();
-        }
+        $this->dispatchReadyOrders(null, null, $orderId);
     }
 
-    public function dispatchReadyOrders(?int $sellerId = null, ?int $zoneId = null): void
+    public function dispatchReadyOrders(?int $sellerId = null, ?int $zoneId = null, ?int $onlyOrderId = null): void
     {
         $orders = Order::query()
             ->whereNull('delivery_boy_id')
             ->whereNotIn('status', [OrderStatusEnum::CANCELLED(), OrderStatusEnum::DELIVERED(), OrderStatusEnum::FAILED(), OrderStatusEnum::REJECTED_BY_SELLER()])
             ->when($zoneId, fn ($query) => $query->where('delivery_zone_id', $zoneId))
+            ->when($onlyOrderId, fn ($query) => $query->whereKey($onlyOrderId))
             ->where(fn ($query) => $query->whereNull('delivery_assignment_type')->orWhere('delivery_assignment_type', '!=', 'seller_self_delivery'))
             ->whereHas('sellerOrders', fn ($query) => $query
                 ->when($sellerId, fn ($sellerQuery) => $sellerQuery->where('seller_id', $sellerId))
@@ -68,6 +66,7 @@ class DeliveryBoyOrderOfferService
                 ) <= 0.2)
                 ->shuffle();
 
+            $assigned = false;
             foreach ($riders as $rider) {
                 $offerData = DB::transaction(function () use ($order, $rider, $store) {
                     $lockedOrder = Order::query()->whereKey($order->id)->lockForUpdate()->first();
@@ -135,6 +134,7 @@ class DeliveryBoyOrderOfferService
                     continue;
                 }
 
+                $acceptedByFirebase = 0;
                 foreach ($offerData['tokens'] as $token) {
                     $result = $this->firebase->sendDataMessage($token, $offerData['payload']);
                     if (!$result['success']) {
@@ -143,12 +143,28 @@ class DeliveryBoyOrderOfferService
                             'delivery_boy_id' => $rider->id,
                             'error' => $result['error'] ?? 'unknown',
                         ]);
+                    } else {
+                        $acceptedByFirebase++;
                     }
                 }
+                Log::info('Rider order push dispatch completed.', [
+                    'order_id' => $order->id,
+                    'delivery_boy_id' => $rider->id,
+                    'token_count' => count($offerData['tokens']),
+                    'firebase_accepted_count' => $acceptedByFirebase,
+                ]);
                 $ridersByZone[$zoneId] = $ridersByZone[$zoneId]
                     ->reject(fn ($candidate) => $candidate->id === $rider->id)
                     ->values();
+                $assigned = true;
                 break;
+            }
+
+            if (!$assigned) {
+                Log::notice('No eligible nearby rider for prepared order.', [
+                    'order_id' => $order->id,
+                    'delivery_zone_id' => $order->delivery_zone_id,
+                ]);
             }
         }
     }
@@ -175,7 +191,11 @@ class DeliveryBoyOrderOfferService
             ->distinct()
             ->pluck('delivery_zone_id')
             ->all();
-        $zoneIds = collect(array_keys($storesByZone))->merge($orderZoneIds)->unique()->values()->all();
+        $zoneIds = collect(array_keys($storesByZone))
+            ->merge($orderZoneIds)
+            ->unique()
+            ->values()
+            ->all();
         $riders = empty($zoneIds)
             ? collect()
             : DeliveryBoy::query()
@@ -241,7 +261,6 @@ class DeliveryBoyOrderOfferService
                 'unavailable_reason' => $unavailableReason,
             ];
         })->values();
-
         return [
             'summary' => [
                 'active_riders' => $riderRows->where('status', 'active')->count(),
