@@ -164,6 +164,7 @@ trait AuthTrait
         $user = $request->user();
         $this->storeFcmToken($request, $user);
         $token = $user->createToken($user->email ?? ($user->mobile ?? 'api-token'))->plainTextToken;
+        app(SellerUserLoginApprovalService::class)->markActive($user);
         event(new UserLoggedIn($user));
 
         // Determine assigned permissions for seller logins
@@ -254,7 +255,9 @@ trait AuthTrait
 
             // 5) Finalize login response
             if ($request->routeIs('seller.login.post')) {
-                $this->storeFcmToken($request, FacadesAuth::user());
+                $user = FacadesAuth::user();
+                $this->storeFcmToken($request, $user);
+                app(SellerUserLoginApprovalService::class)->markActive($user);
 
                 return response()->json([
                     'success' => true,
@@ -380,7 +383,9 @@ trait AuthTrait
     public function logout(Request $request): JsonResponse
     {
         try {
-            $request->user()->currentAccessToken()->delete();
+            $user = $request->user();
+            app(SellerUserLoginApprovalService::class)->markInactive($user);
+            $user->currentAccessToken()->delete();
             return ApiResponseType::sendJsonResponse(
                 success: true,
                 message: 'labels.logout_successful',

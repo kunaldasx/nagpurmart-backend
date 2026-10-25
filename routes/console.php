@@ -59,11 +59,14 @@ Artisan::command('seller-users:expire-login-approvals', function () {
         ->where('login_approved_until', '<=', now())
         ->orderBy('id')
         ->chunkById(500, function ($memberships) use (&$expiredCount) {
-            foreach ($memberships as $membership) {
-                $membership->update([
+            SellerUser::whereIn('id', $memberships->pluck('id'))
+                ->update([
                     'login_approval_status' => 'disapproved',
                     'login_approved_until' => null,
+                    'status' => 'inactive',
                 ]);
+
+            foreach ($memberships as $membership) {
                 $membership->user?->tokens()->delete();
                 $expiredCount++;
             }

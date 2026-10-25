@@ -38,6 +38,7 @@ class EnsureSellerSystemUserApproval
             $membership->update([
                 'login_approval_status' => 'disapproved',
                 'login_approved_until' => null,
+                'status' => 'inactive',
             ]);
         }
 

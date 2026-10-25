@@ -114,7 +114,8 @@ HTTP `200`:
                 "mobile": "9876543210",
                 "login_approval_status": "pending",
                 "login_approval_requested_at": "2026-10-07T12:00:00.000000Z",
-                "login_approved_until": null
+                "login_approved_until": null,
+                "system_user_status": "inactive"
             }
         ]
     }
@@ -144,7 +145,8 @@ HTTP `200`:
     "data": {
         "user_id": 196,
         "login_approval_status": "approved",
-        "login_approved_until": "2026-10-08T12:00:00.000000Z"
+        "login_approved_until": "2026-10-08T12:00:00.000000Z",
+        "system_user_status": "inactive"
     }
 }
 ```
@@ -166,7 +168,8 @@ HTTP `200`:
     "data": {
         "user_id": 196,
         "login_approval_status": "disapproved",
-        "login_approved_until": null
+        "login_approved_until": null,
+        "system_user_status": "inactive"
     }
 }
 ```
@@ -206,3 +209,5 @@ Use the IDs to refresh the pending approvals list or open the target system-user
 - The app should treat that timestamp as authoritative and may refresh login when it expires.
 - Approval expiry is enforced on authenticated seller API requests. On HTTP `401` (revoked token) or `403` (expired approval), clear the saved access token and return the user to the login/pending flow.
 - A successful login is the only point at which the system user receives a new API access token after approval.
+- Each seller-system-user membership stores a separate `status` (`active` or `inactive`). It becomes active after successful login and inactive on logout, seller disapproval, or approval expiry. The seller-system-user list and detail responses expose it as `system_user_status`.
+- Expired approvals are processed in batches by the scheduled `seller-users:expire-login-approvals` command (run every minute); API middleware also marks a user's status inactive when it detects an expired grant.

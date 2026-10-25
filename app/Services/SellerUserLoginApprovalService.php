@@ -31,6 +31,7 @@ class SellerUserLoginApprovalService
             $membership->update([
                 'login_approval_status' => 'disapproved',
                 'login_approved_until' => null,
+                'status' => 'inactive',
             ]);
             $user->tokens()->delete();
             $membership->refresh();
@@ -41,6 +42,36 @@ class SellerUserLoginApprovalService
             'status' => $approved ? 'approved' : $membership->login_approval_status,
             'approved_until' => $approved ? $membership->login_approved_until : null,
         ];
+    }
+
+    public function markActive(User $user): void
+    {
+        $membership = $this->systemUserMembership($user);
+        if ($membership && $membership->status !== 'active') {
+            $membership->update(['status' => 'active']);
+        }
+    }
+
+    public function markInactive(User $user): void
+    {
+        $membership = $this->systemUserMembership($user);
+        if ($membership && $membership->status !== 'inactive') {
+            $membership->update(['status' => 'inactive']);
+        }
+    }
+
+    private function systemUserMembership(User $user): ?SellerUser
+    {
+        if ($user->access_panel?->value !== 'seller') {
+            return null;
+        }
+
+        $membership = SellerUser::where('user_id', $user->id)->first();
+        if (!$membership || (int) $membership->seller?->user_id === (int) $user->id) {
+            return null;
+        }
+
+        return $membership;
     }
 
     public function requestApprovalIfRequired(User $user): ?JsonResponse

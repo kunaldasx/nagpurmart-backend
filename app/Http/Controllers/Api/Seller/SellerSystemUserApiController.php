@@ -47,7 +47,7 @@ class SellerSystemUserApiController extends Controller
 
         $query = User::query()
             ->join('seller_user', 'users.id', '=', 'seller_user.user_id')
-            ->select('users.*', 'seller_user.login_approval_status', 'seller_user.login_approval_requested_at', 'seller_user.login_approved_until')
+            ->select('users.*', 'seller_user.login_approval_status', 'seller_user.login_approval_requested_at', 'seller_user.login_approved_until', 'seller_user.status as system_user_status')
             ->where('seller_user.seller_id', $seller->id)
             ->orderByDesc('users.id');
         if (!empty($q)) {
@@ -92,6 +92,7 @@ class SellerSystemUserApiController extends Controller
             'login_approval_status' => $membership?->login_approval_status,
             'login_approval_requested_at' => $membership?->login_approval_requested_at,
             'login_approved_until' => $membership?->login_approved_until,
+            'system_user_status' => $membership?->status,
         ]);
     }
 
@@ -192,6 +193,7 @@ class SellerSystemUserApiController extends Controller
                 'login_approval_status' => $membership->login_approval_status,
                 'login_approval_requested_at' => $membership->login_approval_requested_at,
                 'login_approved_until' => $membership->login_approved_until,
+                'system_user_status' => $membership->status,
             ])->items(),
         ]);
     }
@@ -236,6 +238,7 @@ class SellerSystemUserApiController extends Controller
             'login_approval_status' => $status === 'approved' ? 'approved' : 'disapproved',
             'login_approved_at' => $status === 'approved' ? now() : null,
             'login_approved_until' => $status === 'approved' ? now()->addHours($durationHours) : null,
+            ...($status === 'approved' ? [] : ['status' => 'inactive']),
         ]);
         if ($status !== 'approved') {
             $user->tokens()->delete();
@@ -245,6 +248,7 @@ class SellerSystemUserApiController extends Controller
             'user_id' => $user->id,
             'login_approval_status' => $membership->login_approval_status,
             'login_approved_until' => $membership->login_approved_until,
+            'system_user_status' => $membership->status,
             'duration_hours' => $durationHours,
         ]);
     }
