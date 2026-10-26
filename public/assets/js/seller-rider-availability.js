@@ -76,7 +76,7 @@
         }
     };
 
-    document.getElementById("rider-availability-refresh").addEventListener("click", refresh);
+    document.addEventListener("rider-availability-refresh", refresh);
     refresh();
     window.setInterval(refresh, 30000);
 })();

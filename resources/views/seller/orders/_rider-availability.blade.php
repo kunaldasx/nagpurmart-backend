@@ -4,10 +4,6 @@
             <h3 class="card-title mb-1">Rider availability</h3>
             <div class="text-secondary small">Across your pickup zones; available means active, nearby, recently located, and not already assigned.</div>
         </div>
-        <button class="btn btn-outline-primary btn-sm" type="button" id="rider-availability-refresh" title="Refresh rider availability">
-            <i class="ti ti-refresh" aria-hidden="true"></i>
-            Refresh
-        </button>
     </div>
     <div class="card-body pt-2">
         <div class="alert alert-warning d-none mb-3" id="rider-availability-error" role="alert"></div>

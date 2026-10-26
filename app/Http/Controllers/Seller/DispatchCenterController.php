@@ -17,7 +17,9 @@ class DispatchCenterController extends Controller
 
     public function index(): View
     {
-        return view('seller.orders.dispatch-center');
+        return view('seller.orders.dispatch-center', [
+            'dataUrl' => route('seller.orders.dispatch-center.data'),
+        ]);
     }
 
     public function data(): JsonResponse
