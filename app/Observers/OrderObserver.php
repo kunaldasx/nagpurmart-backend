@@ -7,6 +7,7 @@ use App\Enums\DeliveryBoy\DeliveryBoyAssignmentTypeEnum;
 use App\Enums\Order\OrderStatusEnum;
 use App\Models\Order;
 use App\Services\DeliveryBoyOrderOfferService;
+use App\Services\SellerOrderPopupOfferService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +34,7 @@ class OrderObserver
                         ->update(['status' => DeliveryBoyAssignmentStatusEnum::CANCELED()]);
 
                     app(DeliveryBoyOrderOfferService::class)->cancelPendingForOrder((int) $order->id, 'cancelled');
+                    app(SellerOrderPopupOfferService::class)->releaseOffersForCancelledOrder((int) $order->id);
                 });
             }
         } catch (\Throwable $e) {

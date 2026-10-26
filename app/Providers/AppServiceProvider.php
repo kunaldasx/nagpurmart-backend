@@ -14,8 +14,10 @@ use App\Models\OrderItemReturn;
 use App\Observers\OrderItemReturnObserver;
 use App\Models\Store;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Observers\StoreObserver;
 use App\Observers\OrderObserver;
+use App\Observers\OrderItemObserver;
 use App\Models\SubscriptionTransaction;
 use App\Observers\SubscriptionTransactionObserver;
 use App\Models\SellerSubscription;
@@ -169,6 +171,7 @@ class AppServiceProvider extends ServiceProvider
             OrderItemReturn::class => OrderItemReturnObserver::class,
             Store::class => StoreObserver::class,
             Order::class => OrderObserver::class,
+            OrderItem::class => OrderItemObserver::class,
             SubscriptionTransaction::class => SubscriptionTransactionObserver::class,
             SellerSubscription::class => SellerSubscriptionObserver::class,
         ];

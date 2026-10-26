@@ -54,6 +54,8 @@ class SellerOrderPopupOfferService
             return;
         }
 
+        $this->releaseStaleCancelledOffers($sellerId);
+
         $systemUsers = $this->eligibleSystemUsers($seller);
         $sellerOwner = $this->eligibleSellerOwner($seller);
         if ($systemUsers->isEmpty() && !$sellerOwner) {
@@ -163,8 +165,138 @@ class SellerOrderPopupOfferService
         $this->dispatchPendingOrders($sellerId);
     }
 
+    public function releaseOfferForCancelledOrderItem(int $orderItemId): void
+    {
+        $sellerOrders = SellerOrder::query()
+            ->whereHas('items', fn ($query) => $query->where('order_item_id', $orderItemId))
+            ->get();
+
+        foreach ($sellerOrders as $sellerOrder) {
+            $released = DB::transaction(function () use ($sellerOrder): bool {
+                $lockedSellerOrder = SellerOrder::query()
+                    ->whereKey($sellerOrder->id)
+                    ->lockForUpdate()
+                    ->first();
+                if (!$lockedSellerOrder || !$lockedSellerOrder->items()->exists() || $lockedSellerOrder->items()
+                    ->whereHas('orderItem', fn ($query) => $query->whereNotIn('status', [
+                        OrderItemStatusEnum::CANCELLED(),
+                        OrderItemStatusEnum::REJECTED(),
+                        OrderItemStatusEnum::FAILED(),
+                        OrderItemStatusEnum::REFUNDED(),
+                        OrderItemStatusEnum::DELIVERED(),
+                        OrderItemStatusEnum::RETURNED(),
+                    ]))
+                    ->exists()) {
+                    return false;
+                }
+
+                $cancellationOnly = !$lockedSellerOrder->items()
+                    ->whereHas('orderItem', fn ($query) => $query->whereNotIn('status', [
+                        OrderItemStatusEnum::CANCELLED(),
+                        OrderItemStatusEnum::REJECTED(),
+                        OrderItemStatusEnum::FAILED(),
+                    ]))
+                    ->exists();
+
+                return $lockedSellerOrder->popupOffers()
+                    ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
+                    ->update([
+                        'status' => $cancellationOnly ? 'cancelled' : 'completed',
+                        'completed_at' => now(),
+                        'updated_at' => now(),
+                    ]) > 0;
+            });
+
+            if ($released) {
+                $this->dispatchPendingOrders((int) $sellerOrder->seller_id);
+            }
+        }
+    }
+
+    private function releaseStaleCancelledOffers(int $sellerId): bool
+    {
+        $terminalStatuses = [
+            OrderItemStatusEnum::CANCELLED(),
+            OrderItemStatusEnum::REJECTED(),
+            OrderItemStatusEnum::FAILED(),
+            OrderItemStatusEnum::REFUNDED(),
+            OrderItemStatusEnum::DELIVERED(),
+            OrderItemStatusEnum::RETURNED(),
+        ];
+
+        $offers = SellerOrderPopupOffer::query()
+            ->where('seller_id', $sellerId)
+            ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
+            ->with(['sellerOrder.order', 'sellerOrder.items.orderItem'])
+            ->get();
+        $releasedAny = false;
+
+        foreach ($offers as $offer) {
+            $sellerOrder = $offer->sellerOrder;
+            if (!$sellerOrder) {
+                continue;
+            }
+
+            $orderCancelled = $sellerOrder->order?->status === \App\Enums\Order\OrderStatusEnum::CANCELLED();
+            $items = $sellerOrder->items;
+            $allItemsTerminal = $items->isNotEmpty()
+                && $items->every(fn ($item) => $item->orderItem
+                    && in_array($item->orderItem->status, $terminalStatuses, true));
+            if (!$orderCancelled && !$allItemsTerminal) {
+                continue;
+            }
+
+            $onlyCancelledItems = $items->every(fn ($item) => $item->orderItem
+                && in_array($item->orderItem->status, [
+                    OrderItemStatusEnum::CANCELLED(),
+                    OrderItemStatusEnum::REJECTED(),
+                    OrderItemStatusEnum::FAILED(),
+                ], true));
+            $releasedAny = SellerOrderPopupOffer::query()
+                ->whereKey($offer->id)
+                ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
+                ->update([
+                    'status' => $orderCancelled || $onlyCancelledItems ? 'cancelled' : 'completed',
+                    'completed_at' => now(),
+                    'updated_at' => now(),
+                ]) > 0 || $releasedAny;
+        }
+
+        return $releasedAny;
+    }
+
+    public function releaseOffersForCancelledOrder(int $orderId): void
+    {
+        $sellerOrders = SellerOrder::query()
+            ->where('order_id', $orderId)
+            ->get(['id', 'seller_id']);
+        $sellerIdsToRedispatch = [];
+
+        foreach ($sellerOrders as $sellerOrder) {
+            $released = $sellerOrder->popupOffers()
+                ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
+                ->update([
+                    'status' => 'cancelled',
+                    'completed_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            if ($released > 0) {
+                $sellerIdsToRedispatch[] = (int) $sellerOrder->seller_id;
+            }
+        }
+
+        foreach (array_unique($sellerIdsToRedispatch) as $sellerId) {
+            $this->dispatchPendingOrders($sellerId);
+        }
+    }
+
     public function popupUserDashboard(Seller $seller): array
     {
+        if ($this->releaseStaleCancelledOffers((int) $seller->id)) {
+            $this->dispatchPendingOrders((int) $seller->id);
+        }
+
         $now = now();
         $stores = Store::query()
             ->where('seller_id', $seller->id)
