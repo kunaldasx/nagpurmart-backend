@@ -300,7 +300,7 @@ class SellerOrderPopupOfferService
         return $members
             ->filter()
             ->unique('id')
-            ->filter(function (User $user) use ($seller, $now) {
+            ->filter(function (User $user) use ($seller, $now, $busyUserIds) {
                 if ((int) $user->id === (int) $seller->user_id) {
                     return false;
                 }
