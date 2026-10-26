@@ -20,7 +20,7 @@ class SellerOrderPopupDashboardController extends Controller
         $seller = Auth::user()?->seller();
         abort_unless($seller && (int) $seller->user_id === (int) Auth::id(), 403);
 
-        return redirect()->route('seller.orders.dispatch-center');
+        return redirect()->to(route('seller.orders.dispatch-center') . '#seller-popup-users');
     }
 
     public function data(): JsonResponse
