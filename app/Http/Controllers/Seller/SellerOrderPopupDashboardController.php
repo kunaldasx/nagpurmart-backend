@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Services\SellerOrderPopupOfferService;
 use App\Types\Api\ApiResponseType;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class SellerOrderPopupDashboardController extends Controller
 {
@@ -15,12 +15,14 @@ class SellerOrderPopupDashboardController extends Controller
     {
     }
 
-    public function index(): RedirectResponse
+    public function index(): View
     {
         $seller = Auth::user()?->seller();
         abort_unless($seller && (int) $seller->user_id === (int) Auth::id(), 403);
 
-        return redirect()->to(route('seller.orders.dispatch-center') . '#seller-popup-users');
+        return view('seller.orders.popup-users', [
+            'dataUrl' => route('seller.orders.popup-users.data'),
+        ]);
     }
 
     public function data(): JsonResponse

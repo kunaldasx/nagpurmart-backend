@@ -1,9 +1,5 @@
-<div class="card mb-3 d-none" id="seller-popup-users" data-url="{{ route('seller.orders.popup-users.data') }}">
-    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
-            <h3 class="card-title mb-1">System user availability</h3>
-            <div class="text-secondary">Eligible system users receive incoming orders first. You receive an order alert only when no eligible system user is nearby and available.</div>
-        </div>
+<div class="card mb-3">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-end gap-2">
         <button class="btn btn-outline-primary" id="seller-popup-users-refresh" type="button">
             <i class="ti ti-refresh" aria-hidden="true"></i> Refresh
         </button>

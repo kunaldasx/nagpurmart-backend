@@ -63,7 +63,7 @@
                                     @endphp
                                     @if($isMainSeller)
                                         <div class="col-auto">
-                                            <a class="btn btn-outline-primary" href="{{ route('seller.orders.dispatch-center') }}#seller-popup-users">
+                                            <a class="btn btn-outline-primary" href="{{ route('seller.orders.popup-users') }}">
                                                 <i class="ti ti-users" aria-hidden="true"></i>
                                                 System user availability
                                             </a>
