@@ -10,6 +10,10 @@
 @endsection
 
 @section('seller-content')
+    @php
+        $currentSeller = auth()->user()?->seller();
+        $isMainSeller = $currentSeller && (int) $currentSeller->user_id === (int) auth()->id();
+    @endphp
     <div class="page-wrapper" id="dispatch-center" data-url="{{ $dataUrl }}" data-self-url="{{ route('seller.orders.index') }}">
         <div class="page-body">
             <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
@@ -18,10 +22,21 @@
                     <h2 class="page-title mb-1">Rider dispatch</h2>
                     <div class="text-secondary">Orders are reserved to one active rider within 200 m of the pickup store.</div>
                 </div>
-                <button class="btn btn-outline-primary" id="dispatch-refresh" type="button" title="Refresh dispatch status">
-                    <i class="ti ti-refresh" aria-hidden="true"></i> Refresh
-                </button>
+                <div class="d-flex flex-wrap gap-2">
+                    @if($isMainSeller)
+                        <button class="btn btn-outline-primary" id="seller-popup-users-toggle" type="button" aria-expanded="false" aria-controls="seller-popup-users">
+                            <i class="ti ti-users" aria-hidden="true"></i> System user availability
+                        </button>
+                    @endif
+                    <button class="btn btn-outline-primary" id="dispatch-refresh" type="button" title="Refresh dispatch status">
+                        <i class="ti ti-refresh" aria-hidden="true"></i> Refresh
+                    </button>
+                </div>
             </div>
+
+            @if($isMainSeller)
+                @include('seller.orders._popup-users-dashboard')
+            @endif
 
             <div class="alert alert-warning d-none" id="dispatch-alert" role="alert"></div>
             <div class="row row-cards mb-3">
@@ -95,6 +110,13 @@
                     alert.textContent = error.message;
                 }
             };
+            const popupUsersToggle = document.getElementById('seller-popup-users-toggle');
+            popupUsersToggle?.addEventListener('click', () => {
+                const dashboard = document.getElementById('seller-popup-users');
+                const isExpanded = popupUsersToggle.getAttribute('aria-expanded') === 'true';
+                dashboard.classList.toggle('d-none', isExpanded);
+                popupUsersToggle.setAttribute('aria-expanded', String(!isExpanded));
+            });
             document.getElementById('dispatch-refresh').addEventListener('click', refresh);
             document.getElementById('dispatch-orders').addEventListener('click', async (event) => {
                 const button = event.target.closest('[data-self-deliver]');
@@ -117,4 +139,7 @@
             window.setInterval(refresh, 15000);
         })();
     </script>
+    @if($isMainSeller)
+        <script src="{{ hyperAsset('assets/js/seller-order-popup-dashboard.js') }}" defer></script>
+    @endif
 @endpush
