@@ -29,7 +29,7 @@
         </div>
     </div>
     @if($canShowSellerOrderPopup)
-    <div class="modal modal-blur fade" id="newRegularOrderModal" data-pending-url="{{ route('seller.orders.pending-regular') }}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal modal-blur fade" id="newRegularOrderModal" data-pending-url="{{ route('seller.orders.pending-regular') }}" data-presence-url="{{ route('seller.orders.popup-presence') }}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header new-order-header">
@@ -40,6 +40,7 @@
                     </div>
                 </div>
                 <div class="modal-body">
+                    <div id="new-order-location-status" class="small text-secondary mb-2" role="status">Checking location for nearby order alerts…</div>
                     <div class="new-order-pulse text-center">
                         <div id="new-order-timer-ring" aria-label="Order waiting time"><span><small>WAITING</small><strong id="new-order-timer">00:00</strong><em>response time</em></span></div>
                     </div>

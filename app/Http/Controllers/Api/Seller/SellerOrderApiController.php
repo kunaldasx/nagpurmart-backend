@@ -14,6 +14,7 @@ use App\Models\SellerOrderItem;
 use App\Services\CurrencyService;
 use App\Services\DeliveryBoyOrderOfferService;
 use App\Services\OrderService;
+use App\Services\SellerOrderPopupOfferService;
 use App\Types\Api\ApiResponseType;
 use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
@@ -217,6 +218,7 @@ class SellerOrderApiController extends Controller
             $orderMode = 'regular';
         }
 
+        app(SellerOrderPopupOfferService::class)->dispatchPendingOrders((int) $seller->id);
         $items = SellerOrderItem::with(['sellerOrder.order.deliveryTimeSlot', 'sellerOrder.bag', 'orderItem', 'product', 'variant'])
             ->whereHas('sellerOrder', function ($query) use ($seller, $orderMode) {
                 $query->where('seller_id', $seller->id)
@@ -226,6 +228,9 @@ class SellerOrderApiController extends Controller
                 OrderItemStatusEnum::AWAITING_STORE_RESPONSE(),
                 OrderItemStatusEnum::ACCEPTED(),
             ]))
+            ->whereHas('sellerOrder.popupOffers', fn ($query) => $query
+                ->where('user_id', $user->id)
+                ->whereIn('status', \App\Models\SellerOrderPopupOffer::ACTIVE_STATUSES))
             ->orderBy('created_at')
             ->get();
 
@@ -300,6 +305,38 @@ class SellerOrderApiController extends Controller
         ]);
     }
 
+    public function updatePopupPresence(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+            'latitude' => ['required_if:active,true', 'nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['required_if:active,true', 'nullable', 'numeric', 'between:-180,180'],
+        ]);
+        $user = auth()->user();
+        $seller = $user?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+        if (!$user->hasRole(\App\Enums\DefaultSystemRolesEnum::SELLER()) && !$user->can('order.popup')) {
+            return ApiResponseType::sendJsonResponse(false, __('messages.unauthorized_action'), [], 403);
+        }
+
+        $presence = app(SellerOrderPopupOfferService::class)->updatePresence(
+            $user,
+            $seller,
+            (bool) $validated['active'],
+            isset($validated['latitude']) ? (float) $validated['latitude'] : null,
+            isset($validated['longitude']) ? (float) $validated['longitude'] : null,
+        );
+
+        return ApiResponseType::sendJsonResponse(true, 'Seller popup presence updated.', [
+            'active' => $presence->active,
+            'latitude' => $presence->latitude,
+            'longitude' => $presence->longitude,
+            'last_seen_at' => $presence->last_seen_at?->toIso8601String(),
+        ]);
+    }
+
     /**
      * Show a seller order (not a global Order). ID is seller_orders.id
      */
@@ -351,6 +388,12 @@ class SellerOrderApiController extends Controller
             if (!$orderItem) {
                 return ApiResponseType::sendJsonResponse(false, __('labels.order_item_not_found') ?? 'Order item not found', []);
             }
+            if (!app(SellerOrderPopupOfferService::class)->canUserProcessOrder(
+                (int) $orderItem->seller_order_id,
+                (int) auth()->id()
+            )) {
+                return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [], 409);
+            }
 
             $this->authorize('updateStatus', $orderItem);
 
@@ -395,6 +438,9 @@ class SellerOrderApiController extends Controller
         if (!$sellerOrder) {
             return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
         }
+        if (!app(SellerOrderPopupOfferService::class)->canUserProcessOrder($id, (int) auth()->id())) {
+            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [], 409);
+        }
 
         try {
             foreach ($sellerOrder->items as $sellerOrderItem) {
@@ -405,6 +451,9 @@ class SellerOrderApiController extends Controller
         }
 
         $result = $this->orderService->verifyAndPrepareSellerOrder($id, $seller->id, $validated['items']);
+        if ($result['success']) {
+            app(SellerOrderPopupOfferService::class)->markCompleted($id, (int) $seller->id, (int) auth()->id());
+        }
         return ApiResponseType::sendJsonResponse(
             $result['success'],
             $result['message'],
@@ -424,6 +473,9 @@ class SellerOrderApiController extends Controller
         $sellerOrder = SellerOrder::query()->where('id', $id)->where('seller_id', $seller->id)->with('items')->first();
         if (!$sellerOrder) {
             return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
+        }
+        if (!app(SellerOrderPopupOfferService::class)->canUserProcessOrder($id, (int) auth()->id())) {
+            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [], 409);
         }
         try {
             foreach ($sellerOrder->items as $sellerOrderItem) {
@@ -452,6 +504,9 @@ class SellerOrderApiController extends Controller
         if (!$sellerOrder) {
             return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
         }
+        if (!app(SellerOrderPopupOfferService::class)->canUserProcessOrder($id, (int) auth()->id())) {
+            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [], 409);
+        }
 
         try {
             foreach ($sellerOrder->items as $sellerOrderItem) {
@@ -462,6 +517,9 @@ class SellerOrderApiController extends Controller
         }
 
         $result = $this->orderService->acceptSellerOrderItems($id, $seller->id);
+        if ($result['success']) {
+            app(SellerOrderPopupOfferService::class)->markAccepted($id, (int) auth()->id());
+        }
         return ApiResponseType::sendJsonResponse(
             $result['success'],
             $result['message'],

@@ -131,6 +131,17 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->hasMany(UserFcmToken::class, 'user_id', 'id');
     }
+
+    public function sellerOrderPopupPresence(): HasMany
+    {
+        return $this->hasMany(SellerOrderPopupPresence::class, 'user_id', 'id');
+    }
+
+    public function sellerOrderPopupOffers(): HasMany
+    {
+        return $this->hasMany(SellerOrderPopupOffer::class, 'user_id', 'id');
+    }
+
     public function routeNotificationForFirebase()
     {
         // Return an array of FCM tokens for this user

@@ -1,7 +1,8 @@
 $(document).ready(function () {
     const modal = $("#newRegularOrderModal");
     const pendingOrdersUrl = modal.data("pending-url");
-    if (!modal.length || !pendingOrdersUrl) return;
+    const presenceUrl = modal.data("presence-url");
+    if (!modal.length || !pendingOrdersUrl || !presenceUrl) return;
 
     const timerRing = $("#new-order-timer-ring");
     const timerText = $("#new-order-timer");
@@ -17,6 +18,10 @@ $(document).ready(function () {
     const timerDuration = 60;
     let alertAudioContext = null;
     let alertSoundHandle = null;
+    let latestCoordinates = null;
+    let lastPresenceUpdateAt = 0;
+    let presenceRequestPending = false;
+    const locationStatus = $("#new-order-location-status");
     const ringAlert = () => {
         if (!alertAudioContext) return;
         const now = alertAudioContext.currentTime;
@@ -63,6 +68,72 @@ $(document).ready(function () {
             window.clearInterval(alertSoundHandle);
             alertSoundHandle = null;
         }
+    };
+    const sendPresence = (active, coordinates = latestCoordinates) => {
+        if (presenceRequestPending) return Promise.resolve();
+        presenceRequestPending = true;
+        const payload = { active };
+        if (active && coordinates) {
+            payload.latitude = coordinates.latitude;
+            payload.longitude = coordinates.longitude;
+        }
+        return axios
+            .post(presenceUrl, payload)
+            .then(() => {
+                lastPresenceUpdateAt = Date.now();
+                if (active) {
+                    locationStatus
+                        .removeClass("text-danger")
+                        .addClass("text-success")
+                        .text("Location active — nearby order alerts are enabled.");
+                }
+            })
+            .catch((error) => {
+                console.error("Seller order popup presence update failed:", error);
+                locationStatus
+                    .removeClass("text-success")
+                    .addClass("text-danger")
+                    .text("Could not update location. Check your connection and location permission.");
+            })
+            .finally(() => {
+                presenceRequestPending = false;
+            });
+    };
+    const startLocationPresence = () => {
+        if (!navigator.geolocation) {
+            locationStatus
+                .addClass("text-danger")
+                .text("Location is unavailable in this browser; nearby order alerts are disabled.");
+            return;
+        }
+
+        navigator.geolocation.watchPosition(
+            (position) => {
+                latestCoordinates = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                };
+                if (Date.now() - lastPresenceUpdateAt >= 60000) {
+                    sendPresence(true);
+                }
+            },
+            (error) => {
+                console.error("Seller popup location tracking failed:", error);
+                latestCoordinates = null;
+                locationStatus
+                    .removeClass("text-success")
+                    .addClass("text-danger")
+                    .text("Allow location access to receive nearby order alerts.");
+                sendPresence(false);
+            },
+            { enableHighAccuracy: false, maximumAge: 30000, timeout: 15000 },
+        );
+
+        window.setInterval(() => {
+            if (latestCoordinates && Date.now() - lastPresenceUpdateAt >= 60000) {
+                sendPresence(true);
+            }
+        }, 15000);
     };
 
     const escapeHtml = (value) =>
@@ -526,6 +597,7 @@ $(document).ready(function () {
         }
     });
     modal.on("hidden.bs.modal", stopAlertSound);
+    startLocationPresence();
     window.addEventListener("nagpurmart:notification", () => {
         pollRegularOrders().catch((error) =>
             console.error("Regular order polling failed:", error),

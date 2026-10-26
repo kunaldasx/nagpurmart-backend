@@ -122,6 +122,7 @@ Route::middleware(['auth:sanctum', 'seller.user.approval',
         Route::get('/', [SellerOrderApiController::class, 'index'])->name('index');
         Route::get('/enums', [SellerOrderApiController::class, 'enums'])->name('enums');
         Route::get('/pending-regular', [SellerOrderApiController::class, 'pendingRegular'])->name('pending-regular');
+        Route::post('/popup-presence', [SellerOrderApiController::class, 'updatePopupPresence'])->name('popup-presence');
         Route::post('/{id}/accept-items', [SellerOrderApiController::class, 'acceptSellerOrderItems'])->name('accept-items');
         Route::post('/{id}/assign-bag', [SellerOrderApiController::class, 'assignBag'])->name('assign-bag');
         Route::post('/{id}/verify-and-prepare', [SellerOrderApiController::class, 'verifyAndPrepare'])->name('verify-and-prepare');

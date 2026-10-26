@@ -22,6 +22,8 @@ These seller permissions were added for the role/permission system:
 
 The default seller role is still allowed to access the popup automatically.
 
+New seller popup assignment, location heartbeat, FCM notification, and API payload instructions are documented in [SELLER_ORDER_POPUP_FLOW_API.md](./SELLER_ORDER_POPUP_FLOW_API.md). The pending-orders endpoint returns offers assigned only to the authenticated seller user.
+
 ---
 
 ## 2) API to fetch grouped permissions for a seller role

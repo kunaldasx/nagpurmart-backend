@@ -40,7 +40,7 @@ class NewOrderNotification
 
         // Let the Notification decide channels via via() and handle queueing
         try {
-            $user->notify(new \App\Notifications\NewOrderNotification($event));
+            $user->notify(new \App\Notifications\NewOrderNotification($event, $sendTo !== 'seller'));
         } catch (\Throwable $e) {
             Log::error('NewOrderNotification failed to dispatch notification', [
                 'message' => $e->getMessage(),

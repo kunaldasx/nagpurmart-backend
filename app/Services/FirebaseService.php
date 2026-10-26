@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\AndroidConfig;
+use Kreait\Firebase\Messaging\ApnsConfig;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 
@@ -116,6 +117,53 @@ class FirebaseService
             Log::error('Firebase sendDataMessage failed', [
                 'error' => $e->getMessage(),
                 'token' => $token,
+            ]);
+
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Send a visible notification for backgrounded seller apps and include routing data.
+     */
+    public function sendHighPriorityNotification(string $token, string $title, string $body, array $data = []): array
+    {
+        if ($this->messaging === null) {
+            return ['success' => false, 'error' => 'Firebase is not configured'];
+        }
+
+        try {
+            $message = CloudMessage::new()
+                ->withNotification(Notification::create($title, $body))
+                ->withData(array_map(static fn ($value) => (string) $value, $data))
+                ->withAndroidConfig(AndroidConfig::fromArray([
+                    'priority' => 'high',
+                    'notification' => [
+                        'channel_id' => 'seller_orders',
+                        'priority' => 'max',
+                        'sound' => 'default',
+                    ],
+                ]))
+                ->withApnsConfig(ApnsConfig::fromArray([
+                    'headers' => [
+                        'apns-priority' => '10',
+                        'apns-push-type' => 'alert',
+                    ],
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'default',
+                            'content-available' => 1,
+                        ],
+                    ],
+                ]))
+                ->toToken($token);
+
+            $this->messaging->send($message);
+
+            return ['success' => true];
+        } catch (\Throwable $e) {
+            Log::error('Firebase high-priority notification failed', [
+                'error' => $e->getMessage(),
             ]);
 
             return ['success' => false, 'error' => $e->getMessage()];

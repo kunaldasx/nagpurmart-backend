@@ -31,6 +31,11 @@ class SellerOrder extends Model
         return $this->hasOne(Bag::class);
     }
 
+    public function popupOffers(): HasMany
+    {
+        return $this->hasMany(SellerOrderPopupOffer::class, 'seller_order_id');
+    }
+
     public function feedback(): HasMany
     {
         return $this->hasMany(SellerFeedback::class, 'order_id', 'order_id');

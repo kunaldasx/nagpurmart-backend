@@ -17,13 +17,15 @@ class NewOrderNotification extends Notification implements ShouldQueue
     use Queueable;
 
     protected $event;
+    protected bool $sendFirebase;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct($event)
+    public function __construct($event, bool $sendFirebase = true)
     {
         $this->event = $event;
+        $this->sendFirebase = $sendFirebase;
     }
 
     /**
@@ -33,10 +35,13 @@ class NewOrderNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        // Ensure Firebase push is sent even if mail channel fails (e.g., bad SMTP)
-        // By sending via Firebase before Mail, push notifications are dispatched
-        // prior to any potential mail transport exception.
-        return ['database', FirebaseChannel::class, 'mail'];
+        $channels = ['database'];
+        if ($this->sendFirebase) {
+            $channels[] = FirebaseChannel::class;
+        }
+        $channels[] = 'mail';
+
+        return $channels;
     }
 
     /**
