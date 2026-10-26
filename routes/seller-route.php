@@ -274,6 +274,8 @@ Route::prefix('seller')->name('seller.')->group(function () {
 
         // orders
         Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/popup-users', [\App\Http\Controllers\Seller\SellerOrderPopupDashboardController::class, 'index'])->name('popup-users');
+            Route::get('/popup-users/data', [\App\Http\Controllers\Seller\SellerOrderPopupDashboardController::class, 'data'])->name('popup-users.data');
             Route::get('/dispatch-center', [DispatchCenterController::class, 'index'])->name('dispatch-center');
             Route::get('/dispatch-center/data', [DispatchCenterController::class, 'data'])->name('dispatch-center.data');
             Route::post('/{id}/self-deliver', [DispatchCenterController::class, 'selfDeliver'])->whereNumber('id')->name('self-deliver');

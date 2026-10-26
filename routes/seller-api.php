@@ -32,6 +32,7 @@ Route::middleware(['auth:sanctum', 'seller.user.approval',
 //    'ensure.seller.subscription'
 ])->prefix('seller')->name('seller.api.')->group(function () {
     Route::post('logout', [SellerAuthApiController::class, 'logout']);
+    Route::post('fcm-token', [SellerAuthApiController::class, 'registerFcmToken'])->name('fcm-token');
 
     Route::prefix('bags')->name('bags.')->group(function () {
         Route::get('/', [BagController::class, 'index'])->name('index');
@@ -123,6 +124,7 @@ Route::middleware(['auth:sanctum', 'seller.user.approval',
         Route::get('/enums', [SellerOrderApiController::class, 'enums'])->name('enums');
         Route::get('/pending-regular', [SellerOrderApiController::class, 'pendingRegular'])->name('pending-regular');
         Route::post('/popup-presence', [SellerOrderApiController::class, 'updatePopupPresence'])->name('popup-presence');
+        Route::get('/popup-users', [SellerOrderApiController::class, 'popupUsers'])->name('popup-users');
         Route::post('/{id}/accept-items', [SellerOrderApiController::class, 'acceptSellerOrderItems'])->name('accept-items');
         Route::post('/{id}/assign-bag', [SellerOrderApiController::class, 'assignBag'])->name('assign-bag');
         Route::post('/{id}/verify-and-prepare', [SellerOrderApiController::class, 'verifyAndPrepare'])->name('verify-and-prepare');

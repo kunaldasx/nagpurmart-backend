@@ -337,6 +337,24 @@ class SellerOrderApiController extends Controller
         ]);
     }
 
+    public function popupUsers(): JsonResponse
+    {
+        $user = auth()->user();
+        $seller = $user?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+        if ((int) $seller->user_id !== (int) $user->id) {
+            return ApiResponseType::sendJsonResponse(false, __('messages.unauthorized_action'), [], 403);
+        }
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            'Seller order popup user availability fetched successfully.',
+            app(SellerOrderPopupOfferService::class)->popupUserDashboard($seller)
+        );
+    }
+
     /**
      * Show a seller order (not a global Order). ID is seller_orders.id
      */
@@ -392,7 +410,9 @@ class SellerOrderApiController extends Controller
                 (int) $orderItem->seller_order_id,
                 (int) auth()->id()
             )) {
-                return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [], 409);
+                return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [
+                    'code' => 'seller_order_offer_assigned_to_another_user',
+                ], 409);
             }
 
             $this->authorize('updateStatus', $orderItem);
@@ -439,7 +459,9 @@ class SellerOrderApiController extends Controller
             return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
         }
         if (!app(SellerOrderPopupOfferService::class)->canUserProcessOrder($id, (int) auth()->id())) {
-            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [], 409);
+            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [
+                'code' => 'seller_order_offer_assigned_to_another_user',
+            ], 409);
         }
 
         try {
@@ -475,7 +497,9 @@ class SellerOrderApiController extends Controller
             return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
         }
         if (!app(SellerOrderPopupOfferService::class)->canUserProcessOrder($id, (int) auth()->id())) {
-            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [], 409);
+            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [
+                'code' => 'seller_order_offer_assigned_to_another_user',
+            ], 409);
         }
         try {
             foreach ($sellerOrder->items as $sellerOrderItem) {
@@ -505,7 +529,9 @@ class SellerOrderApiController extends Controller
             return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
         }
         if (!app(SellerOrderPopupOfferService::class)->canUserProcessOrder($id, (int) auth()->id())) {
-            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [], 409);
+            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [
+                'code' => 'seller_order_offer_assigned_to_another_user',
+            ], 409);
         }
 
         try {

@@ -4,17 +4,89 @@ This document is the frontend contract for seller web and mobile apps. The backe
 
 ## Assignment behavior
 
-- An incoming seller order is offered to one user who has `order.popup` permission (or is the default seller owner), is active, has a fresh location, and is within 200 m of at least one store in that seller order.
+- An incoming seller order is offered to one eligible system user first. A system user must have `order.popup` permission, an active seller membership, a current login approval, an active account/presence, a fresh location, and be within 200 m of a store in the seller order.
+- The main seller owner is a fallback recipient only when no system user is eligible for that specific order. The owner must have active popup presence, a fresh location within 200 m of one of the order's stores, and must not already have an active popup offer.
 - A system user must also have an active seller membership and a currently approved login.
-- A location is fresh for two minutes. While the user is active, send a location heartbeat at least once every 60 seconds.
+- A location is considered fresh for two minutes. A stale presence is excluded from new assignment; the presence row itself is not automatically deactivated.
 - Each user can hold one pending or accepted popup offer at a time. Additional orders stay unassigned until the user dispatches the current order.
 - After `verify-and-prepare` succeeds, that offer is completed and the backend immediately tries to assign the next eligible order to that user.
+- The one-order-at-a-time limit is shared across regular and wholesale orders.
 - Offers are committed before push delivery. Push failure is logged; the assigned offer remains available from the pending endpoint.
 - Wholesale orders are offered only during the existing popup window: the delivery-slot end time is now through 30 minutes from now.
-- The seller owner and an authorized system user both use their own authenticated user ID as the offer recipient.
+- A system user with eligibility always takes priority over an eligible seller owner. If there are multiple eligible system users, they are served fairly according to their most recent assignment; each may hold only one active order at a time.
+- Both system users and the owner use their own authenticated user ID as the offer recipient.
 - Orders without an eligible nearby user remain unassigned. New heartbeats, pending-order polling, and new-order events retry assignment.
+- There is currently no accept timeout. A pending offer remains assigned until its order is accepted/dispatched or otherwise processed; it is not reassigned because the recipient's presence becomes stale. Do not show a server countdown.
+- There is no seller-order offer-revoked/cancelled push type yet. Presence expiration or order cancellation does not currently publish a push telling the app to close the popup. Refresh/reconcile against the API when the app resumes or the user acts; do not rely on a cancellation push.
 
 The radius check uses coordinates reported by the app/browser. The frontend must request device/browser location permission and send GPS coordinates; do not use a typed address or customer coordinates.
+
+## Main seller: system-user availability dashboard
+
+The main seller owner can view the web dashboard at:
+
+```text
+GET /seller/orders/popup-users
+GET /seller/orders/popup-users/data
+```
+
+The seller system-users page includes an **Order popup availability** shortcut for the main seller owner. The dashboard refreshes every 30 seconds and shows system-user contact and role details, seller membership status, login approval/expiry, popup permission, active/inactive state, last location report, nearest seller store and distance, current assigned order, and whether an FCM token is registered. The owner is the only user allowed to read this dashboard.
+
+The mobile seller API can retrieve the same dashboard data using:
+
+```http
+GET /api/seller/orders/popup-users
+Authorization: Bearer <sanctum_access_token>
+Accept: application/json
+```
+
+Only the main seller owner may call this endpoint. Response (`200`):
+
+```json
+{
+    "success": true,
+    "message": "Seller order popup user availability fetched successfully.",
+    "data": {
+        "summary": {
+            "total_system_users": 3,
+            "active_users": 1,
+            "eligible_users": 1,
+            "inactive_users": 2,
+            "busy_users": 0
+        },
+        "users": [
+            {
+                "user_id": 24,
+                "name": "Store Operator",
+                "email": "operator@example.com",
+                "mobile": "+911234567890",
+                "roles": ["Order Manager"],
+                "system_user_status": "active",
+                "login_approval_status": "approved",
+                "login_approved_until": "2026-10-27T10:00:00+00:00",
+                "has_order_popup_permission": true,
+                "popup_presence_active": true,
+                "location_fresh": true,
+                "last_seen_at": "2026-10-26T05:00:00+00:00",
+                "nearest_store": {
+                    "id": 10,
+                    "name": "Store One",
+                    "distance_m": 82
+                },
+                "has_fcm_token": true,
+                "is_active": true,
+                "is_eligible": true,
+                "ineligible_reason": null,
+                "current_offer": null
+            }
+        ],
+        "location_freshness_minutes": 2,
+        "pickup_radius_meters": 200
+    }
+}
+```
+
+`is_active` means the membership is active and the user has active popup presence with a location heartbeat inside the freshness window. `is_eligible` additionally requires an active account, current login approval, popup permission, a reported location within 200 m of any seller store, and no active offer. Actual assignment is checked against each order's store(s), so the dashboard's nearest-store indication is a general seller-store view, not a guarantee for every order. `ineligible_reason` can be `account_inactive`, `system_user_inactive`, `login_not_approved_or_expired`, `order_popup_permission_missing`, `popup_presence_inactive`, `location_stale`, `location_or_store_unavailable`, `outside_200m_radius`, or `order_in_progress`.
 
 ## Authentication and base URLs
 
@@ -46,7 +118,7 @@ The web response for the pending endpoint is the legacy shape described in the w
 
 ## 1. Register push token and start popup presence
 
-The seller app should register an FCM token during seller login (the login endpoint accepts `fcm_token` and `device_type`). The app must keep the token current using Firebase's token-refresh callback and the existing seller login/token registration flow.
+The seller app can register an FCM token during seller login if supported, and must call `POST /api/seller/fcm-token` on every authenticated app start and Firebase token refresh.
 
 When the user opens the order popup feature and grants location access, start a background-capable location subscription and call:
 
@@ -87,9 +159,45 @@ On logout, when the user disables order alerts, or when location permission is r
 { "active": false }
 ```
 
-Validation failure returns `422`; latitude must be between -90 and 90 and longitude between -180 and 180. An unauthenticated request returns `401`; a user without popup permission returns `403`. The backend also expires presence automatically after two minutes without a heartbeat.
+The current `POST /api/seller/logout` endpoint does not itself clear popup presence and does not delete the stored FCM token. Send `active: false` before logout, as planned. Keeping the device token is intentional so it can be reused/refreshed on the next authenticated session; no new offers should be assigned while presence is inactive/stale.
+
+Validation failure returns `422`; latitude must be between -90 and 90 and longitude between -180 and 180. An unauthenticated request returns `401`; a user without popup permission returns `403`. Presence older than two minutes is not eligible for a new assignment. Staleness does not remove or revoke an offer that has already been assigned.
 
 The seller web panel calls the equivalent session-authenticated endpoint while the browser grants location permission. If location is unavailable or denied, show a clear status to the user; they will not receive new nearby offers.
+
+## Seller FCM token registration
+
+Register the current device token after login, when Firebase refreshes it, and on app startup while authenticated:
+
+```http
+POST /api/seller/fcm-token
+Authorization: Bearer <sanctum_access_token>
+Accept: application/json
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{
+    "fcm_token": "<current-device-fcm-token>",
+    "device_type": "android"
+}
+```
+
+`device_type` accepts `android`, `ios`, or `web`. Success (`200`):
+
+```json
+{
+    "success": true,
+    "message": "FCM token registered successfully.",
+    "data": {
+        "device_type": "android"
+    }
+}
+```
+
+An invalid request returns `422`, a user without a seller account returns `404`, and an unauthenticated request returns `401`. Token registration updates the current user's stored token using the existing shared auth-token storage behavior.
 
 ## 2. Handle high-priority Firebase order notification
 
@@ -325,15 +433,30 @@ Mismatch or incomplete item set returns `422`:
 }
 ```
 
-Request-shape validation errors also return `422`. Missing bag returns `422` with `data.bag_required: true`. If an offer was assigned to another user, the accept/dispatch action returns `409`; refresh the pending endpoint and do not retry that seller order. Unauthenticated requests return `401`; an order not owned by the seller returns `404`; insufficient permission returns `403`.
+Request-shape validation errors also return `422`. Missing bag returns `422` with `data.bag_required: true`. If an offer was assigned to another user, popup state-changing actions (accept, assign bag, verify/prepare, and per-item status updates) return `409`; refresh the pending endpoint and do not retry that seller order. Unauthenticated requests return `401`; an order not owned by the seller returns `404`; insufficient permission returns `403`.
+
+The assigned-to-another-user `409` response is:
+
+```json
+{
+    "success": false,
+    "message": "This order popup is assigned to another system user.",
+    "data": {
+        "code": "seller_order_offer_assigned_to_another_user"
+    }
+}
+```
+
+Use `data.code` rather than message text to handle this conflict. Other validation errors are `422` and may have a different response shape.
 
 ## Frontend implementation checklist
 
 1. Register and refresh the device's FCM token during authenticated seller app sessions.
 2. Check popup permission (`order.popup`) or the default seller-owner role before rendering the popup.
 3. Request device location permission, activate popup presence, and heartbeat every 60 seconds while active, including in the background where the platform permits.
-4. Handle `seller_new_order` notifications by opening the popup and refreshing the authenticated pending endpoint; do not trust push data as the order source.
+4. Handle `seller_new_order` notifications by opening the popup and refreshing the authenticated pending endpoint; do not trust push data as the order source. The main seller owner receives this only as fallback when no eligible system user is available for the order.
 5. Display only the order returned to the authenticated user. Another system user will not receive the same active seller order.
 6. Accept, verify each item, assign a bag, and dispatch in that order.
 7. Keep sending location heartbeats until the user disables popup availability or logs out. Stop tracking and send `active: false` on those transitions.
-8. After a successful dispatch, refresh immediately; the same user may be assigned the next nearby queued order.
+8. The main seller owner can use `/seller/orders/popup-users` (web) or `GET /api/seller/orders/popup-users` (mobile) to monitor system-user status, eligibility, location, current assignment, and push-token registration.
+9. After a successful dispatch, refresh immediately; the same user may be assigned the next nearby queued order.

@@ -40,6 +40,15 @@
                     </div>
                     <div class="card-actions">
                         <div class="row g-2">
+                            @php
+                                $currentSeller = auth()->user()?->seller();
+                                $isMainSeller = $currentSeller && (int) $currentSeller->user_id === (int) auth()->id();
+                            @endphp
+                            @if($isMainSeller)
+                                <div class="col-auto">
+                                    <a class="btn btn-outline-primary" href="{{ route('seller.orders.popup-users') }}">Order popup availability</a>
+                                </div>
+                            @endif
                             <div class="col-auto">
                                 @if($createPermission)
                                     <div class="col text-end">

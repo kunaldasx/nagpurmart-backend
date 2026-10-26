@@ -8,6 +8,7 @@ use App\Models\Seller;
 use App\Models\SellerOrder;
 use App\Models\SellerOrderPopupOffer;
 use App\Models\SellerOrderPopupPresence;
+use App\Models\Store;
 use App\Models\SellerUser;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -53,8 +54,9 @@ class SellerOrderPopupOfferService
             return;
         }
 
-        $eligibleUsers = $this->eligibleUsers($seller);
-        if ($eligibleUsers->isEmpty()) {
+        $systemUsers = $this->eligibleSystemUsers($seller);
+        $sellerOwner = $this->eligibleSellerOwner($seller);
+        if ($systemUsers->isEmpty() && !$sellerOwner) {
             return;
         }
 
@@ -91,22 +93,36 @@ class SellerOrderPopupOfferService
                 continue;
             }
 
-            $nearbyUsers = $eligibleUsers
+            $nearbySystemUsers = $systemUsers
                 ->filter(fn (array $candidate) => $this->userIsNearStores($candidate['presence'], $stores))
                 ->sortBy(fn (array $candidate) => $candidate['presence']->last_offer_at?->getTimestamp() ?? 0)
                 ->values();
 
-            foreach ($nearbyUsers as $candidate) {
+            $assigned = false;
+            foreach ($nearbySystemUsers as $candidate) {
                 $offer = $this->reserveOffer($sellerOrder, $candidate['user'], $candidate['presence']);
                 if (!$offer) {
                     continue;
                 }
 
                 $this->sendOfferNotification($sellerOrder, $candidate['user']);
-                $eligibleUsers = $eligibleUsers->reject(
+                $systemUsers = $systemUsers->reject(
                     fn (array $user) => (int) $user['user']->id === (int) $candidate['user']->id
                 )->values();
+                if ($sellerOwner && (int) $sellerOwner['user']->id === (int) $candidate['user']->id) {
+                    $sellerOwner = null;
+                }
+                $assigned = true;
                 break;
+            }
+
+            if (!$assigned && $sellerOwner
+                && $this->userIsNearStores($sellerOwner['presence'], $stores)) {
+                $offer = $this->reserveOffer($sellerOrder, $sellerOwner['user'], $sellerOwner['presence']);
+                if ($offer) {
+                    $this->sendOfferNotification($sellerOrder, $sellerOwner['user']);
+                    $sellerOwner = null;
+                }
             }
         }
     }
@@ -142,10 +158,131 @@ class SellerOrderPopupOfferService
         $this->dispatchPendingOrders($sellerId);
     }
 
-    private function eligibleUsers(Seller $seller): Collection
+    public function popupUserDashboard(Seller $seller): array
     {
         $now = now();
-        $owner = $seller->user;
+        $stores = Store::query()
+            ->where('seller_id', $seller->id)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get(['id', 'name', 'latitude', 'longitude']);
+        $activeOffers = SellerOrderPopupOffer::query()
+            ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
+            ->with(['sellerOrder.order:id,order_number,order_mode'])
+            ->get()
+            ->keyBy('user_id');
+
+        $users = SellerUser::query()
+            ->where('seller_id', $seller->id)
+            ->with(['user.roles', 'user.fcmTokens', 'user.sellerOrderPopupPresence'])
+            ->get()
+            ->map(function (SellerUser $membership) use ($seller, $stores, $activeOffers, $now) {
+                $user = $membership->user;
+                if (!$user) {
+                    return null;
+                }
+
+                $presence = $user->sellerOrderPopupPresence
+                    ->first(fn (SellerOrderPopupPresence $row) => (int) $row->seller_id === (int) $seller->id);
+                $lastSeen = $presence?->last_seen_at;
+                $locationFresh = $lastSeen?->greaterThanOrEqualTo($now->copy()->subMinutes(self::LOCATION_FRESHNESS_MINUTES)) ?? false;
+                $isActive = $membership->status === 'active'
+                    && $presence?->active
+                    && $locationFresh;
+                $permissionGranted = $user->can('order.popup');
+                $loginApproved = $membership->login_approval_status === 'approved'
+                    && $membership->login_approved_until?->isFuture();
+                $offer = $activeOffers->get($user->id);
+                $nearestStoreDistanceKm = null;
+                $nearestStore = null;
+
+                if ($presence?->latitude !== null && $presence?->longitude !== null) {
+                    foreach ($stores as $store) {
+                        $distance = DeliveryZoneService::calculateDistance(
+                            (float) $presence->latitude,
+                            (float) $presence->longitude,
+                            (float) $store->latitude,
+                            (float) $store->longitude
+                        );
+                        if ($nearestStoreDistanceKm === null || $distance < $nearestStoreDistanceKm) {
+                            $nearestStoreDistanceKm = $distance;
+                            $nearestStore = $store;
+                        }
+                    }
+                }
+
+                $withinRadius = $nearestStoreDistanceKm !== null && $nearestStoreDistanceKm <= self::RADIUS_KM;
+                $eligible = (bool) $user->status
+                    && $membership->status === 'active'
+                    && $loginApproved
+                    && $permissionGranted
+                    && $isActive
+                    && $withinRadius
+                    && !$offer;
+                $reason = match (true) {
+                    !(bool) $user->status => 'account_inactive',
+                    $membership->status !== 'active' => 'system_user_inactive',
+                    !$loginApproved => 'login_not_approved_or_expired',
+                    !$permissionGranted => 'order_popup_permission_missing',
+                    !$presence?->active => 'popup_presence_inactive',
+                    !$locationFresh => 'location_stale',
+                    $nearestStoreDistanceKm === null => 'location_or_store_unavailable',
+                    !$withinRadius => 'outside_200m_radius',
+                    (bool) $offer => 'order_in_progress',
+                    default => null,
+                };
+
+                return [
+                    'user_id' => (int) $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'mobile' => $user->mobile,
+                    'roles' => $user->roles->pluck('name')->values(),
+                    'system_user_status' => $membership->status,
+                    'login_approval_status' => $membership->login_approval_status,
+                    'login_approved_until' => $membership->login_approved_until?->toIso8601String(),
+                    'has_order_popup_permission' => $permissionGranted,
+                    'popup_presence_active' => (bool) $presence?->active,
+                    'location_fresh' => $locationFresh,
+                    'last_seen_at' => $lastSeen?->toIso8601String(),
+                    'nearest_store' => $nearestStore ? [
+                        'id' => (int) $nearestStore->id,
+                        'name' => $nearestStore->name,
+                        'distance_m' => (int) round($nearestStoreDistanceKm * 1000),
+                    ] : null,
+                    'has_fcm_token' => $user->fcmTokens->isNotEmpty(),
+                    'is_active' => $isActive,
+                    'is_eligible' => $eligible,
+                    'ineligible_reason' => $reason,
+                    'current_offer' => $offer ? [
+                        'seller_order_id' => (int) $offer->seller_order_id,
+                        'order_number' => $offer->sellerOrder?->order?->order_number,
+                        'order_mode' => $offer->sellerOrder?->order?->order_mode,
+                        'status' => $offer->status,
+                        'assigned_at' => $offer->assigned_at?->toIso8601String(),
+                    ] : null,
+                ];
+            })
+            ->filter()
+            ->values();
+
+        return [
+            'summary' => [
+                'total_system_users' => $users->count(),
+                'active_users' => $users->where('is_active', true)->count(),
+                'eligible_users' => $users->where('is_eligible', true)->count(),
+                'inactive_users' => $users->where('is_active', false)->count(),
+                'busy_users' => $users->filter(fn (array $user) => $user['current_offer'] !== null)->count(),
+            ],
+            'users' => $users->all(),
+            'location_freshness_minutes' => self::LOCATION_FRESHNESS_MINUTES,
+            'pickup_radius_meters' => (int) (self::RADIUS_KM * 1000),
+        ];
+    }
+
+    private function eligibleSystemUsers(Seller $seller): Collection
+    {
+        $now = now();
         $members = SellerUser::query()
             ->where('seller_id', $seller->id)
             ->where('status', 'active')
@@ -161,18 +298,16 @@ class SellerOrderPopupOfferService
             ->map(fn ($userId) => (int) $userId)
             ->all();
 
-        return collect([$owner])
-            ->merge($members)
+        return $members
             ->filter()
             ->unique('id')
             ->filter(function (User $user) use ($seller, $now) {
-                $isSellerOwner = (int) $seller->user_id === (int) $user->id;
-                $canViewPopup = $user->hasRole(DefaultSystemRolesEnum::SELLER()) || $user->can('order.popup');
+                $canViewPopup = $user->can('order.popup');
                 $presence = $user->sellerOrderPopupPresence
                     ->first(fn (SellerOrderPopupPresence $row) => (int) $row->seller_id === (int) $seller->id);
 
                 return $user->status
-                    && ($isSellerOwner || $canViewPopup)
+                    && $canViewPopup
                     && $presence?->active
                     && $presence->last_seen_at?->greaterThanOrEqualTo($now->copy()->subMinutes(self::LOCATION_FRESHNESS_MINUTES))
                     && $presence->latitude !== null
@@ -185,6 +320,29 @@ class SellerOrderPopupOfferService
                     ->first(fn (SellerOrderPopupPresence $row) => (int) $row->seller_id === (int) $seller->id),
             ])
             ->values();
+    }
+
+    private function eligibleSellerOwner(Seller $seller): ?array
+    {
+        $owner = $seller->user;
+        if (!$owner || !(bool) $owner->status) {
+            return null;
+        }
+        $presence = SellerOrderPopupPresence::query()
+            ->where('seller_id', $seller->id)
+            ->where('user_id', $owner->id)
+            ->where('active', true)
+            ->where('last_seen_at', '>=', now()->subMinutes(self::LOCATION_FRESHNESS_MINUTES))
+            ->first();
+
+        if (!$presence || SellerOrderPopupOffer::query()
+            ->where('user_id', $owner->id)
+            ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
+            ->exists()) {
+            return null;
+        }
+
+        return ['user' => $owner, 'presence' => $presence];
     }
 
     private function reserveOffer(SellerOrder $sellerOrder, User $user, SellerOrderPopupPresence $presence): ?SellerOrderPopupOffer
