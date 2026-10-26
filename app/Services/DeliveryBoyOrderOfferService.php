@@ -7,6 +7,7 @@ use App\Enums\DeliveryBoy\DeliveryBoyVerificationStatusEnum;
 use App\Enums\Order\OrderItemStatusEnum;
 use App\Enums\Order\OrderStatusEnum;
 use App\Models\DeliveryBoy;
+use App\Models\DeliveryBoyLocation;
 use App\Models\DeliveryBoyOrderOffer;
 use App\Models\Order;
 use App\Models\Store;
@@ -79,9 +80,8 @@ class DeliveryBoyOrderOfferService
                     }
 
                     $location = $lockedRider->location()
-                        ->where('recorded_at', '>=', now()->subMinutes(2))
                         ->first();
-                    if (!$location
+                    if (!$this->hasSavedLocation($location)
                         || DeliveryZoneService::calculateDistance(
                             (float) $location->latitude,
                             (float) $location->longitude,
@@ -249,10 +249,10 @@ class DeliveryBoyOrderOfferService
             $hasActiveAssignment = $rider->assignments->isNotEmpty();
             $recordedAt = $rider->location?->getRawOriginal('recorded_at');
             $lastSeen = $recordedAt ? Carbon::parse($recordedAt) : null;
-            $locationFresh = $lastSeen?->greaterThanOrEqualTo($now->copy()->subMinutes(2)) ?? false;
+            $hasLocation = $this->hasSavedLocation($rider->location);
             $nearestDistanceKm = null;
 
-            if ($locationFresh) {
+            if ($hasLocation) {
                 foreach ($storesByZone[$rider->delivery_zone_id] ?? [] as $store) {
                     $distance = DeliveryZoneService::calculateDistance(
                         (float) $rider->location->latitude,
@@ -266,13 +266,13 @@ class DeliveryBoyOrderOfferService
 
             $withinRadius = $nearestDistanceKm !== null && $nearestDistanceKm <= 0.2;
             $hasPickupStore = !empty($storesByZone[$rider->delivery_zone_id]);
-            $available = $active && $verified && $hasFcmToken && $locationFresh && $withinRadius
+            $available = $active && $verified && $hasFcmToken && $hasLocation && $withinRadius
                 && !$hasPendingOffer && !$hasActiveAssignment;
             $unavailableReason = match (true) {
                 !$active => 'inactive',
                 !$verified => 'not_verified',
                 !$hasFcmToken => 'no_fcm_token',
-                !$locationFresh => 'location_stale',
+                !$hasLocation => 'location_missing',
                 !$hasPickupStore => 'no_pickup_store',
                 !$withinRadius => 'outside_pickup_radius',
                 $hasPendingOffer => 'pending_offer',
@@ -448,13 +448,22 @@ class DeliveryBoyOrderOfferService
             ->where('status', ActiveInactiveStatusEnum::ACTIVE())
             ->where('verification_status', DeliveryBoyVerificationStatusEnum::VERIFIED())
             ->whereHas('user.fcmTokens')
-            ->whereHas('location', fn ($query) => $query->where('recorded_at', '>=', now()->subMinutes(2)))
+            ->whereHas('location', fn ($query) => $query
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude'))
             ->whereDoesntHave('assignments', fn ($query) => $query->whereIn('status', ['assigned', 'in_progress']))
             ->whereDoesntHave('orderOffers', fn ($query) => $query->where('status', 'pending'))
             ->with(['location', 'user.fcmTokens'])
             ->get()
             ->filter(fn ($rider) => $rider->location !== null)
             ->values();
+    }
+
+    private function hasSavedLocation(?DeliveryBoyLocation $location): bool
+    {
+        return $location !== null
+            && $location->latitude !== null
+            && $location->longitude !== null;
     }
 
     public function expire(int $offerId): void
