@@ -140,7 +140,6 @@ class FirebaseService
                     'priority' => 'high',
                     'notification' => [
                         'channel_id' => 'seller_orders',
-                        'priority' => 'max',
                         'sound' => 'default',
                     ],
                 ]))

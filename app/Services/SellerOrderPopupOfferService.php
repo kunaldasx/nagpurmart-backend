@@ -62,7 +62,7 @@ class SellerOrderPopupOfferService
 
         $orders = SellerOrder::query()
             ->where('seller_id', $sellerId)
-            ->whereDoesntHave('popupOffers')
+            ->whereDoesntHave('popupOffers', fn ($query) => $query->where('status', '!=', 'notification_failed'))
             ->whereHas('items.orderItem', fn ($query) => $query->whereIn('status', [
                 OrderItemStatusEnum::AWAITING_STORE_RESPONSE(),
                 OrderItemStatusEnum::ACCEPTED(),
@@ -105,7 +105,10 @@ class SellerOrderPopupOfferService
                     continue;
                 }
 
-                $this->sendOfferNotification($sellerOrder, $candidate['user']);
+                if (!$this->sendOfferNotification($sellerOrder, $candidate['user'])) {
+                    $offer->update(['status' => 'notification_failed']);
+                    continue;
+                }
                 $systemUsers = $systemUsers->reject(
                     fn (array $user) => (int) $user['user']->id === (int) $candidate['user']->id
                 )->values();
@@ -119,8 +122,11 @@ class SellerOrderPopupOfferService
             if (!$assigned && $sellerOwner) {
                 $offer = $this->reserveOffer($sellerOrder, $sellerOwner['user'], $sellerOwner['presence']);
                 if ($offer) {
-                    $this->sendOfferNotification($sellerOrder, $sellerOwner['user']);
-                    $sellerOwner = null;
+                    if ($this->sendOfferNotification($sellerOrder, $sellerOwner['user'])) {
+                        $sellerOwner = null;
+                    } else {
+                        $offer->update(['status' => 'notification_failed']);
+                    }
                 }
             }
         }
@@ -353,7 +359,14 @@ class SellerOrderPopupOfferService
         return DB::transaction(function () use ($sellerOrder, $user, $presence) {
             $lockedOrder = SellerOrder::query()->whereKey($sellerOrder->id)->lockForUpdate()->first();
             $lockedPresence = SellerOrderPopupPresence::query()->whereKey($presence->id)->lockForUpdate()->first();
-            if (!$lockedOrder || !$lockedPresence || SellerOrderPopupOffer::query()->where('seller_order_id', $lockedOrder->id)->exists()) {
+            $existingOffer = $lockedOrder
+                ? SellerOrderPopupOffer::query()
+                    ->where('seller_order_id', $lockedOrder->id)
+                    ->lockForUpdate()
+                    ->first()
+                : null;
+            if (!$lockedOrder || !$lockedPresence
+                || ($existingOffer && $existingOffer->status !== 'notification_failed')) {
                 return null;
             }
 
@@ -367,20 +380,31 @@ class SellerOrderPopupOfferService
                 return null;
             }
 
-            $offer = SellerOrderPopupOffer::query()->create([
-                'seller_id' => $lockedOrder->seller_id,
-                'seller_order_id' => $lockedOrder->id,
-                'user_id' => $user->id,
-                'status' => 'pending',
-                'assigned_at' => $now,
-            ]);
+            if ($existingOffer) {
+                $existingOffer->update([
+                    'user_id' => $user->id,
+                    'status' => 'pending',
+                    'assigned_at' => $now,
+                    'accepted_at' => null,
+                    'completed_at' => null,
+                ]);
+                $offer = $existingOffer;
+            } else {
+                $offer = SellerOrderPopupOffer::query()->create([
+                    'seller_id' => $lockedOrder->seller_id,
+                    'seller_order_id' => $lockedOrder->id,
+                    'user_id' => $user->id,
+                    'status' => 'pending',
+                    'assigned_at' => $now,
+                ]);
+            }
             $lockedPresence->update(['last_offer_at' => $now]);
 
             return $offer;
         });
     }
 
-    private function sendOfferNotification(SellerOrder $sellerOrder, User $user): void
+    private function sendOfferNotification(SellerOrder $sellerOrder, User $user): bool
     {
         if ($user->fcmTokens->isEmpty()) {
             Log::warning('Seller order popup offer reserved without an FCM token.', [
@@ -388,7 +412,7 @@ class SellerOrderPopupOfferService
                 'seller_id' => $sellerOrder->seller_id,
                 'user_id' => $user->id,
             ]);
-            return;
+            return false;
         }
 
         $order = $sellerOrder->order;
@@ -402,9 +426,12 @@ class SellerOrderPopupOfferService
         $title = 'New order received';
         $body = 'Order #' . ($order?->order_number ?? $sellerOrder->order_id) . ' is waiting for your review.';
 
+        $sent = false;
         foreach ($user->fcmTokens as $token) {
             $result = $this->firebase->sendHighPriorityNotification($token->fcm_token, $title, $body, $payload);
-            if (!$result['success']) {
+            if ($result['success']) {
+                $sent = true;
+            } else {
                 Log::error('Seller order popup push failed after offer reservation.', [
                     'seller_order_id' => $sellerOrder->id,
                     'seller_id' => $sellerOrder->seller_id,
@@ -413,6 +440,8 @@ class SellerOrderPopupOfferService
                 ]);
             }
         }
+
+        return $sent;
     }
 
     private function userIsNearStores(SellerOrderPopupPresence $presence, Collection $stores): bool
