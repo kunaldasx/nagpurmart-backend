@@ -71,24 +71,24 @@ class SellerAuthApiController
                 status: 500
             );
         }
+    }
 
-        public function registerFcmToken(Request $request): JsonResponse
-        {
-            $validated = $request->validate([
-                'fcm_token' => ['required', 'string', 'max:4096'],
-                'device_type' => ['required', 'string', 'in:android,ios,web'],
-            ]);
+    public function registerFcmToken(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'fcm_token' => ['required', 'string', 'max:4096'],
+            'device_type' => ['required', 'string', 'in:android,ios,web'],
+        ]);
 
-            $user = $request->user();
-            if (!$user instanceof User || !$user->seller()) {
-                return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
-            }
-
-            $this->storeFcmToken($request, $user);
-
-            return ApiResponseType::sendJsonResponse(true, 'FCM token registered successfully.', [
-                'device_type' => $validated['device_type'],
-            ]);
+        $user = $request->user();
+        if (!$user instanceof User || !$user->seller()) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
         }
+
+        $this->storeFcmToken($request, $user);
+
+        return ApiResponseType::sendJsonResponse(true, 'FCM token registered successfully.', [
+            'device_type' => $validated['device_type'],
+        ]);
     }
 }
