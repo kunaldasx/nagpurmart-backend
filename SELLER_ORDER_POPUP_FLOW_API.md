@@ -30,7 +30,7 @@ GET /seller/orders/popup-users
 GET /seller/orders/popup-users/data
 ```
 
-On `/seller/orders`, the main seller owner has a **System user availability** button beside **Rider dispatch**. It opens the standalone `/seller/orders/popup-users` page, which contains only the system-user availability dashboard. The dashboard refreshes every 30 seconds and shows system-user contact and role details, seller membership status, login approval/expiry, popup permission, active/inactive state, last location report, nearest seller store and distance, current assigned order, and whether an FCM token is registered. The owner is the only user allowed to read this dashboard. Rider dispatch remains at `/seller/orders/dispatch-center` and contains its own dispatch refresh and order status table.
+On `/seller/orders`, the main seller owner has a **System user availability** button beside **Rider dispatch**. It opens the standalone `/seller/orders/popup-users` page, which contains only the system-user availability dashboard. The dashboard refreshes every 30 seconds and shows system-user contact and role details, seller membership status, login approval/expiry, popup permission, active/inactive state, last location report, nearest seller store and distance, current assigned order, and whether an FCM token is registered. The owner is the only user allowed to read this dashboard. `/seller/orders/dispatch-center` shows the rider availability summary and expandable rider details, with a single refresh control and automatic 30-second refresh; the dispatch order counts and order table are not displayed there.
 
 The mobile seller API can retrieve the same dashboard data using:
 
