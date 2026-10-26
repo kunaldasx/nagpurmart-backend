@@ -3,6 +3,7 @@ $(document).ready(function () {
     const pendingOrdersUrl = modal.data("pending-url");
     const presenceUrl = modal.data("presence-url");
     if (!modal.length || !pendingOrdersUrl || !presenceUrl) return;
+    const isMainSeller = modal.attr("data-main-seller") === "true";
 
     const timerRing = $("#new-order-timer-ring");
     const timerText = $("#new-order-timer");
@@ -85,7 +86,9 @@ $(document).ready(function () {
                     locationStatus
                         .removeClass("text-danger")
                         .addClass("text-success")
-                        .text("Location active — nearby order alerts are enabled.");
+                        .text(isMainSeller
+                            ? "Order alerts are enabled; nearby system users get priority."
+                            : "Location active — nearby order alerts are enabled.");
                 }
             })
             .catch((error) => {
@@ -93,13 +96,29 @@ $(document).ready(function () {
                 locationStatus
                     .removeClass("text-success")
                     .addClass("text-danger")
-                    .text("Could not update location. Check your connection and location permission.");
+                    .text(isMainSeller
+                        ? "Could not enable order alerts. Check your connection."
+                        : "Could not update location. Check your connection and location permission.");
             })
             .finally(() => {
                 presenceRequestPending = false;
             });
     };
     const startLocationPresence = () => {
+        if (isMainSeller) {
+            locationStatus
+                .removeClass("text-danger")
+                .addClass("text-success")
+                .text("Order alerts are enabled; nearby system users get priority.");
+            sendPresence(true, null);
+            window.setInterval(() => {
+                if (Date.now() - lastPresenceUpdateAt >= 60000) {
+                    sendPresence(true, null);
+                }
+            }, 15000);
+            return;
+        }
+
         if (!navigator.geolocation) {
             locationStatus
                 .addClass("text-danger")

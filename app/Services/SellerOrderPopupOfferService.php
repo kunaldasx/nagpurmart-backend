@@ -116,8 +116,7 @@ class SellerOrderPopupOfferService
                 break;
             }
 
-            if (!$assigned && $sellerOwner
-                && $this->userIsNearStores($sellerOwner['presence'], $stores)) {
+            if (!$assigned && $sellerOwner) {
                 $offer = $this->reserveOffer($sellerOrder, $sellerOwner['user'], $sellerOwner['presence']);
                 if ($offer) {
                     $this->sendOfferNotification($sellerOrder, $sellerOwner['user']);
@@ -302,6 +301,10 @@ class SellerOrderPopupOfferService
             ->filter()
             ->unique('id')
             ->filter(function (User $user) use ($seller, $now) {
+                if ((int) $user->id === (int) $seller->user_id) {
+                    return false;
+                }
+
                 $canViewPopup = $user->can('order.popup');
                 $presence = $user->sellerOrderPopupPresence
                     ->first(fn (SellerOrderPopupPresence $row) => (int) $row->seller_id === (int) $seller->id);

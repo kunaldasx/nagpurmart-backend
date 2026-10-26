@@ -29,7 +29,11 @@
         </div>
     </div>
     @if($canShowSellerOrderPopup)
-    <div class="modal modal-blur fade" id="newRegularOrderModal" data-pending-url="{{ route('seller.orders.pending-regular') }}" data-presence-url="{{ route('seller.orders.popup-presence') }}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    @php
+        $popupSeller = auth()->user()?->seller();
+        $isMainSellerForOrderPopup = $popupSeller && (int) $popupSeller->user_id === (int) auth()->id();
+    @endphp
+    <div class="modal modal-blur fade" id="newRegularOrderModal" data-pending-url="{{ route('seller.orders.pending-regular') }}" data-presence-url="{{ route('seller.orders.popup-presence') }}" data-main-seller="{{ $isMainSellerForOrderPopup ? 'true' : 'false' }}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header new-order-header">

@@ -5,7 +5,7 @@ This document is the frontend contract for seller web and mobile apps. The backe
 ## Assignment behavior
 
 - An incoming seller order is offered to one eligible system user first. A system user must have `order.popup` permission, an active seller membership, a current login approval, an active account/presence, a fresh location, and be within 200 m of a store in the seller order.
-- The main seller owner is a fallback recipient only when no system user is eligible for that specific order. The owner must have active popup presence, a fresh location within 200 m of one of the order's stores, and must not already have an active popup offer.
+- The main seller owner is a fallback recipient only when no eligible system user is within 200 m of that order's store(s). The owner must have active, fresh popup presence and must not already have an active popup offer; the owner's location is not required or checked.
 - A system user must also have an active seller membership and a currently approved login.
 - A location is considered fresh for two minutes. A stale presence is excluded from new assignment; the presence row itself is not automatically deactivated.
 - Each user can hold one pending or accepted popup offer at a time. Additional orders stay unassigned until the user dispatches the current order.
@@ -13,9 +13,9 @@ This document is the frontend contract for seller web and mobile apps. The backe
 - The one-order-at-a-time limit is shared across regular and wholesale orders.
 - Offers are committed before push delivery. Push failure is logged; the assigned offer remains available from the pending endpoint.
 - Wholesale orders are offered only during the existing popup window: the delivery-slot end time is now through 30 minutes from now.
-- A system user with eligibility always takes priority over an eligible seller owner. If there are multiple eligible system users, they are served fairly according to their most recent assignment; each may hold only one active order at a time.
+- A nearby eligible system user always takes priority over the main seller owner. System-user eligibility is checked for each order's store(s); if no system user qualifies within 200 m, the active main seller owner is assigned without a location check. If there are multiple eligible system users, they are served fairly according to their most recent assignment; each may hold only one active order at a time.
 - Both system users and the owner use their own authenticated user ID as the offer recipient.
-- Orders without an eligible nearby user remain unassigned. New heartbeats, pending-order polling, and new-order events retry assignment.
+- Orders remain unassigned only when there is no nearby eligible system user and no active, available main seller owner. New heartbeats, pending-order polling, and new-order events retry assignment.
 - There is currently no accept timeout. A pending offer remains assigned until its order is accepted/dispatched or otherwise processed; it is not reassigned because the recipient's presence becomes stale. Do not show a server countdown.
 - There is no seller-order offer-revoked/cancelled push type yet. Presence expiration or order cancellation does not currently publish a push telling the app to close the popup. Refresh/reconcile against the API when the app resumes or the user acts; do not rely on a cancellation push.
 
@@ -120,7 +120,7 @@ The web response for the pending endpoint is the legacy shape described in the w
 
 The seller app can register an FCM token during seller login if supported, and must call `POST /api/seller/fcm-token` on every authenticated app start and Firebase token refresh.
 
-When the user opens the order popup feature and grants location access, start a background-capable location subscription and call:
+When a system user opens the order popup feature and grants location access, start a background-capable location subscription and call:
 
 ```http
 POST /api/seller/orders/popup-presence
@@ -153,6 +153,8 @@ Success (`200`):
 
 Send fresh coordinates immediately on activation, at least every 60 seconds while the user remains active, and after a meaningful location change. Use a platform location subscription; do not start a high-accuracy GPS request for every API request. Keep permitted background location updates running when the seller app is backgrounded so the server can continue to assign nearby orders.
 
+The main seller owner does not need to grant location access. While the popup is active, the owner should send `{ "active": true }` immediately and refresh that presence at least every 60 seconds. The owner is used only as the fallback when no eligible system user is within 200 m; the owner's coordinates are ignored. Continue to send `{ "active": false }` when the owner disables popup alerts or logs out.
+
 On logout, when the user disables order alerts, or when location permission is revoked, send:
 
 ```json
@@ -161,9 +163,9 @@ On logout, when the user disables order alerts, or when location permission is r
 
 The current `POST /api/seller/logout` endpoint does not itself clear popup presence and does not delete the stored FCM token. Send `active: false` before logout, as planned. Keeping the device token is intentional so it can be reused/refreshed on the next authenticated session; no new offers should be assigned while presence is inactive/stale.
 
-Validation failure returns `422`; latitude must be between -90 and 90 and longitude between -180 and 180. An unauthenticated request returns `401`; a user without popup permission returns `403`. Presence older than two minutes is not eligible for a new assignment. Staleness does not remove or revoke an offer that has already been assigned.
+Validation failure returns `422`; when supplied, latitude must be between -90 and 90 and longitude between -180 and 180. Coordinates are required for system users to qualify for nearby orders, but the main seller owner can activate presence without coordinates for fallback assignment. An unauthenticated request returns `401`; a user without popup permission returns `403`. Presence older than two minutes is not eligible for a new assignment. Staleness does not remove or revoke an offer that has already been assigned.
 
-The seller web panel calls the equivalent session-authenticated endpoint while the browser grants location permission. If location is unavailable or denied, show a clear status to the user; they will not receive new nearby offers.
+The seller web panel calls the equivalent session-authenticated endpoint. System users must grant location permission to qualify for nearby orders. The main seller owner is activated as a fallback without location permission and receives orders only when no eligible system user is nearby.
 
 ## Seller FCM token registration
 

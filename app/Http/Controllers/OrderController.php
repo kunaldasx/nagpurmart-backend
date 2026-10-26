@@ -324,8 +324,8 @@ class OrderController extends Controller
     {
         $validated = $request->validate([
             'active' => ['required', 'boolean'],
-            'latitude' => ['required_if:active,true', 'nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['required_if:active,true', 'nullable', 'numeric', 'between:-180,180'],
+            'latitude' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
         ]);
         $user = Auth::user();
         $seller = $user?->seller();
