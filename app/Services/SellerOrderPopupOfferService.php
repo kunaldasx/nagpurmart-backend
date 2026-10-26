@@ -192,8 +192,7 @@ class SellerOrderPopupOfferService
                 $lastSeen = $presence?->last_seen_at;
                 $locationFresh = $lastSeen?->greaterThanOrEqualTo($now->copy()->subMinutes(self::LOCATION_FRESHNESS_MINUTES)) ?? false;
                 $isActive = $membership->status === 'active'
-                    && $presence?->active
-                    && $locationFresh;
+                    && $presence?->active;
                 $permissionGranted = $user->can('order.popup');
                 $loginApproved = $membership->login_approval_status === 'approved'
                     && $membership->login_approved_until?->isFuture();
@@ -222,6 +221,7 @@ class SellerOrderPopupOfferService
                     && $loginApproved
                     && $permissionGranted
                     && $isActive
+                    && $this->hasActivePresenceLocation($presence)
                     && $withinRadius
                     && !$offer;
                 $reason = match (true) {
@@ -230,7 +230,6 @@ class SellerOrderPopupOfferService
                     !$loginApproved => 'login_not_approved_or_expired',
                     !$permissionGranted => 'order_popup_permission_missing',
                     !$presence?->active => 'popup_presence_inactive',
-                    !$locationFresh => 'location_stale',
                     $nearestStoreDistanceKm === null => 'location_or_store_unavailable',
                     !$withinRadius => 'outside_200m_radius',
                     (bool) $offer => 'order_in_progress',
@@ -306,7 +305,7 @@ class SellerOrderPopupOfferService
         return $members
             ->filter()
             ->unique('id')
-            ->filter(function (User $user) use ($seller, $now, $busyUserIds) {
+            ->filter(function (User $user) use ($seller, $busyUserIds) {
                 if ((int) $user->id === (int) $seller->user_id) {
                     return false;
                 }
@@ -317,10 +316,7 @@ class SellerOrderPopupOfferService
 
                 return $user->status
                     && $canViewPopup
-                    && $presence?->active
-                    && $presence->last_seen_at?->greaterThanOrEqualTo($now->copy()->subMinutes(self::LOCATION_FRESHNESS_MINUTES))
-                    && $presence->latitude !== null
-                    && $presence->longitude !== null
+                    && $this->hasActivePresenceLocation($presence)
                     && !in_array((int) $user->id, $busyUserIds, true);
             })
             ->map(fn (User $user) => [
@@ -371,8 +367,7 @@ class SellerOrderPopupOfferService
             }
 
             $now = now();
-            if (!$lockedPresence->active
-                || !$lockedPresence->last_seen_at?->greaterThanOrEqualTo($now->copy()->subMinutes(self::LOCATION_FRESHNESS_MINUTES))
+            if (!$this->hasActivePresenceLocation($lockedPresence)
                 || SellerOrderPopupOffer::query()
                     ->where('user_id', $user->id)
                     ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
@@ -458,6 +453,14 @@ class SellerOrderPopupOfferService
         }
 
         return false;
+    }
+
+    private function hasActivePresenceLocation(?SellerOrderPopupPresence $presence): bool
+    {
+        return $presence !== null
+            && $presence->active
+            && $presence->latitude !== null
+            && $presence->longitude !== null;
     }
 
     private function isWholesalePopupWindowOpen(object $order, $now): bool

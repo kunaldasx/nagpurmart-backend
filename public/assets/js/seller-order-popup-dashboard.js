@@ -26,7 +26,6 @@
         login_not_approved_or_expired: "Login approval missing or expired",
         order_popup_permission_missing: "Popup permission missing",
         popup_presence_inactive: "Popup presence inactive",
-        location_stale: "Location report stale",
         location_or_store_unavailable: "Location or store unavailable",
         outside_200m_radius: "Outside 200 m radius",
         order_in_progress: "Already handling an order",
@@ -85,7 +84,7 @@
                 ? data.users.map(renderUser).join("")
                 : '<tr><td colspan="6" class="text-secondary p-4">No system users are set up for this seller.</td></tr>';
             document.getElementById("seller-popup-users-updated").textContent =
-                `Updated ${new Date().toLocaleTimeString()}. Refreshes automatically every 30 seconds. Eligible means active, approved, permitted, reporting a fresh location, within ${data.pickup_radius_meters} m of a seller store, and not already handling an order.`;
+                `Updated ${new Date().toLocaleTimeString()}. Refreshes automatically every 30 seconds. Eligible means active, approved, permitted, with a saved location within ${data.pickup_radius_meters} m of a seller store, and not already handling an order. The saved location is used when the system user app is closed.`;
             errorElement.classList.add("d-none");
             errorElement.textContent = "";
         } catch (error) {

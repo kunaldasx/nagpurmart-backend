@@ -46,20 +46,17 @@ trait AuthTrait
                 return;
             }
 
-            $userFcmToken = UserFcmToken::where('user_id', $user->id)->first();
-
-            if ($userFcmToken) {
-                $userFcmToken->update([
-                    'fcm_token' => $fcmToken,
-                    'device_type' => $deviceType,
-                ]);
-            } else {
-                UserFcmToken::create([
+            UserFcmToken::query()->upsert(
+                [[
                     'user_id' => $user->id,
                     'fcm_token' => $fcmToken,
                     'device_type' => $deviceType,
-                ]);
-            }
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]],
+                ['fcm_token'],
+                ['user_id', 'device_type', 'updated_at']
+            );
 
             Log::info('FCM token stored during authentication', [
                 'user_id' => $user->id,

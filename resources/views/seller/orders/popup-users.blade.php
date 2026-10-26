@@ -15,7 +15,7 @@
             <div class="mb-3">
                 <div class="text-secondary small text-uppercase fw-bold">Order operations</div>
                 <h2 class="page-title mb-1">System user availability</h2>
-                <div class="text-secondary">Eligible system users receive incoming orders first. You receive an order alert only when no eligible system user is nearby and available.</div>
+                <div class="text-secondary">Eligible system users receive incoming orders first. Their last saved location is used if the app is closed; you receive an order alert only when no eligible system user is nearby and available.</div>
             </div>
             @include('seller.orders._popup-users-dashboard')
         </div>
