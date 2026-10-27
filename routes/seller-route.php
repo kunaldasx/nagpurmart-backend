@@ -287,6 +287,7 @@ Route::prefix('seller')->name('seller.')->group(function () {
             Route::post('/{id}/accept-items', [OrderController::class, 'acceptSellerOrderItems'])->name('accept-items');
             Route::post('/{id}/assign-bag', [OrderController::class, 'assignBag'])->name('assign-bag');
             Route::post('/{id}/verify-and-prepare', [OrderController::class, 'verifyAndPrepare'])->name('verify-and-prepare');
+            Route::post('/{id}/takeover-pending-offer', [OrderController::class, 'takeOverPendingPopupOffer'])->whereNumber('id')->name('takeover-pending-offer');
             Route::get('/{id}', [OrderController::class, 'show'])->name('show');
             Route::post('/{id}/{status}', [OrderController::class, 'updateStatus'])->name('update_status');
         });

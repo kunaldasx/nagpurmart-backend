@@ -146,6 +146,130 @@ class SellerOrderPopupOfferService
         );
     }
 
+    public function takeOverPendingOffer(int $sellerOrderId, int $sellerId, int $ownerUserId): array
+    {
+        $result = DB::transaction(function () use ($sellerOrderId, $sellerId, $ownerUserId): array {
+            $seller = Seller::query()->whereKey($sellerId)->lockForUpdate()->first();
+            if (!$seller) {
+                return [
+                    'success' => false,
+                    'status' => 404,
+                    'code' => 'seller_not_found',
+                    'message' => 'Seller not found.',
+                ];
+            }
+
+            $sellerOrder = SellerOrder::query()
+                ->whereKey($sellerOrderId)
+                ->where('seller_id', $sellerId)
+                ->lockForUpdate()
+                ->first();
+            if (!$sellerOrder) {
+                return [
+                    'success' => false,
+                    'status' => 404,
+                    'code' => 'seller_order_not_found',
+                    'message' => 'Seller order not found.',
+                ];
+            }
+
+            $offer = SellerOrderPopupOffer::query()
+                ->where('seller_order_id', $sellerOrderId)
+                ->where('seller_id', $sellerId)
+                ->lockForUpdate()
+                ->first();
+            if (!$offer || !in_array($offer->status, SellerOrderPopupOffer::ACTIVE_STATUSES, true)) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'code' => 'seller_order_offer_not_pending',
+                    'message' => 'This order no longer has a pending popup offer to take over.',
+                ];
+            }
+
+            if ((int) $offer->user_id === $ownerUserId) {
+                return [
+                    'success' => true,
+                    'changed' => false,
+                    'data' => [
+                        'seller_order_id' => $sellerOrderId,
+                        'assigned_to_user_id' => $ownerUserId,
+                        'status' => $offer->status,
+                    ],
+                ];
+            }
+
+            if ($offer->status !== 'pending') {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'code' => 'seller_order_offer_already_accepted',
+                    'message' => 'This order has already been accepted by another user.',
+                ];
+            }
+
+            $hasAcceptedItems = $sellerOrder->items()
+                ->whereHas('orderItem', fn ($query) => $query->whereIn('status', [
+                    OrderItemStatusEnum::ACCEPTED(),
+                    OrderItemStatusEnum::PREPARING(),
+                ]))
+                ->exists();
+            if ($hasAcceptedItems) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'code' => 'seller_order_offer_already_accepted',
+                    'message' => 'This order has already been accepted by another user.',
+                ];
+            }
+
+            $previousUserId = (int) $offer->user_id;
+            $ownerHasAnotherActiveOffer = SellerOrderPopupOffer::query()
+                ->where('user_id', $ownerUserId)
+                ->where('seller_order_id', '!=', $sellerOrderId)
+                ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
+                ->lockForUpdate()
+                ->exists();
+            if ($ownerHasAnotherActiveOffer) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'code' => 'seller_owner_has_active_order',
+                    'message' => 'Finish the order currently assigned to you before taking over another order.',
+                ];
+            }
+
+            $offer->update([
+                'user_id' => $ownerUserId,
+                'assigned_at' => now(),
+                'accepted_at' => null,
+            ]);
+
+            return [
+                'success' => true,
+                'changed' => true,
+                'reassigned_from_user_id' => $previousUserId,
+                'data' => [
+                    'seller_order_id' => $sellerOrderId,
+                    'assigned_to_user_id' => $ownerUserId,
+                    'status' => 'pending',
+                ],
+            ];
+        });
+
+        if ($result['success'] && $result['changed']) {
+            $this->sendOfferReassignedNotification(
+                (int) $result['reassigned_from_user_id'],
+                $sellerOrderId
+            );
+            $this->dispatchPendingOrders($sellerId);
+        }
+
+        unset($result['changed']);
+        unset($result['reassigned_from_user_id']);
+        return $result;
+    }
+
     public function markAccepted(int $sellerOrderId, int $userId): void
     {
         SellerOrderPopupOffer::query()
@@ -364,6 +488,7 @@ class SellerOrderPopupOfferService
                     !$loginApproved => 'login_not_approved_or_expired',
                     !$permissionGranted => 'order_popup_permission_missing',
                     !$presence?->active => 'popup_presence_inactive',
+                    !$locationFresh => 'location_stale',
                     $nearestStoreDistanceKm === null => 'location_or_store_unavailable',
                     !$withinRadius => 'outside_200m_radius',
                     (bool) $offer => 'order_in_progress',
@@ -579,6 +704,57 @@ class SellerOrderPopupOfferService
         }
 
         return $sent;
+    }
+
+    private function sendOfferReassignedNotification(int $userId, int $sellerOrderId): void
+    {
+        $user = User::query()->with('fcmTokens')->find($userId);
+        $sellerOrder = SellerOrder::query()->with('order')->find($sellerOrderId);
+        if (!$user || !$sellerOrder) {
+            Log::warning('Seller order offer reassignment notification could not be prepared.', [
+                'seller_order_id' => $sellerOrderId,
+                'user_id' => $userId,
+            ]);
+            return;
+        }
+
+        if ($user->fcmTokens->isEmpty()) {
+            Log::warning('Seller order offer reassigned without an FCM token.', [
+                'seller_order_id' => $sellerOrderId,
+                'seller_id' => $sellerOrder->seller_id,
+                'user_id' => $userId,
+            ]);
+            return;
+        }
+
+        $order = $sellerOrder->order;
+        $payload = [
+            'type' => 'seller_order_offer_reassigned',
+            'seller_order_id' => (string) $sellerOrder->id,
+            'order_id' => (string) $sellerOrder->order_id,
+            'order_number' => (string) ($order?->order_number ?? $sellerOrder->order_id),
+            'order_mode' => (string) ($order?->order_mode ?? 'regular'),
+        ];
+        $title = 'Order reassigned';
+        $body = 'Order #' . ($order?->order_number ?? $sellerOrder->order_id)
+            . ' is now being handled by the main seller.';
+
+        foreach ($user->fcmTokens as $token) {
+            $result = $this->firebase->sendHighPriorityNotification(
+                $token->fcm_token,
+                $title,
+                $body,
+                $payload
+            );
+            if (!$result['success']) {
+                Log::error('Seller order offer reassignment push failed.', [
+                    'seller_order_id' => $sellerOrderId,
+                    'seller_id' => $sellerOrder->seller_id,
+                    'user_id' => $userId,
+                    'error' => $result['error'] ?? 'unknown',
+                ]);
+            }
+        }
     }
 
     private function userIsNearStores(SellerOrderPopupPresence $presence, Collection $stores): bool

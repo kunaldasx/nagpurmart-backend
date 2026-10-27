@@ -23,6 +23,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Store;
 
 #[Group('Seller Orders')]
@@ -355,6 +356,32 @@ class SellerOrderApiController extends Controller
         );
     }
 
+    public function takeOverPendingPopupOffer(int $id): JsonResponse
+    {
+        $user = auth()->user();
+        $seller = $user?->seller();
+        if (!$seller) {
+            return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
+        }
+        if ((int) $seller->user_id !== (int) $user->id) {
+            return ApiResponseType::sendJsonResponse(false, __('messages.unauthorized_action'), [], 403);
+        }
+
+        $result = app(SellerOrderPopupOfferService::class)->takeOverPendingOffer(
+            $id,
+            (int) $seller->id,
+            (int) $user->id
+        );
+        $data = $result['data'] ?? (isset($result['code']) ? ['code' => $result['code']] : []);
+
+        return ApiResponseType::sendJsonResponse(
+            $result['success'],
+            $result['message'] ?? 'Pending order offer assigned to the main seller.',
+            $data,
+            $result['status'] ?? 200
+        );
+    }
+
     /**
      * Show a seller order (not a global Order). ID is seller_orders.id
      */
@@ -520,37 +547,60 @@ class SellerOrderApiController extends Controller
             return ApiResponseType::sendJsonResponse(false, __('labels.seller_not_found'), [], 404);
         }
 
-        $sellerOrder = SellerOrder::query()
-            ->where('id', $id)
-            ->where('seller_id', $seller->id)
-            ->with('items')
-            ->first();
-        if (!$sellerOrder) {
-            return ApiResponseType::sendJsonResponse(false, __('labels.order_not_found'), [], 404);
-        }
-        if (!app(SellerOrderPopupOfferService::class)->canUserProcessOrder($id, (int) auth()->id())) {
-            return ApiResponseType::sendJsonResponse(false, 'This order popup is assigned to another system user.', [
-                'code' => 'seller_order_offer_assigned_to_another_user',
-            ], 409);
-        }
-
         try {
-            foreach ($sellerOrder->items as $sellerOrderItem) {
-                $this->authorize('updateStatus', $sellerOrderItem);
-            }
+            $result = DB::transaction(function () use ($id, $seller): array {
+                $sellerOrder = SellerOrder::query()
+                    ->where('id', $id)
+                    ->where('seller_id', $seller->id)
+                    ->with('items')
+                    ->lockForUpdate()
+                    ->first();
+                if (!$sellerOrder) {
+                    return [
+                        'success' => false,
+                        'message' => __('labels.order_not_found'),
+                        'data' => [],
+                        'http_status' => 404,
+                    ];
+                }
+
+                $offer = \App\Models\SellerOrderPopupOffer::query()
+                    ->where('seller_order_id', $id)
+                    ->where('seller_id', $seller->id)
+                    ->lockForUpdate()
+                    ->first();
+                if ($offer && (
+                    (int) $offer->user_id !== (int) auth()->id()
+                    || !in_array($offer->status, \App\Models\SellerOrderPopupOffer::ACTIVE_STATUSES, true)
+                )) {
+                    return [
+                        'success' => false,
+                        'message' => 'This order popup is assigned to another system user.',
+                        'data' => ['code' => 'seller_order_offer_assigned_to_another_user'],
+                        'http_status' => 409,
+                    ];
+                }
+
+                foreach ($sellerOrder->items as $sellerOrderItem) {
+                    $this->authorize('updateStatus', $sellerOrderItem);
+                }
+
+                $result = $this->orderService->acceptSellerOrderItems($id, $seller->id);
+                if ($result['success'] && $offer?->status === 'pending') {
+                    app(SellerOrderPopupOfferService::class)->markAccepted($id, (int) auth()->id());
+                }
+
+                return $result;
+            });
         } catch (AuthorizationException) {
             return ApiResponseType::sendJsonResponse(false, __('messages.unauthorized_action'), [], 403);
         }
 
-        $result = $this->orderService->acceptSellerOrderItems($id, $seller->id);
-        if ($result['success']) {
-            app(SellerOrderPopupOfferService::class)->markAccepted($id, (int) auth()->id());
-        }
         return ApiResponseType::sendJsonResponse(
             $result['success'],
             $result['message'],
             $result['data'] ?? [],
-            $result['success'] ? 200 : 422
+            $result['http_status'] ?? ($result['success'] ? 200 : 422)
         );
     }
 

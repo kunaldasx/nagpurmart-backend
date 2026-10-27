@@ -568,6 +568,28 @@ $(document).ready(function () {
             )
             .then((response) => {
                 const orders = response.data.data || [];
+                const assignedOrderIds = new Set(
+                    orders.map((order) => Number(order.seller_order_id)),
+                );
+                pendingOrders = pendingOrders.filter(
+                    (order) =>
+                        order.order_mode !== orderMode ||
+                        assignedOrderIds.has(Number(order.seller_order_id)),
+                );
+                if (
+                    activeOrder &&
+                    popupStage === "accept" &&
+                    activeOrder.order_mode === orderMode &&
+                    !assignedOrderIds.has(Number(activeOrder.seller_order_id))
+                ) {
+                    handledOrderIds.add(activeOrder.seller_order_id);
+                    activeOrder = null;
+                    window.clearInterval(timerHandle);
+                    timerHandle = null;
+                    stopAlertSound();
+                    modal.one("hidden.bs.modal", showNextOrder);
+                    modal.modal("hide");
+                }
                 if (!popupOnly) {
                     $(`#${orderMode}-order-count`).text(
                         response.data.count ?? orders.length,
@@ -619,6 +641,35 @@ $(document).ready(function () {
 
         if (
             activeOrder &&
+            Number(activeOrder.seller_order_id) !== orderId
+        ) {
+            window.alert("Finish the order currently open before continuing another order.");
+            return;
+        }
+
+        if (isMainSeller) {
+            try {
+                const response = await axios.post(
+                    `/seller/orders/${orderId}/takeover-pending-offer`,
+                );
+                if (response.data?.success === false) {
+                    throw new Error(
+                        response.data.message ||
+                            "Could not take over this order.",
+                    );
+                }
+            } catch (error) {
+                window.alert(
+                    error.response?.data?.message ||
+                        error.message ||
+                        "Could not take over this order. Refresh the orders list and try again.",
+                );
+                return;
+            }
+        }
+
+        if (
+            activeOrder &&
             Number(activeOrder.seller_order_id) === orderId
         ) {
             resumeActiveOrder();
@@ -629,10 +680,6 @@ $(document).ready(function () {
             (order) => Number(order.seller_order_id) === orderId,
         );
         if (queuedOrderIndex !== -1) {
-            if (activeOrder) {
-                window.alert("Finish the order currently open before continuing another order.");
-                return;
-            }
             const [order] = pendingOrders.splice(queuedOrderIndex, 1);
             pendingOrders.unshift(order);
             window.sessionStorage.removeItem(minimizedOrderStorageKey);
@@ -645,10 +692,6 @@ $(document).ready(function () {
             const order = await loadAssignedOrder(orderId);
             if (!order) {
                 window.alert("This order is not currently assigned to your account. Refresh the orders list and try again.");
-                return;
-            }
-            if (activeOrder) {
-                window.alert("Finish the order currently open before continuing another order.");
                 return;
             }
             handledOrderIds.delete(orderId);

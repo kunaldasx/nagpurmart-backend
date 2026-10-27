@@ -68,7 +68,7 @@
                 class="btn btn-primary seller-order-popup-resume"
                 data-seller-order-id="{{ $sellerOrderId }}"
             >
-                Continue order
+                Process order
             </button>
         </div>
     @endif
