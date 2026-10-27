@@ -11,7 +11,7 @@ This document is the frontend contract for seller web and mobile apps. The backe
 - Each user can hold one pending or accepted popup offer at a time. Additional orders stay unassigned until the user dispatches the current order.
 - After `verify-and-prepare` succeeds, that offer is completed and the backend immediately tries to assign the next eligible order to that user.
 - The one-order-at-a-time limit is shared across regular and wholesale orders.
-- Offers are committed before push delivery. Push failure is logged; the assigned offer remains available from the pending endpoint.
+- Offers are committed before push delivery. Push failure is logged; the assigned offer remains available from the pending endpoint. In particular, a main-seller fallback offer stays assigned and pollable even if that owner's FCM token is missing or push delivery fails.
 - Wholesale orders are offered only during the existing popup window: the delivery-slot end time is now through 30 minutes from now.
 - A nearby eligible system user always takes priority over the main seller owner. System-user eligibility is checked for each order's store(s); if no system user qualifies within 200 m, the active main seller owner is assigned without a location check. If there are multiple eligible system users, they are served fairly according to their most recent assignment; each may hold only one active order at a time.
 - Both system users and the owner use their own authenticated user ID as the offer recipient.

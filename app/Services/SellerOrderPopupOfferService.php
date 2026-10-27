@@ -122,13 +122,15 @@ class SellerOrderPopupOfferService
             }
 
             if (!$assigned && $sellerOwner) {
-                $offer = $this->reserveOffer($sellerOrder, $sellerOwner['user'], $sellerOwner['presence']);
+                $offer = $this->reserveOffer(
+                    $sellerOrder,
+                    $sellerOwner['user'],
+                    $sellerOwner['presence'],
+                    allowLocationlessOwner: true
+                );
                 if ($offer) {
-                    if ($this->sendOfferNotification($sellerOrder, $sellerOwner['user'])) {
-                        $sellerOwner = null;
-                    } else {
-                        $offer->update(['status' => 'notification_failed']);
-                    }
+                    $this->sendOfferNotification($sellerOrder, $sellerOwner['user']);
+                    $sellerOwner = null;
                 }
             }
         }
@@ -482,9 +484,14 @@ class SellerOrderPopupOfferService
         return ['user' => $owner, 'presence' => $presence];
     }
 
-    private function reserveOffer(SellerOrder $sellerOrder, User $user, SellerOrderPopupPresence $presence): ?SellerOrderPopupOffer
+    private function reserveOffer(
+        SellerOrder $sellerOrder,
+        User $user,
+        SellerOrderPopupPresence $presence,
+        bool $allowLocationlessOwner = false
+    ): ?SellerOrderPopupOffer
     {
-        return DB::transaction(function () use ($sellerOrder, $user, $presence) {
+        return DB::transaction(function () use ($sellerOrder, $user, $presence, $allowLocationlessOwner) {
             $lockedOrder = SellerOrder::query()->whereKey($sellerOrder->id)->lockForUpdate()->first();
             $lockedPresence = SellerOrderPopupPresence::query()->whereKey($presence->id)->lockForUpdate()->first();
             $existingOffer = $lockedOrder
@@ -499,7 +506,10 @@ class SellerOrderPopupOfferService
             }
 
             $now = now();
-            if (!$this->hasActivePresenceLocation($lockedPresence)
+            $hasNoCoordinates = $lockedPresence->latitude === null && $lockedPresence->longitude === null;
+            $presenceIsUsable = $this->hasActivePresenceLocation($lockedPresence)
+                || ($allowLocationlessOwner && $hasNoCoordinates && $this->hasFreshActivePresence($lockedPresence));
+            if (!$presenceIsUsable
                 || SellerOrderPopupOffer::query()
                     ->where('user_id', $user->id)
                     ->whereIn('status', SellerOrderPopupOffer::ACTIVE_STATUSES)
@@ -589,10 +599,18 @@ class SellerOrderPopupOfferService
 
     private function hasActivePresenceLocation(?SellerOrderPopupPresence $presence): bool
     {
-        return $presence !== null
-            && $presence->active
+        return $this->hasFreshActivePresence($presence)
             && $presence->latitude !== null
             && $presence->longitude !== null;
+    }
+
+    private function hasFreshActivePresence(?SellerOrderPopupPresence $presence): bool
+    {
+        return $presence !== null
+            && $presence->active
+            && $presence->last_seen_at?->greaterThanOrEqualTo(
+                now()->subMinutes(self::LOCATION_FRESHNESS_MINUTES)
+            );
     }
 
     private function isWholesalePopupWindowOpen(object $order, $now): bool
