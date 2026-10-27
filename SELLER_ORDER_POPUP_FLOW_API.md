@@ -472,6 +472,7 @@ API success (`200`):
                         "order_item_id": 9901,
                         "product_id": 440,
                         "product": "Example Product",
+                        "rack_number": "A-12",
                         "variant": "500 g",
                         "barcode": "8901234500021",
                         "sku": "EXAMPLE-500G",
@@ -491,6 +492,8 @@ API success (`200`):
 ```
 
 `status` is `awaiting_store_response` for a new decision or `accepted` when resuming item verification. The expected barcode is supplied for internal comparison; never display it to the person scanning the item. `bag` is `null` until a bag is assigned.
+
+`rack_number` is the product's optional storage location (`string|null`). Show it prominently beside the product name in the order summary and while scanning/verifying the item so the picker can find the correct shelf. It is also available on seller product create/update and product detail responses; send it as an optional string (maximum 100 characters) when editing product information.
 
 When no order is currently assigned, `orders` is an empty array and `count` is `0`; this is a successful response, not an error. The web seller-panel equivalent returns:
 

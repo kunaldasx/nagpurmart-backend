@@ -23,6 +23,7 @@ class StoreUpdateProductRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
+            'rack_number' => 'nullable|string|max:100',
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'tax_groups' => 'nullable|array',
@@ -94,6 +95,7 @@ class StoreUpdateProductRequest extends FormRequest
     {
         return [
             'title' => 'Product Title',
+            'rack_number' => 'Rack Number',
             'category_id' => 'Category',
             'brand_id' => 'Brand',
             'type' => 'Product Type',

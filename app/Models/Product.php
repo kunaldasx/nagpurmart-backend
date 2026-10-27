@@ -44,6 +44,7 @@ class Product extends Model implements HasMedia
         'provider_product_id',
         'slug',
         'title',
+        'rack_number',
         'product_identity',
         'type',
         'short_description',

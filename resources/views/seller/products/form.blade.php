@@ -156,6 +156,12 @@
                             <input type="text" class="form-control" name="title" value="{{ $product->title ?? "" }}">
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Rack number</label>
+                            <input type="text" class="form-control" name="rack_number" maxlength="100"
+                                   value="{{ old('rack_number', $product->rack_number ?? '') }}">
+                            <small class="form-hint">Enter the shelf or storage rack location for this product.</small>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">{{ __('labels.brand') }}</label>
                             <input type="hidden" id="selected-brand" value="{{ $product->brand_id ?? "" }}">
                             <select class="form-select" name="brand_id" id="select-brand">

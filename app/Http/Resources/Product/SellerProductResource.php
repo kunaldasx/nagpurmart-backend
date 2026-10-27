@@ -22,6 +22,7 @@ class SellerProductResource extends JsonResource
             'brand_id' => $this->brand_id,
             'seller_id' => $this->seller_id,
             'title' => $this->title,
+            'rack_number' => $this->rack_number,
             'slug' => $this->slug,
             'type' => $this->type,
             'short_description' => $this->short_description,

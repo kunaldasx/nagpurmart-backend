@@ -79,6 +79,14 @@
                                         <div class="datagrid-title">{{ __('labels.product_type') }}</div>
                                         <div class="datagrid-content text-capitalize">{{ $product->type }}</div>
                                     </div>
+                                    @if($product->rack_number)
+                                        <div class="datagrid-item">
+                                            <div class="datagrid-title">Rack number</div>
+                                            <div class="datagrid-content">
+                                                <span class="badge bg-yellow text-dark fs-3">{{ $product->rack_number }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
                                     <div class="datagrid-item">
                                         <div class="datagrid-title">Price Drop</div>
                                         <div class="datagrid-content">

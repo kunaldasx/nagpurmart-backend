@@ -256,7 +256,7 @@ $(document).ready(function () {
                     (item) =>
                         `<div class="d-flex justify-content-between border-top py-2">` +
                         `<img class="new-order-item-image" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.product)}" loading="lazy">` +
-                        `<span class="new-order-item-details">${escapeHtml(item.product)}${item.variant ? ` (${escapeHtml(item.variant)})` : ""} × ${item.quantity}</span>` +
+                        `<span class="new-order-item-details">${escapeHtml(item.product)}${item.variant ? ` (${escapeHtml(item.variant)})` : ""} × ${item.quantity}${item.rack_number ? `<span class="d-block mt-1"><span class="badge bg-yellow text-dark">Rack ${escapeHtml(item.rack_number)}</span></span>` : ""}</span>` +
                         `<span class="new-order-item-price">${escapeHtml(item.subtotal)}</span>` +
                         `</div>`,
                 )
@@ -334,6 +334,7 @@ $(document).ready(function () {
                     `<div class="d-flex align-items-center gap-3 mb-3">` +
                     `<img class="new-order-item-image" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.product)}" loading="lazy">` +
                     `<div class="new-order-item-details"><strong>${escapeHtml(item.product)}</strong>${item.variant && item.variant !== item.product ? `<div>${escapeHtml(item.variant)}</div>` : ""}` +
+                    `${item.rack_number ? `<div class="mt-1"><span class="badge bg-yellow text-dark">Rack ${escapeHtml(item.rack_number)}</span></div>` : ""}` +
                     `${item.sku ? `<div class="text-secondary small">SKU: ${escapeHtml(item.sku)}</div>` : ""}` +
                     `${item.variant_weight ? `<div class="text-secondary small">Weight: ${escapeHtml(item.variant_weight)} kg</div>` : ""}` +
                     `${item.variant_dimensions ? `<div class="text-secondary small">Dimensions: ${escapeHtml(item.variant_dimensions)}</div>` : ""}</div>` +

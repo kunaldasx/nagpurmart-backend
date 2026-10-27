@@ -302,6 +302,7 @@ class OrderController extends Controller
                     'order_item_id' => $item->order_item_id,
                     'product_id' => $item->product_id,
                     'product' => $item->product?->title,
+                    'rack_number' => $item->product?->rack_number,
                     'variant' => $item->variant?->title,
                     'barcode' => $item->variant?->barcode,
                     'sku' => $item->orderItem?->sku,
