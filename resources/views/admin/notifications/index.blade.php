@@ -80,8 +80,8 @@
                             <div class="border rounded p-3">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <div>
-                                        <h4 class="mb-1">Customer notification campaigns</h4>
-                                        <p class="text-muted mb-0">Create, review, and resend announcements for the customer app.</p>
+                                        <h4 class="mb-1">App notification campaigns</h4>
+                                        <p class="text-muted mb-0">Choose whether each campaign reaches customer, seller, and/or rider apps. Customer app is selected by default.</p>
                                     </div>
                                 </div>
                                 <div class="table-responsive">
@@ -89,6 +89,7 @@
                                         <thead>
                                         <tr>
                                             <th>Title</th>
+                                            <th>Apps</th>
                                             <th>Status</th>
                                             <th>Recipients</th>
                                             <th>Sent at</th>
@@ -187,7 +188,7 @@
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="broadcast-modal-title">Create customer notification</h5>
+                    <h5 class="modal-title" id="broadcast-modal-title">Create app notification</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -211,6 +212,24 @@
                                 <input type="file" class="form-control" name="image_file" accept="image/*">
                             </div>
                         </div>
+                        <fieldset class="mt-3">
+                            <legend class="form-label">Send to apps</legend>
+                            <div class="d-flex flex-wrap gap-3">
+                                <label class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="target_apps[]" value="customer" checked>
+                                    <span class="form-check-label">Customer app (all customers)</span>
+                                </label>
+                                <label class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="target_apps[]" value="seller">
+                                    <span class="form-check-label">Seller app</span>
+                                </label>
+                                <label class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="target_apps[]" value="rider">
+                                    <span class="form-check-label">Rider app</span>
+                                </label>
+                            </div>
+                            <small class="form-hint">Only the selected app audiences will receive this campaign. Existing campaigns without an app selection are treated as customer-only.</small>
+                        </fieldset>
                         <div class="row g-3 mt-1">
                             <div class="col-md-6">
                                 <label class="form-label">Action URL</label>
@@ -248,7 +267,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="save-broadcast-btn">Send to customers</button>
+                    <button type="button" class="btn btn-primary" id="save-broadcast-btn">Send campaign</button>
                 </div>
             </div>
         </div>

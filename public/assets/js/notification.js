@@ -20,6 +20,23 @@ $(document).ready(function () {
                 const items = response.data?.data?.items ?? [];
                 const rows = items
                     .map(function (item) {
+                        const appLabels = {
+                            customer: "Customer",
+                            seller: "Seller",
+                            rider: "Rider",
+                        };
+                        const targetApps =
+                            Array.isArray(item.target_apps) &&
+                            item.target_apps.length
+                                ? item.target_apps
+                                : ["customer"];
+                        const appBadges = targetApps
+                            .filter((app) => appLabels[app])
+                            .map(
+                                (app) =>
+                                    `<span class="badge bg-blue-lt me-1">${appLabels[app]}</span>`,
+                            )
+                            .join("");
                         const statusBadge =
                             item.status === "sent"
                                 ? '<span class="badge bg-success">Sent</span>'
@@ -34,6 +51,7 @@ $(document).ready(function () {
                             <div class="fw-semibold">${item.title || ""}</div>
                             <div class="text-muted small">${item.description || ""}</div>
                         </td>
+                        <td>${appBadges}</td>
                         <td>${statusBadge}</td>
                         <td>${item.recipient_count ?? 0}</td>
                         <td>${item.sent_at ? new Date(item.sent_at).toLocaleString() : "Not sent yet"}</td>
@@ -49,7 +67,7 @@ $(document).ready(function () {
                     .join("");
                 $("#broadcasts-table tbody").html(
                     rows ||
-                        '<tr><td colspan="5" class="text-center text-muted">No campaigns yet.</td></tr>',
+                        '<tr><td colspan="6" class="text-center text-muted">No campaigns yet.</td></tr>',
                 );
                 $("#broadcasts-table tbody tr").each(function (index) {
                     $(this).data("broadcast", items[index]);
@@ -311,8 +329,8 @@ $(document).ready(function () {
     $("#create-broadcast-btn").on("click", function () {
         $("#broadcast-form")[0].reset();
         $("#broadcast-form [name=broadcast_id]").val("");
-        $("#broadcast-modal-title").text("Create customer notification");
-        $("#save-broadcast-btn").text("Send to customers");
+        $("#broadcast-modal-title").text("Create app notification");
+        $("#save-broadcast-btn").text("Send campaign");
         showModal("#broadcastModal");
     });
 
@@ -342,6 +360,15 @@ $(document).ready(function () {
         $(form)
             .find("[name=target_categories]")
             .val((item.target_categories || []).join(","));
+        const targetApps =
+            Array.isArray(item.target_apps) && item.target_apps.length
+                ? item.target_apps
+                : ["customer"];
+        $(form)
+            .find('[name="target_apps[]"]')
+            .each(function () {
+                $(this).prop("checked", targetApps.includes(this.value));
+            });
         $(form)
             .find("[name=expires_at]")
             .val(item.expires_at ? item.expires_at.substring(0, 10) : "");
@@ -349,7 +376,7 @@ $(document).ready(function () {
             .find("[name=priority]")
             .val(item.priority || 0);
         $(form).find("[name=is_active]").prop("checked", !!item.is_active);
-        $("#broadcast-modal-title").text("Edit customer notification");
+        $("#broadcast-modal-title").text("Edit app notification");
         $("#save-broadcast-btn").text("Save changes");
         showModal("#broadcastModal");
     });
@@ -404,7 +431,7 @@ $(document).ready(function () {
             .finally(function () {
                 button
                     .prop("disabled", false)
-                    .html(broadcastId ? "Save changes" : "Send to customers");
+                    .html(broadcastId ? "Save changes" : "Send campaign");
             });
     });
 

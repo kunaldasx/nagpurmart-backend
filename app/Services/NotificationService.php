@@ -283,6 +283,7 @@ class NotificationService
     {
         $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : [];
         $targetCategories = $this->normalizeTargetCategories($data['target_categories'] ?? $metadata['target_categories'] ?? null);
+        $targetApps = $this->normalizeTargetApps($data['target_apps'] ?? null);
         $imageUrl = $data['image_url'] ?? null;
 
         if (! empty($data['image_file']) && $data['image_file'] instanceof UploadedFile) {
@@ -302,6 +303,7 @@ class NotificationService
             'action_url' => $data['action_url'] ?? null,
             'deep_link' => $data['deep_link'] ?? null,
             'target_categories' => $targetCategories,
+            'target_apps' => $targetApps,
             'expires_at' => $expiresAt,
             'priority' => (int) ($data['priority'] ?? 0),
             'is_active' => filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
@@ -322,6 +324,7 @@ class NotificationService
     {
         $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : ($broadcast->metadata ?? []);
         $targetCategories = $this->normalizeTargetCategories($data['target_categories'] ?? $broadcast->target_categories);
+        $targetApps = $this->normalizeTargetApps($data['target_apps'] ?? $broadcast->target_apps);
         $imageUrl = $broadcast->image_url;
 
         if (! empty($data['image_file']) && $data['image_file'] instanceof UploadedFile) {
@@ -338,6 +341,7 @@ class NotificationService
             'action_url' => $data['action_url'] ?? $broadcast->action_url,
             'deep_link' => $data['deep_link'] ?? $broadcast->deep_link,
             'target_categories' => $targetCategories,
+            'target_apps' => $targetApps,
             'expires_at' => $data['expires_at'] ?? $broadcast->expires_at,
             'priority' => (int) ($data['priority'] ?? $broadcast->priority),
             'is_active' => filter_var($data['is_active'] ?? $broadcast->is_active, FILTER_VALIDATE_BOOLEAN),
@@ -384,15 +388,22 @@ class NotificationService
             return $broadcast;
         }
 
-        $customerUsers = User::query()
-            ->where(function ($query) {
-                $query->whereNull('access_panel')
-                    ->orWhere('access_panel', GuardNameEnum::WEB());
-            })
+        $targetApps = $this->normalizeTargetApps($broadcast->target_apps);
+        $recipientIds = collect();
+        $recipientApps = [];
+        foreach ($targetApps as $targetApp) {
+            $appRecipients = $this->getBroadcastRecipients($targetApp)->get(['id']);
+            foreach ($appRecipients as $appRecipient) {
+                $recipientIds->push($appRecipient->id);
+                $recipientApps[$appRecipient->id] ??= $targetApp;
+            }
+        }
+        $recipients = User::query()
+            ->whereIn('id', $recipientIds->unique())
             ->where('status', true)
             ->get();
 
-        if ($customerUsers->isEmpty()) {
+        if ($recipients->isEmpty()) {
             $broadcast->update([
                 'status' => 'sent',
                 'sent_at' => now(),
@@ -409,15 +420,16 @@ class NotificationService
             'action_url' => $broadcast->action_url,
             'deep_link' => $broadcast->deep_link,
             'target_categories' => $broadcast->target_categories ?? [],
+            'target_apps' => $targetApps,
             'expires_at' => $broadcast->expires_at?->toIso8601String(),
             'priority' => $broadcast->priority,
             'is_active' => $broadcast->is_active,
         ]);
 
         $deliveredCount = 0;
-        foreach ($customerUsers as $customer) {
+        foreach ($recipients as $recipient) {
             try {
-                NotificationFacade::sendNow($customer, new CustomerBroadcastNotificationNotification(
+                NotificationFacade::sendNow($recipient, new CustomerBroadcastNotificationNotification(
                     title: $broadcast->title,
                     description: $broadcast->description,
                     imageUrl: $broadcast->image_url,
@@ -425,13 +437,14 @@ class NotificationService
                     deepLink: $broadcast->deep_link,
                     priority: $broadcast->priority,
                     isActive: $broadcast->is_active,
-                    metadata: $metadata
+                    metadata: $metadata,
+                    sentTo: $recipientApps[$recipient->id] ?? 'customer'
                 ));
                 $deliveredCount++;
             } catch (\Throwable $exception) {
-                Log::error('Customer broadcast delivery failed', [
+                Log::error('App notification campaign delivery failed', [
                     'broadcast_id' => $broadcast->id,
-                    'customer_id' => $customer->id,
+                    'user_id' => $recipient->id,
                     'error' => $exception->getMessage(),
                 ]);
             }
@@ -440,7 +453,7 @@ class NotificationService
         $broadcast->update([
             'status' => 'sent',
             'sent_at' => now(),
-            'recipient_count' => $customerUsers->count(),
+            'recipient_count' => $recipients->count(),
             'sent_count' => $deliveredCount,
         ]);
 
@@ -452,6 +465,10 @@ class NotificationService
         $campaigns = CustomerBroadcastNotification::query()
             ->where('is_active', true)
             ->where('status', 'sent')
+            ->where(function ($query) {
+                $query->whereNull('target_apps')
+                    ->orWhereJsonContains('target_apps', 'customer');
+            })
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
@@ -482,6 +499,66 @@ class NotificationService
         }
 
         return [];
+    }
+
+    protected function normalizeTargetApps(mixed $targetApps): array
+    {
+        $allowedApps = ['customer', 'seller', 'rider'];
+        $targetApps = is_array($targetApps) ? $targetApps : ['customer'];
+        $targetApps = array_values(array_unique(array_intersect($targetApps, $allowedApps)));
+
+        return $targetApps ?: ['customer'];
+    }
+
+    protected function getBroadcastRecipients(string $targetApp)
+    {
+        $query = User::query()->where('status', true);
+
+        return match ($targetApp) {
+            'seller' => $query->where(function ($query) {
+                $query->where('access_panel', GuardNameEnum::SELLER())
+                    ->orWhereExists(function ($subQuery) {
+                        $subQuery->selectRaw('1')
+                            ->from('sellers')
+                            ->whereColumn('sellers.user_id', 'users.id')
+                            ->whereNull('sellers.deleted_at');
+                    })
+                    ->orWhereExists(function ($subQuery) {
+                        $subQuery->selectRaw('1')
+                            ->from('seller_user')
+                            ->whereColumn('seller_user.user_id', 'users.id');
+                    });
+            }),
+            'rider' => $query->whereExists(function ($subQuery) {
+                $subQuery->selectRaw('1')
+                    ->from('delivery_boys')
+                    ->whereColumn('delivery_boys.user_id', 'users.id')
+                    ->whereNull('delivery_boys.deleted_at');
+            }),
+            default => $query
+                ->where(function ($query) {
+                    $query->whereNull('access_panel')
+                        ->orWhere('access_panel', GuardNameEnum::WEB());
+                })
+                // Rider accounts use the web access panel, so exclude linked app roles explicitly.
+                ->whereNotExists(function ($subQuery) {
+                    $subQuery->selectRaw('1')
+                        ->from('sellers')
+                        ->whereColumn('sellers.user_id', 'users.id')
+                        ->whereNull('sellers.deleted_at');
+                })
+                ->whereNotExists(function ($subQuery) {
+                    $subQuery->selectRaw('1')
+                        ->from('seller_user')
+                        ->whereColumn('seller_user.user_id', 'users.id');
+                })
+                ->whereNotExists(function ($subQuery) {
+                    $subQuery->selectRaw('1')
+                        ->from('delivery_boys')
+                        ->whereColumn('delivery_boys.user_id', 'users.id')
+                        ->whereNull('delivery_boys.deleted_at');
+                }),
+        };
     }
 
     public function getHeaderNotifications(int $userId, string $sentTo = null): array

@@ -20,7 +20,8 @@ class CustomerBroadcastNotification extends Notification implements ShouldQueue
         protected ?string $deepLink = null,
         protected int $priority = 0,
         protected bool $isActive = true,
-        protected array $metadata = []
+        protected array $metadata = [],
+        protected string $sentTo = 'customer'
     ) {
     }
 
@@ -34,14 +35,15 @@ class CustomerBroadcastNotification extends Notification implements ShouldQueue
         return [
             'title' => $this->title,
             'message' => $this->description,
-            'sent_to' => 'customer',
+            'sent_to' => $this->sentTo,
             'metadata' => array_merge([
                 'image_url' => $this->imageUrl,
                 'action_url' => $this->actionUrl,
                 'deep_link' => $this->deepLink,
                 'priority' => $this->priority,
                 'is_active' => $this->isActive,
-                'template' => 'customer_broadcast',
+                'template' => $this->template(),
+                'sent_to' => $this->sentTo,
             ], $this->metadata),
             'type' => NotificationTypeEnum::SYSTEM(),
         ];
@@ -63,8 +65,14 @@ class CustomerBroadcastNotification extends Notification implements ShouldQueue
                 // FCM data payload values must be strings.
                 'priority' => (string) $this->priority,
                 'is_active' => $this->isActive ? 'true' : 'false',
-                'template' => 'customer_broadcast',
+                'template' => $this->template(),
+                'sent_to' => $this->sentTo,
             ],
         ];
+    }
+
+    private function template(): string
+    {
+        return $this->sentTo === 'customer' ? 'customer_broadcast' : 'app_broadcast';
     }
 }
