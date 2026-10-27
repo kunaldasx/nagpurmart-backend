@@ -4,6 +4,7 @@ $(document).ready(function () {
     const presenceUrl = modal.data("presence-url");
     if (!modal.length || !pendingOrdersUrl || !presenceUrl) return;
     const isMainSeller = modal.attr("data-main-seller") === "true";
+    const minimizedOrderStorageKey = "seller-order-popup-minimized-order-id";
 
     const timerRing = $("#new-order-timer-ring");
     const timerText = $("#new-order-timer");
@@ -23,6 +24,38 @@ $(document).ready(function () {
     let lastPresenceUpdateAt = 0;
     let presenceRequestPending = false;
     const locationStatus = $("#new-order-location-status");
+    const resumeBanner = $("#new-order-resume-banner");
+    const isMinimized = (order) =>
+        isMainSeller &&
+        order &&
+        window.sessionStorage.getItem(minimizedOrderStorageKey) ===
+            String(order.seller_order_id);
+    const updateResumeBanner = () => {
+        if (!isMainSeller || !activeOrder || !isMinimized(activeOrder)) {
+            resumeBanner.addClass("d-none");
+            return;
+        }
+        resumeBanner
+            .find("span")
+            .text(
+                `Continue order #${activeOrder.order_number || activeOrder.order_id}`,
+            );
+        resumeBanner.removeClass("d-none");
+    };
+    const resumeActiveOrder = () => {
+        if (!activeOrder) {
+            showNextOrder();
+            return;
+        }
+        window.sessionStorage.removeItem(minimizedOrderStorageKey);
+        resumeBanner.addClass("d-none");
+        modal.modal("show");
+        if (popupStage === "accept") {
+            updateTimer();
+            if (!timerHandle) timerHandle = window.setInterval(updateTimer, 1000);
+            startAlertSound();
+        }
+    };
     const ringAlert = () => {
         if (!alertAudioContext) return;
         const now = alertAudioContext.currentTime;
@@ -231,10 +264,16 @@ $(document).ready(function () {
         );
         if (popupStage === "accept") {
             updateTimer();
-            timerHandle = window.setInterval(updateTimer, 1000);
+            if (!isMinimized(activeOrder)) {
+                timerHandle = window.setInterval(updateTimer, 1000);
+            }
         } else {
             $("#new-order-items").addClass("d-none");
             showVerificationItem();
+        }
+        if (isMinimized(activeOrder)) {
+            updateResumeBanner();
+            return;
         }
         modal.modal("show");
         if (popupStage === "accept") startAlertSound();
@@ -242,7 +281,13 @@ $(document).ready(function () {
     const finishOrder = () => {
         window.clearInterval(timerHandle);
         stopAlertSound();
-        if (activeOrder) handledOrderIds.add(activeOrder.seller_order_id);
+        if (activeOrder) {
+            handledOrderIds.add(activeOrder.seller_order_id);
+            if (isMainSeller) {
+                window.sessionStorage.removeItem(minimizedOrderStorageKey);
+                resumeBanner.addClass("d-none");
+            }
+        }
         activeOrder = null;
         modal.one("hidden.bs.modal", showNextOrder);
         modal.modal("hide");
@@ -556,10 +601,94 @@ $(document).ready(function () {
                 );
             });
 
+    const loadAssignedOrder = (sellerOrderId) =>
+        Promise.all([
+            axios.get(`${pendingOrdersUrl}?order_mode=regular`),
+            axios.get(`${pendingOrdersUrl}?order_mode=wholesale&popup=1`),
+        ]).then((responses) =>
+            responses
+                .flatMap((response) => response.data.data || [])
+                .find(
+                    (order) =>
+                        Number(order.seller_order_id) === Number(sellerOrderId),
+                ),
+        );
+    const resumeRequestedOrder = async (sellerOrderId) => {
+        const orderId = Number(sellerOrderId);
+        if (!Number.isInteger(orderId) || orderId < 1) return;
+
+        if (
+            activeOrder &&
+            Number(activeOrder.seller_order_id) === orderId
+        ) {
+            resumeActiveOrder();
+            return;
+        }
+
+        const queuedOrderIndex = pendingOrders.findIndex(
+            (order) => Number(order.seller_order_id) === orderId,
+        );
+        if (queuedOrderIndex !== -1) {
+            if (activeOrder) {
+                window.alert("Finish the order currently open before continuing another order.");
+                return;
+            }
+            const [order] = pendingOrders.splice(queuedOrderIndex, 1);
+            pendingOrders.unshift(order);
+            window.sessionStorage.removeItem(minimizedOrderStorageKey);
+            resumeBanner.addClass("d-none");
+            showNextOrder();
+            return;
+        }
+
+        try {
+            const order = await loadAssignedOrder(orderId);
+            if (!order) {
+                window.alert("This order is not currently assigned to your account. Refresh the orders list and try again.");
+                return;
+            }
+            if (activeOrder) {
+                window.alert("Finish the order currently open before continuing another order.");
+                return;
+            }
+            handledOrderIds.delete(orderId);
+            pendingOrders.unshift(order);
+            window.sessionStorage.removeItem(minimizedOrderStorageKey);
+            resumeBanner.addClass("d-none");
+            showNextOrder();
+        } catch (error) {
+            console.error("Could not load assigned seller order:", error);
+            window.alert(
+                error.response?.data?.message ||
+                    "Could not load this assigned order. Check your connection and try again.",
+            );
+        }
+    };
+
     $("#new-order-accept").on("click", decideOrder);
+    $("#new-order-minimize").on("click", () => {
+        if (!isMainSeller || !activeOrder) return;
+        window.sessionStorage.setItem(
+            minimizedOrderStorageKey,
+            String(activeOrder.seller_order_id),
+        );
+        window.clearInterval(timerHandle);
+        timerHandle = null;
+        stopAlertSound();
+        updateResumeBanner();
+        modal.modal("hide");
+    });
+    $("#new-order-resume").on("click", resumeActiveOrder);
+    window.addEventListener("seller:resume-order", (event) => {
+        resumeRequestedOrder(event.detail?.sellerOrderId);
+    });
     $("#new-order-dismiss").on("click", () => {
         if (!activeOrder) return;
         handledOrderIds.add(activeOrder.seller_order_id);
+        if (isMainSeller) {
+            window.sessionStorage.removeItem(minimizedOrderStorageKey);
+            resumeBanner.addClass("d-none");
+        }
         activeOrder = null;
         window.clearInterval(timerHandle);
         stopAlertSound();

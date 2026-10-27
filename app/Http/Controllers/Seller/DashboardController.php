@@ -223,6 +223,7 @@ class DashboardController extends Controller
                 'panel' => 'seller',
                 'uuid' => $sellerOrderItem->sellerOrder->order->uuid,
                 'id' => $sellerOrderItem->orderItem->id,
+                'sellerOrderId' => $sellerOrderItem->seller_order_id,
                 'hierarchy' => OrderItem::getStatusHierarchy(),
                 'route' => route('seller.orders.show', $sellerOrderItem->sellerOrder->id),
                 'title' => __('labels.edit_order') . $sellerOrderItem->sellerOrder->id,

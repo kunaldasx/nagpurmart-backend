@@ -167,6 +167,8 @@ Validation failure returns `422`; when supplied, latitude must be between -90 an
 
 The seller web panel calls the equivalent session-authenticated endpoint. System users must grant location permission to qualify for nearby orders. The main seller owner is activated as a fallback without location permission and receives orders only when no eligible system user is nearby.
 
+The main seller owner can minimize the incoming-order popup without releasing the assigned offer. A persistent **Continue order** button reopens the same workflow; minimizing is not available to system users. On `/seller/orders`, pending and accepted order rows have a **Continue order** action that opens the assigned order in the same popup workflow (accept, scan/verify every item, assign a bag, and complete dispatch). The server continues enforcing offer ownership for each operation.
+
 ## Seller FCM token registration
 
 Register the current device token after login, when Firebase refreshes it, and on app startup while authenticated:

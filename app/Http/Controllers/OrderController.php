@@ -400,6 +400,7 @@ class OrderController extends Controller
                 'panel' => $this->getPanel(),
                 'uuid' => $sellerOrderItem->sellerOrder->order->uuid,
                 'id' => $sellerOrderItem->orderItem->id,
+                'sellerOrderId' => $sellerOrderItem->seller_order_id,
                 'orderId' => $sellerOrderItem->sellerOrder->order->id,
                 'hierarchy' => OrderItem::getStatusHierarchy(),
                 'route' => route($this->panelView('orders.show'), $this->getPanel() === 'seller' ? $sellerOrderItem->sellerOrder->id : $sellerOrderItem->sellerOrder->order_id),

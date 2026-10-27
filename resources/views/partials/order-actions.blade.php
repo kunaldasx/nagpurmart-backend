@@ -60,7 +60,19 @@
         @endif
     @endif
 </div>
-@if($editPermission)
+@if($panel === 'seller')
+    @if(in_array($status, [OrderItemStatusEnum::AWAITING_STORE_RESPONSE(), OrderItemStatusEnum::ACCEPTED()], true))
+        <div class="d-flex me-2 mt-2">
+            <button
+                type="button"
+                class="btn btn-primary seller-order-popup-resume"
+                data-seller-order-id="{{ $sellerOrderId }}"
+            >
+                Continue order
+            </button>
+        </div>
+    @endif
+@elseif($editPermission)
 
     @if(empty($status) || $status === OrderItemStatusEnum::AWAITING_STORE_RESPONSE())
         <div class="d-flex me-2 mt-2">

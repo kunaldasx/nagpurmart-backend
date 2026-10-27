@@ -42,6 +42,11 @@
                         <h3 class="modal-title">New order</h3>
                         <p class="mb-0">Accept the order, verify every item, then start preparing.</p>
                     </div>
+                    @if($isMainSellerForOrderPopup)
+                        <button type="button" class="btn btn-sm btn-light ms-auto" id="new-order-minimize" aria-label="Minimize order popup">
+                            <i class="ti ti-minus" aria-hidden="true"></i> Minimize
+                        </button>
+                    @endif
                 </div>
                 <div class="modal-body">
                     <div id="new-order-location-status" class="small text-secondary mb-2" role="status">Checking location for nearby order alerts…</div>
@@ -60,6 +65,14 @@
             </div>
         </div>
     </div>
+    @if($isMainSellerForOrderPopup)
+        <div class="position-fixed bottom-0 end-0 m-3 d-none" id="new-order-resume-banner" style="z-index: 1080;">
+            <button type="button" class="btn btn-primary shadow" id="new-order-resume">
+                <i class="ti ti-bell-ringing" aria-hidden="true"></i>
+                <span>Continue order</span>
+            </button>
+        </div>
+    @endif
     <style>
         #newRegularOrderModal .modal-content { overflow: hidden; border: 0; border-radius: 18px; box-shadow: 0 24px 70px rgba(20, 36, 61, .28); }
         .new-order-header { align-items: center; padding: 1.4rem 1.5rem 1.25rem; color: #fff; background: linear-gradient(135deg, #126fd1 0%, #0754a8 100%); border: 0; }

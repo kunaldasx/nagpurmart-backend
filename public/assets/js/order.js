@@ -32,6 +32,11 @@ $(document).ready(function () {
     $("#refresh").on("click", function () {
         table.ajax.reload(updateOrderCount, false);
     });
+    $("#orders-table").on("click", ".seller-order-popup-resume", function () {
+        window.dispatchEvent(new CustomEvent("seller:resume-order", {
+            detail: { sellerOrderId: Number($(this).data("seller-order-id")) },
+        }));
+    });
 
     setTimeout(function () {
         // Initial order count
