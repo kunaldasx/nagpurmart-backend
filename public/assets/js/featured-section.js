@@ -4,6 +4,7 @@ class FeaturedSectionManager {
         this.initializeSortable();
         this.initializeEventListeners();
         this.initializeProductPicker();
+        this.initializeFeaturedProductSortable();
     }
 
     // Initialize sortable functionality
@@ -50,9 +51,22 @@ class FeaturedSectionManager {
             searchField: 'text',
             dropdownParent: 'body',
             maxOptions: 10,
+            render: {
+                option: (product, escape) => `
+                    <div class="d-flex align-items-center gap-2 py-1">
+                        <img src="${escape(product.main_image || '')}" alt="" class="rounded border"
+                             style="width: 44px; height: 44px; object-fit: cover;">
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="fw-semibold text-truncate">${escape(product.title || product.text || '')}</div>
+                            <div class="small text-muted text-truncate">${escape(product.short_description || 'No description available')}</div>
+                            <div class="small fw-semibold">${escape(this.formatProductPrice(product.price))}</div>
+                        </div>
+                    </div>`,
+                item: (product, escape) => `<div>${escape(product.title || product.text || '')}</div>`,
+            },
             load: (query, callback) => {
                 if (!query) return callback();
-                fetch(`${base_url}/${panel}/products/search?search=${encodeURIComponent(query)}`)
+                fetch(`${base_url}/${panel}/products/search?search=${encodeURIComponent(query)}&include_details=1`)
                     .then((response) => {
                         if (!response.ok) throw new Error(`Product search failed (${response.status})`);
                         return response.json();
@@ -88,44 +102,88 @@ class FeaturedSectionManager {
             Toast.fire({ icon: 'error', title: 'Unable to load the selected product' });
             return;
         }
-        this.renderSelectedProduct({
-            id: productId,
-            title: selected.title || selected.text,
-        });
+        this.renderSelectedProduct({ ...selected, id: productId });
         this.productSelect?.clear();
     }
 
     renderSelectedProduct(product) {
         const list = document.getElementById('featured-products-list');
         const row = document.createElement('div');
-        row.className = 'd-flex align-items-center gap-2 border rounded p-2 mb-2';
+        row.className = 'featured-product-card d-flex align-items-center gap-3 border rounded p-2 mb-2 bg-white';
         row.dataset.productId = product.id;
 
+        const dragHandle = document.createElement('span');
+        dragHandle.className = 'featured-product-drag-handle ti ti-grip-vertical text-muted';
+        dragHandle.setAttribute('aria-label', 'Drag to reorder product');
+        dragHandle.setAttribute('title', 'Drag to reorder');
+
+        const image = document.createElement('img');
+        image.className = 'rounded border flex-shrink-0';
+        image.src = product.main_image || '';
+        image.alt = product.title || 'Product image';
+        image.loading = 'lazy';
+        image.style.width = '56px';
+        image.style.height = '56px';
+        image.style.objectFit = 'cover';
+
+        const details = document.createElement('div');
+        details.className = 'flex-grow-1 min-w-0';
+
         const title = document.createElement('span');
-        title.className = 'flex-grow-1';
-        title.textContent = product.title;
+        title.className = 'd-block fw-semibold text-truncate';
+        title.textContent = product.title || product.text || '';
+
+        const description = document.createElement('span');
+        description.className = 'featured-product-description d-block small text-muted';
+        description.textContent = product.short_description || 'No description available';
+        description.title = product.short_description || '';
+
+        const price = document.createElement('span');
+        price.className = 'd-block small fw-semibold';
+        price.textContent = this.formatProductPrice(product.price);
+
+        details.append(title, description, price);
 
         const hidden = document.createElement('input');
         hidden.type = 'hidden';
         hidden.name = 'products[]';
         hidden.value = product.id;
 
-        row.append(hidden, title);
-        [
-            { action: 'up', label: 'Move up', text: 'Up' },
-            { action: 'down', label: 'Move down', text: 'Down' },
-            { action: 'remove', label: 'Remove product', text: 'Remove' },
-        ].forEach(({ action, label, text }) => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = action === 'remove' ? 'btn btn-sm btn-outline-danger' : 'btn btn-sm btn-outline-secondary';
-            button.dataset.productAction = action;
-            button.setAttribute('aria-label', label);
-            button.textContent = text;
-            row.appendChild(button);
-        });
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'btn btn-sm btn-outline-danger';
+        removeButton.dataset.productAction = 'remove';
+        removeButton.setAttribute('aria-label', 'Remove product');
+        removeButton.textContent = 'Remove';
+
+        row.append(dragHandle, image, details, hidden, removeButton);
 
         list.appendChild(row);
+    }
+
+    initializeFeaturedProductSortable() {
+        const list = document.getElementById('featured-products-list');
+        if (!list || !window.Sortable) return;
+
+        this.featuredProductSortable = new Sortable(list, {
+            animation: 150,
+            handle: '.featured-product-drag-handle',
+            draggable: '[data-product-id]',
+            ghostClass: 'featured-product-ghost',
+        });
+    }
+
+    formatProductPrice(price) {
+        const amount = Number(price);
+        if (price === null || price === undefined || !Number.isFinite(amount)) {
+            return 'Price unavailable';
+        }
+
+        const symbol = document.getElementById('selected-currency-symbol')?.value || '';
+        return `From ${symbol}${amount.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
     }
 
     handleProductAction(button) {
@@ -134,13 +192,6 @@ class FeaturedSectionManager {
 
         if (button.dataset.productAction === 'remove') {
             row.remove();
-            return;
-        }
-
-        if (button.dataset.productAction === 'up' && row.previousElementSibling) {
-            row.parentNode.insertBefore(row, row.previousElementSibling);
-        } else if (button.dataset.productAction === 'down' && row.nextElementSibling) {
-            row.parentNode.insertBefore(row.nextElementSibling, row);
         }
     }
 

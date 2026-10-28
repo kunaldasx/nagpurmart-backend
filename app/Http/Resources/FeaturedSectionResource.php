@@ -99,6 +99,9 @@ class FeaturedSectionResource extends JsonResource
                 ->map(fn (Product $product) => [
                     'id' => $product->id,
                     'title' => $product->title,
+                    'short_description' => $product->short_description,
+                    'main_image' => $product->main_image,
+                    'price' => $product->starting_price,
                 ])->values()),
             'scope_category' => new CategoryResource($this->whenLoaded('scopeCategory')),
             'products' => ProductResource::collection($products),

@@ -230,7 +230,13 @@ class FeaturedSectionController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $featuredSection = FeaturedSection::with(['categories', 'selectedProducts'])->find($id);
+            $featuredSection = FeaturedSection::with([
+                'categories',
+                'selectedProducts' => fn ($query) => $query->with([
+                    'media',
+                    'variants.storeProductVariants',
+                ]),
+            ])->find($id);
 
             if (!$featuredSection) {
                 return ApiResponseType::sendJsonResponse(
