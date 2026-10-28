@@ -696,15 +696,23 @@ class ProductController extends Controller
         $query = $request->input('search'); // Get the search query
         $exceptId = $request->input('exceptId'); // Get the search query
         $findId = $request->input('find_id'); // Specific category ID to find
+        $includeDetails = $request->boolean('include_details');
+        $productQuery = Product::query();
+        if ($includeDetails) {
+            $productQuery->with(['media', 'variants.storeProductVariants']);
+        }
+        $productQuery->select($includeDetails
+            ? ['id', 'title', 'short_description']
+            : ['id', 'title']);
 
         if ($findId) {
             // If find_id is set and not empty, fetch only that category
-            $products = Product::where('id', $findId)
-                ->select('id', 'title')
+            $products = $productQuery
+                ->where('id', $findId)
                 ->get();
         } else {
             // Fetch categories matching the search query
-            $products = Product::select('id', 'title')
+            $products = $productQuery
                 ->where('title', 'LIKE', "%{$query}%")
                 ->when($exceptId, function ($q) use ($exceptId) {
                     $q->where('id', '!=', $exceptId);
@@ -715,12 +723,22 @@ class ProductController extends Controller
                 ->limit(10)
                 ->get();
         }
-        $results = $products->map(function ($product) {
-            return [
+        $results = $products->map(function ($product) use ($includeDetails) {
+            $result = [
                 'id' => $product->id,
                 'value' => $product->id,
                 'text' => $product->title,
             ];
+            if ($includeDetails) {
+                $result += [
+                    'title' => $product->title,
+                    'short_description' => $product->short_description,
+                    'main_image' => $product->main_image,
+                    'price' => $product->starting_price,
+                ];
+            }
+
+            return $result;
         });
         // Return the categories as JSON
         return response()->json($results);

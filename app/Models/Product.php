@@ -321,6 +321,21 @@ class Product extends Model implements HasMedia
         return (!empty($this->getFirstMediaUrl(SpatieMediaCollectionName::PRODUCT_MAIN_IMAGE())) ? $this->getFirstMediaUrl(SpatieMediaCollectionName::PRODUCT_MAIN_IMAGE()) : asset('assets/images/product-placeholder.jpg'));
     }
 
+    public function getStartingPriceAttribute(): ?float
+    {
+        return $this->variants
+            ->flatMap(fn (ProductVariant $variant) => $variant->storeProductVariants
+                ->map(function (StoreProductVariant $storeProductVariant) {
+                    $price = $storeProductVariant->is_special_price_active
+                        ? $storeProductVariant->getRawOriginal('special_price')
+                        : $storeProductVariant->getRawOriginal('price');
+
+                    return is_numeric($price) ? (float) $price : null;
+                }))
+            ->filter(fn (?float $price) => $price !== null)
+            ->min();
+    }
+
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class, 'product_id');

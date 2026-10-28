@@ -182,7 +182,9 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="featured-product-search"
                                                class="form-label required">{{ __('labels.products') }}</label>
@@ -194,7 +196,7 @@
                                                 {{ __('labels.add_product') }}
                                             </button>
                                         </div>
-                                        <small class="form-hint">Add products, then use the arrows to set their display order.</small>
+                                        <small class="form-hint">Search products to preview their image, description, and price. Drag selected product cards to set their display order.</small>
                                         <div id="featured-products-list" class="mt-2" aria-live="polite"></div>
                                     </div>
                                 </div>
@@ -301,6 +303,31 @@
     @endif
 @endsection
 
+@push('styles')
+    <style>
+        .featured-product-drag-handle {
+            cursor: grab;
+            font-size: 1.25rem;
+        }
+
+        .featured-product-drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .featured-product-description {
+            display: -webkit-box;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        .featured-product-ghost {
+            opacity: 0.4;
+        }
+    </style>
+@endpush
+
 @push('scripts')
+    <script src="{{asset('assets/vendor/sortablejs/sortable.min.js')}}" defer></script>
     <script src="{{asset('assets/js/featured-section.js')}}" defer></script>
 @endpush
