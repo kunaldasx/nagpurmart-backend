@@ -179,6 +179,8 @@ class FeaturedSectionController extends Controller
             if ($validated['scope_type'] === HomePageScopeEnum::GLOBAL()) {
                 $validated['scope_id'] = null;
             }
+            $productIds = $validated['products'];
+            unset($validated['products']);
             DB::beginTransaction();
             $featuredSection = FeaturedSection::create($validated);
 
@@ -197,15 +199,12 @@ class FeaturedSectionController extends Controller
                 }
             }
 
-            // Sync categories if provided
-            if (!empty($validated['categories'])) {
-                $featuredSection->categories()->sync($validated['categories']);
-            }
+            $featuredSection->selectedProducts()->sync($this->orderedProductIds($productIds));
             DB::commit();
             return ApiResponseType::sendJsonResponse(
                 success: true,
                 message: __('labels.featured_section_created_successfully'),
-                data: $featuredSection->load('categories'),
+                data: $featuredSection->load(['categories', 'selectedProducts']),
                 status: 201
             );
         } catch (ValidationException $e) {
@@ -231,7 +230,7 @@ class FeaturedSectionController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $featuredSection = FeaturedSection::with('categories')->find($id);
+            $featuredSection = FeaturedSection::with(['categories', 'selectedProducts'])->find($id);
 
             if (!$featuredSection) {
                 return ApiResponseType::sendJsonResponse(
@@ -285,6 +284,8 @@ class FeaturedSectionController extends Controller
             if ($validated['scope_type'] === HomePageScopeEnum::GLOBAL()) {
                 $validated['scope_id'] = null;
             }
+            $productIds = $validated['products'];
+            unset($validated['products']);
             DB::beginTransaction();
             $featuredSection->update($validated);
 
@@ -310,16 +311,13 @@ class FeaturedSectionController extends Controller
                 $featuredSection->clearMediaCollection(SpatieMediaCollectionName::FEATURED_SECTION_BG_MOBILE());
             }
 
-            // Sync categories if provided
-            if (isset($validated['categories'])) {
-                $featuredSection->categories()->sync($validated['categories']);
-            }
+            $featuredSection->selectedProducts()->sync($this->orderedProductIds($productIds));
             DB::commit();
 
             return ApiResponseType::sendJsonResponse(
                 success: true,
                 message: __('labels.featured_section_updated_successfully'),
-                data: $featuredSection->load('categories')
+                data: $featuredSection->load(['categories', 'selectedProducts'])
             );
         } catch (ValidationException $e) {
             DB::rollBack();
@@ -468,5 +466,15 @@ class FeaturedSectionController extends Controller
                 data: []
             );
         }
+    }
+
+    private function orderedProductIds(array $productIds): array
+    {
+        $orderedProducts = [];
+        foreach (array_values($productIds) as $index => $productId) {
+            $orderedProducts[$productId] = ['sort_order' => $index + 1];
+        }
+
+        return $orderedProducts;
     }
 }

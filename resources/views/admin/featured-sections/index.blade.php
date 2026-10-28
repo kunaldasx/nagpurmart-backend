@@ -184,12 +184,18 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="categories"
-                                               class="form-label">{{ __('labels.categories') }}</label>
-                                        <select class="form-select" id="select-category" name="categories[]"
-                                                multiple>
-                                            <!-- Categories will be loaded via AJAX -->
-                                        </select>
+                                        <label for="featured-product-search"
+                                               class="form-label required">{{ __('labels.products') }}</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="featured-product-search">
+                                                <option value="">{{ __('labels.select_product') }}</option>
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" id="add-featured-product">
+                                                {{ __('labels.add_product') }}
+                                            </button>
+                                        </div>
+                                        <small class="form-hint">Add products, then use the arrows to set their display order.</small>
+                                        <div id="featured-products-list" class="mt-2" aria-live="polite"></div>
                                     </div>
                                 </div>
                             </div>

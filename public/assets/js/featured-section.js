@@ -3,6 +3,7 @@ class FeaturedSectionManager {
     constructor() {
         this.initializeSortable();
         this.initializeEventListeners();
+        this.initializeProductPicker();
     }
 
     // Initialize sortable functionality
@@ -31,7 +32,129 @@ class FeaturedSectionManager {
         $('#background_type').on('change', (e) => this.handleBackgroundTypeChange(e.target.value));
         document.addEventListener('show.bs.modal', (e) => this.handleModalShow(e));
         document.addEventListener('click', (e) => this.handleDelete(e));
+        document.getElementById('featured-products-list')?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-product-action]');
+            if (!button) return;
+            this.handleProductAction(button);
+        });
         this.initializeCollapseHandlers();
+    }
+
+    initializeProductPicker() {
+        const select = document.getElementById('featured-product-search');
+        if (!select || !window.TomSelect) return;
+
+        this.productSelect = new TomSelect(select, {
+            valueField: 'value',
+            labelField: 'text',
+            searchField: 'text',
+            dropdownParent: 'body',
+            maxOptions: 10,
+            load: (query, callback) => {
+                if (!query) return callback();
+                fetch(`${base_url}/${panel}/products/search?search=${encodeURIComponent(query)}`)
+                    .then((response) => {
+                        if (!response.ok) throw new Error(`Product search failed (${response.status})`);
+                        return response.json();
+                    })
+                    .then(callback)
+                    .catch((error) => {
+                        callback();
+                        Toast.fire({ icon: 'error', title: error.message || 'Unable to search products' });
+                    });
+            },
+        });
+
+        document.getElementById('add-featured-product')?.addEventListener('click', () => {
+            this.addSelectedProduct();
+        });
+    }
+
+    addSelectedProduct(product = null) {
+        const productId = product?.id || this.productSelect?.getValue();
+        if (!productId) {
+            Toast.fire({ icon: 'warning', title: 'Select a product first' });
+            return;
+        }
+
+        const list = document.getElementById('featured-products-list');
+        if (Array.from(list.children).some((row) => row.dataset.productId === String(productId))) {
+            Toast.fire({ icon: 'warning', title: 'This product has already been added' });
+            return;
+        }
+
+        const selected = product || this.productSelect?.options[productId];
+        if (!selected) {
+            Toast.fire({ icon: 'error', title: 'Unable to load the selected product' });
+            return;
+        }
+        this.renderSelectedProduct({
+            id: productId,
+            title: selected.title || selected.text,
+        });
+        this.productSelect?.clear();
+    }
+
+    renderSelectedProduct(product) {
+        const list = document.getElementById('featured-products-list');
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center gap-2 border rounded p-2 mb-2';
+        row.dataset.productId = product.id;
+
+        const title = document.createElement('span');
+        title.className = 'flex-grow-1';
+        title.textContent = product.title;
+
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'products[]';
+        hidden.value = product.id;
+
+        row.append(hidden, title);
+        [
+            { action: 'up', label: 'Move up', text: 'Up' },
+            { action: 'down', label: 'Move down', text: 'Down' },
+            { action: 'remove', label: 'Remove product', text: 'Remove' },
+        ].forEach(({ action, label, text }) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = action === 'remove' ? 'btn btn-sm btn-outline-danger' : 'btn btn-sm btn-outline-secondary';
+            button.dataset.productAction = action;
+            button.setAttribute('aria-label', label);
+            button.textContent = text;
+            row.appendChild(button);
+        });
+
+        list.appendChild(row);
+    }
+
+    handleProductAction(button) {
+        const row = button.closest('[data-product-id]');
+        if (!row) return;
+
+        if (button.dataset.productAction === 'remove') {
+            row.remove();
+            return;
+        }
+
+        if (button.dataset.productAction === 'up' && row.previousElementSibling) {
+            row.parentNode.insertBefore(row, row.previousElementSibling);
+        } else if (button.dataset.productAction === 'down' && row.nextElementSibling) {
+            row.parentNode.insertBefore(row.nextElementSibling, row);
+        }
+    }
+
+    setSelectedProducts(products = []) {
+        const list = document.getElementById('featured-products-list');
+        if (!list) return;
+        list.replaceChildren();
+        products.forEach((product) => this.renderSelectedProduct(product));
+    }
+
+    resetProductPicker() {
+        this.setSelectedProducts();
+        this.productSelect?.clear();
+        this.productSelect?.clearOptions();
     }
 
     // Handle sort order submission
@@ -179,6 +302,7 @@ class FeaturedSectionManager {
     // Setup modal for editing existing featured section
     async setupEditMode(featuredId) {
         try {
+            this.productSelect?.clear();
             const url = `${base_url}/${panel}/featured-sections/${featuredId}`;
             const response = await fetch(url, { method: 'GET' });
             const responseData = await response.json();
@@ -202,6 +326,7 @@ class FeaturedSectionManager {
 
         this.removeMethodInput(elements.form);
         this.clearTomSelects(elements);
+        this.resetProductPicker();
         this.hideBackgroundFields(elements);
         this.clearFilePond(elements.imageUpload4k);
         this.clearFilePond(elements.imageUploadFhd);
@@ -224,6 +349,7 @@ class FeaturedSectionManager {
         this.fillBasicFormFields(elements.form, data);
         this.handleBackgroundType(elements, data);
         this.setupTomSelects(elements, data);
+        this.setSelectedProducts(data.selected_products || []);
         this.setupFilePond(elements, data);
         elements.form.setAttribute('action', `${base_url}/${panel}/featured-sections/${featuredId}`);
         elements.modalTitle.textContent = 'Edit Featured Section';
@@ -236,7 +362,6 @@ class FeaturedSectionManager {
             form: document.querySelector('.form-submit'),
             modalTitle: document.querySelector('#featured-section-modal .modal-title'),
             submitButton: document.querySelector('#featured-section-modal button[type="submit"]'),
-            selectElement: document.getElementById('select-category'),
             selectScopeElement: document.getElementById('select-root-category'),
             colorField: document.getElementById('background-color-field'),
             imageField: document.getElementById('background-image-field'),
@@ -296,7 +421,6 @@ class FeaturedSectionManager {
 
     // Setup TomSelect dropdowns
     setupTomSelects(elements, data) {
-        let tomSelect = elements.selectElement.tomselect || new TomSelect(elements.selectElement);
         let tomSelectScope = elements.selectScopeElement.tomselect || new TomSelect(elements.selectScopeElement);
 
         // Handle scope selection
@@ -311,14 +435,6 @@ class FeaturedSectionManager {
             tomSelectScope.clear();
         }
 
-        // Handle categories
-        if (data.categories && Array.isArray(data.categories)) {
-            data.categories.forEach(item => {
-                tomSelect.addOption({ value: item.id, text: item.title });
-            });
-            const allIds = data.categories.map(item => item.id);
-            tomSelect.setValue(allIds);
-        }
     }
 
     // Setup FilePond for image upload
@@ -353,16 +469,11 @@ class FeaturedSectionManager {
     }
 
     clearTomSelects(elements) {
-        const tomSelect = elements.selectElement.tomselect;
         const tomSelectScope = elements.selectScopeElement.tomselect;
 
         if (tomSelectScope) {
             tomSelectScope.clearOptions();
             tomSelectScope.clear();
-        }
-        if (tomSelect) {
-            tomSelect.clearOptions();
-            tomSelect.clear();
         }
     }
 

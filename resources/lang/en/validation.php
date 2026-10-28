@@ -230,6 +230,8 @@ return [
     'featured_section_slug_unique' => 'This slug is already taken',
     'featured_section_type_required' => 'Please select a section type',
     'featured_section_categories_exists' => 'One or more selected categories do not exist',
+    'featured_section_products_required' => 'Select at least one product for the featured section',
+    'featured_section_products_exists' => 'One or more selected products do not exist',
     'store_id_exists' => 'Store does not exist.',
     'store_id_required' => 'Store ID is required.',
     'product_id_exists' => 'Product ID does not exist.',
