@@ -40,8 +40,8 @@ class UpdateFeaturedSectionRequest extends FormRequest
             'desktop_fdh_background_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:10240',
             'tablet_background_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:10240',
             'mobile_background_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:10240',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id',
+            'products' => 'required|array|min:1',
+            'products.*' => 'required|integer|distinct|exists:products,id',
         ];
     }
 
@@ -59,8 +59,8 @@ class UpdateFeaturedSectionRequest extends FormRequest
             'scope_id' => __('labels.scope_category'),
             'background_type' => __('labels.background_type'),
             'background_color' => __('labels.background_color'),
-            'categories' => __('labels.categories'),
-            'categories.*' => __('labels.category'),
+            'products' => __('labels.products'),
+            'products.*' => __('labels.product'),
         ];
     }
 
@@ -71,7 +71,9 @@ class UpdateFeaturedSectionRequest extends FormRequest
             'slug.required' => __('validation.featured_section_slug_required'),
             'slug.unique' => __('validation.featured_section_slug_unique'),
             'section_type.required' => __('validation.featured_section_type_required'),
-            'categories.*.exists' => __('validation.featured_section_categories_exists'),
+            'products.required' => __('validation.featured_section_products_required'),
+            'products.min' => __('validation.featured_section_products_required'),
+            'products.*.exists' => __('validation.featured_section_products_exists'),
         ];
     }
 }

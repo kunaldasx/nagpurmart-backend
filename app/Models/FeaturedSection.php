@@ -64,6 +64,14 @@ class FeaturedSection extends Model implements HasMedia
             ->withTimestamps();
     }
 
+    public function selectedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'featured_section_product')
+            ->withPivot('sort_order')
+            ->withTimestamps()
+            ->orderByPivot('sort_order');
+    }
+
     /**
      * Get the scope category for this featured section.
      */
@@ -115,10 +123,34 @@ class FeaturedSection extends Model implements HasMedia
     }
 
     /**
-     * Get products for this featured section based on a section type and categories.
+     * Get manually selected products in configured order, or legacy type/category products.
      */
     public function getProductsQuery(?string $sort = null, array $storeIds = []): Builder
     {
+        $hasSelectedProducts = DB::table('featured_section_product')
+            ->where('featured_section_id', $this->id)
+            ->exists();
+
+        if ($hasSelectedProducts) {
+            $query = Product::query();
+
+            if ($sort !== null && $sort !== '') {
+                $query->whereIn('products.id', function ($subquery) {
+                    $subquery->select('product_id')
+                        ->from('featured_section_product')
+                        ->where('featured_section_id', $this->id);
+                });
+
+                return $query->applySorting($sort, $storeIds);
+            }
+
+            return $query->join('featured_section_product as curated_products', function ($join) {
+                $join->on('curated_products.product_id', '=', 'products.id')
+                    ->where('curated_products.featured_section_id', $this->id);
+            })->select('products.*')
+                ->orderBy('curated_products.sort_order');
+        }
+
         $query = Product::query();
 
         $categoryIds = $this->categories->pluck('id')->toArray() ?? [];

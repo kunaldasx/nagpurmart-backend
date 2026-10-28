@@ -23,7 +23,46 @@ Example:
 GET /featured-sections?section_type=lowest_price&products_limit=10
 ```
 
-Response data contains pagination fields and `data`, an array of sections. Each section includes `id`, `title`, `slug`, `section_type`, `scope_type`, `categories`, `products`, and `products_count`.
+Response data contains pagination fields and `data`, an array of sections. Each section includes its existing section metadata, `products`, and `products_count`. Products selected in the admin are returned in the exact configured order. Existing sections with no configured products continue to use their legacy section-type/category-based product query.
+
+Example section object (abbreviated):
+
+```json
+{
+    "id": 12,
+    "title": "Shopper Favorites - Deals",
+    "slug": "shopper-favorites-deals",
+    "short_description": "More popular picks to browse",
+    "style": "with_background",
+    "section_type": "best_seller",
+    "sort_order": 2,
+    "status": "active",
+    "scope_type": "global",
+    "scope_id": null,
+    "scope_category_slug": "",
+    "scope_category_title": "",
+    "background_type": "color",
+    "background_color": "#7900ff",
+    "background_image": "",
+    "text_color": "#ffffff",
+    "categories": [],
+    "products": [
+        {
+            "id": 501,
+            "title": "Product selected first",
+            "slug": "product-selected-first"
+        },
+        {
+            "id": 318,
+            "title": "Product selected second",
+            "slug": "product-selected-second"
+        }
+    ],
+    "products_count": 2
+}
+```
+
+`products` entries use the standard Product response shape (the example is abbreviated). Their array order is the frontend display order. `products_limit` limits the number returned by the homepage/list and single-section endpoints. The `/products` endpoint preserves this order unless a `sort` override is explicitly supplied. The legacy `categories` field may remain populated on older sections, but categories are no longer configured in the featured-section admin form.
 
 ## Get One Section's Products
 
@@ -47,7 +86,7 @@ Example:
 GET /featured-sections/lowest-price/products?per_page=20&sort=price_asc
 ```
 
-The section's configured type is always applied. `sort` is an optional override for the product order.
+For sections with manually selected products, this endpoint returns only those products. Their saved order is used by default; `sort` explicitly overrides that order. For legacy sections without selected products, the configured section type determines the product set and ordering.
 
 ## Get One Section
 
@@ -57,7 +96,7 @@ GET /featured-sections/{section_slug}?products_limit=10
 
 Optional query parameters: `products_limit`, `latitude`, and `longitude`.
 
-## Section Type Behavior
+## Legacy Section Type Behavior
 
 - `newly_added`: newest products first
 - `top_rated`: highest review rating first
@@ -65,6 +104,8 @@ Optional query parameters: `products_limit`, `latitude`, and `longitude`.
 - `featured`: products marked as featured
 - `lowest_price`: lowest available default-variant selling price first; a valid special price is preferred
 - `best_price`: largest percentage discount on the default variant first
+
+These rules apply only to sections that do not have a manually selected product list.
 
 ## Frontend Flow
 

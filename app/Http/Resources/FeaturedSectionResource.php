@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Enums\Store\StoreVerificationStatusEnum;
 use App\Enums\Store\StoreVisibilityStatusEnum;
 use App\Http\Resources\Product\ProductResource;
+use App\Models\Product;
 use App\Models\Store;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class FeaturedSectionResource extends JsonResource
 
         // Get products based on location if coordinates are provided
         if ($latitude && $longitude && $zoneInfo) {
-            // Get products query based on section type and categories
+            // Use the configured product order or the legacy section query.
             $productsQuery = $this->getProductsQuery();
 
             // Get stores in the delivery zone
@@ -56,7 +57,8 @@ class FeaturedSectionResource extends JsonResource
             });
 
             // Get products with limit
-            $products = $productsQuery->take($productsLimit)->get();
+            $productsCount = (clone $productsQuery)->count();
+            $products = (clone $productsQuery)->take($productsLimit)->get();
 
             // Store the user's latitude and longitude in each product for delivery time calculation
             foreach ($products as $product) {
@@ -65,8 +67,6 @@ class FeaturedSectionResource extends JsonResource
                 $product->zone_info = $zoneInfo;
             }
 
-            // Get count for products in this zone
-            $productsCount = $productsQuery->count();
         } else {
             // Get products without location filtering
             $products = $this->products($productsLimit);
@@ -95,6 +95,11 @@ class FeaturedSectionResource extends JsonResource
             'mobile_background_image' => $this->mobile_background_image,
             'text_color' => $this->text_color,
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
+            'selected_products' => $this->whenLoaded('selectedProducts', fn () => $this->selectedProducts
+                ->map(fn (Product $product) => [
+                    'id' => $product->id,
+                    'title' => $product->title,
+                ])->values()),
             'scope_category' => new CategoryResource($this->whenLoaded('scopeCategory')),
             'products' => ProductResource::collection($products),
             'products_count' => $productsCount,
