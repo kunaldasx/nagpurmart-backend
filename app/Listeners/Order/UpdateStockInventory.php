@@ -3,9 +3,10 @@
 namespace App\Listeners\Order;
 
 use App\Events\Order\OrderPlaced;
+use App\Models\OrderItem;
 use App\Services\StockService;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class UpdateStockInventory
 {
@@ -24,13 +25,30 @@ class UpdateStockInventory
      */
     public function handle(OrderPlaced $event): void
     {
-        foreach ($event->orderItem as $item) {
-            $this->stockService->removeStock(
-                $item->store_id,
-                $item->product_variant_id,
-                $item->quantity,
-                "Moved {$item->quantity} item(s) from stock to Order #{$event->order->id}."
-            );
-        }
+        DB::transaction(function () use ($event): void {
+            foreach ($event->orderItem as $item) {
+                $orderItem = OrderItem::query()
+                    ->lockForUpdate()
+                    ->findOrFail($item->id);
+
+                if ($orderItem->stock_deducted_at) {
+                    continue;
+                }
+
+                $stockResult = $this->stockService->removeStock(
+                    $orderItem->store_id,
+                    $orderItem->product_variant_id,
+                    $orderItem->quantity,
+                    "Moved {$orderItem->quantity} item(s) from stock to Order #{$event->order->id}."
+                );
+
+                if (!$stockResult['success']) {
+                    throw new RuntimeException($stockResult['message']);
+                }
+
+                $orderItem->stock_deducted_at = now();
+                $orderItem->save();
+            }
+        });
     }
 }

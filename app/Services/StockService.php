@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\StockInventoryTypeEnum;
 use App\Models\StoreInventoryLog;
 use App\Models\StoreProductVariant;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class StockService
@@ -21,53 +22,59 @@ class StockService
     public function updateStock(int $storeId, int $productVariantId, int $quantity, string $reason): array
     {
         try {
-            // Find the store variant
-            $storeVariant = StoreProductVariant::where('store_id', $storeId)
-                ->where('product_variant_id', $productVariantId)
-                ->first();
+            return DB::transaction(function () use ($storeId, $productVariantId, $quantity, $reason): array {
+                $storeVariant = StoreProductVariant::where('store_id', $storeId)
+                    ->where('product_variant_id', $productVariantId)
+                    ->lockForUpdate()
+                    ->first();
 
-            if (!$storeVariant) {
+                if (!$storeVariant) {
+                    return [
+                        'success' => false,
+                        'message' => 'Store product variant not found',
+                        'data' => []
+                    ];
+                }
+
+                $newStock = $storeVariant->stock + $quantity;
+                if ($newStock < 0) {
+                    return [
+                        'success' => false,
+                        'message' => 'Insufficient stock available',
+                        'data' => ['available_stock' => (int) $storeVariant->stock]
+                    ];
+                }
+
+                $storeVariant->update(['stock' => $newStock]);
+
+                $changeType = $quantity > 0
+                    ? StockInventoryTypeEnum::ADD()
+                    : StockInventoryTypeEnum::REMOVE();
+
+                $this->logInventoryChange(
+                    $storeId,
+                    $productVariantId,
+                    $changeType,
+                    abs($quantity),
+                    $reason
+                );
+
+                Log::info('Stock updated', [
+                    'store_id' => $storeId,
+                    'product_variant_id' => $productVariantId,
+                    'quantity_change' => $quantity,
+                    'new_stock_level' => $newStock,
+                    'reason' => $reason
+                ]);
+
                 return [
-                    'success' => false,
-                    'message' => 'Store product variant not found',
-                    'data' => []
+                    'success' => true,
+                    'message' => 'Stock updated successfully',
+                    'data' => [
+                        'new_stock' => $newStock
+                    ]
                 ];
-            }
-
-            // Update the stock
-            $newStock = $storeVariant->stock + $quantity;
-            $newStock = max(0, $newStock); // Ensure stock doesn't go below 0
-            $storeVariant->update(['stock' => $newStock]);
-
-            // Determine change type
-            $changeType = $quantity > 0
-                ? StockInventoryTypeEnum::ADD()
-                : StockInventoryTypeEnum::REMOVE();
-
-            // Log the inventory change
-            $this->logInventoryChange(
-                $storeId,
-                $productVariantId,
-                $changeType,
-                abs($quantity),
-                $reason
-            );
-
-            Log::info('Stock updated', [
-                'store_id' => $storeId,
-                'product_variant_id' => $productVariantId,
-                'quantity_change' => $quantity,
-                'new_stock_level' => $newStock,
-                'reason' => $reason
-            ]);
-
-            return [
-                'success' => true,
-                'message' => 'Stock updated successfully',
-                'data' => [
-                    'new_stock' => $newStock
-                ]
-            ];
+            });
         } catch (\Exception $e) {
             Log::error('Error updating stock', [
                 'store_id' => $storeId,
