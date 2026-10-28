@@ -33,6 +33,16 @@ class FeaturedSectionManager {
         $('#background_type').on('change', (e) => this.handleBackgroundTypeChange(e.target.value));
         document.addEventListener('show.bs.modal', (e) => this.handleModalShow(e));
         document.addEventListener('click', (e) => this.handleDelete(e));
+        document.querySelector('#featured-section-modal form.form-submit')?.addEventListener('submit', (event) => {
+            if (this.productSelect?.getValue()) this.addSelectedProduct();
+
+            if (document.querySelectorAll('#featured-products-list input[name="products[]"]').length === 0) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                Toast.fire({ icon: 'error', title: 'Select a product for the featured section' });
+                this.productSelect?.focus();
+            }
+        }, true);
         document.getElementById('featured-products-list')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-product-action]');
             if (!button) return;
@@ -64,6 +74,9 @@ class FeaturedSectionManager {
                     </div>`,
                 item: (product, escape) => `<div>${escape(product.title || product.text || '')}</div>`,
             },
+            onChange: (value) => {
+                if (value) this.addSelectedProduct();
+            },
             load: (query, callback) => {
                 if (!query) return callback();
                 fetch(`${base_url}/${panel}/products/search?search=${encodeURIComponent(query)}&include_details=1`)
@@ -78,10 +91,6 @@ class FeaturedSectionManager {
                     });
             },
         });
-
-        document.getElementById('add-featured-product')?.addEventListener('click', () => {
-            this.addSelectedProduct();
-        });
     }
 
     addSelectedProduct(product = null) {
@@ -94,6 +103,7 @@ class FeaturedSectionManager {
         const list = document.getElementById('featured-products-list');
         if (Array.from(list.children).some((row) => row.dataset.productId === String(productId))) {
             Toast.fire({ icon: 'warning', title: 'This product has already been added' });
+            this.productSelect?.clear();
             return;
         }
 

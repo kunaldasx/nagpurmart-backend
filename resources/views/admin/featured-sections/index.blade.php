@@ -192,12 +192,10 @@
                                             <select class="form-select" id="featured-product-search">
                                                 <option value="">{{ __('labels.select_product') }}</option>
                                             </select>
-                                            <button type="button" class="btn btn-outline-primary" id="add-featured-product">
-                                                {{ __('labels.add_product') }}
-                                            </button>
                                         </div>
-                                        <small class="form-hint">Search products to preview their image, description, and price. Drag selected product cards to set their display order.</small>
-                                        <div id="featured-products-list" class="mt-2" aria-live="polite"></div>
+                                        <small class="form-hint">Select a product to add it to the section. Drag product cards to set their display order.</small>
+                                        <div id="featured-products-list" class="mt-2" tabindex="0"
+                                             aria-label="{{ __('labels.products') }}" aria-live="polite"></div>
                                     </div>
                                 </div>
                             </div>
@@ -305,6 +303,13 @@
 
 @push('styles')
     <style>
+        #featured-products-list {
+            max-height: 320px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding-right: 0.25rem;
+        }
+
         .featured-product-drag-handle {
             cursor: grab;
             font-size: 1.25rem;
