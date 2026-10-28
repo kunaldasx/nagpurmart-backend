@@ -192,11 +192,8 @@
                                             <select class="form-select" id="featured-product-search">
                                                 <option value="">{{ __('labels.select_product') }}</option>
                                             </select>
-                                            <button type="button" class="btn btn-outline-primary" id="add-featured-product">
-                                                {{ __('labels.add_product') }}
-                                            </button>
                                         </div>
-                                        <small class="form-hint">Search products to preview their image, description, and price. Drag selected product cards to set their display order.</small>
+                                        <small class="form-hint">Select a product to add it to the section. Drag product cards to set their display order.</small>
                                         <div id="featured-products-list" class="mt-2" aria-live="polite"></div>
                                     </div>
                                 </div>
