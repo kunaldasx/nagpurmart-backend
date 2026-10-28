@@ -4,10 +4,13 @@ namespace App\Models;
 
 use App\Enums\Order\OrderItemStatusEnum;
 use App\Enums\SpatieMediaCollectionName;
+use App\Events\Order\OrderStatusUpdated;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -40,6 +43,8 @@ class OrderItem extends Model implements HasMedia
         'tax_percent',
         'sku',
         'quantity',
+        'stock_deducted_at',
+        'stock_restored_at',
         'price',
         'subtotal',
         'status',
@@ -51,6 +56,8 @@ class OrderItem extends Model implements HasMedia
         'return_eligible' => 'boolean',
         'is_gift' => 'boolean',
         'return_deadline' => 'date',
+        'stock_deducted_at' => 'datetime',
+        'stock_restored_at' => 'datetime',
     ];
 
     /**
@@ -211,17 +218,28 @@ class OrderItem extends Model implements HasMedia
     public static function paymentFailed(int $orderId): bool
     {
         try {
-
-            $orderItem = self::where('order_id', $orderId)->get();
-            if ($orderItem->isNotEmpty()) {
-                foreach ($orderItem as $item) {
+            return DB::transaction(function () use ($orderId): bool {
+                $orderItems = self::where('order_id', $orderId)->lockForUpdate()->get();
+                foreach ($orderItems as $item) {
+                    $oldStatus = $item->status;
                     $item->update([
                         'status' => OrderItemStatusEnum::FAILED()
                     ]);
+                    event(new OrderStatusUpdated(
+                        orderItem: $item,
+                        oldStatus: $oldStatus,
+                        newStatus: OrderItemStatusEnum::FAILED()
+                    ));
                 }
-            }
-            return false;
+
+                return true;
+            });
         } catch (\Exception $e) {
+            Log::error('Failed to mark order items as payment failed', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
             return false;
         }
     }

@@ -28,6 +28,7 @@ use App\Listeners\DeliveryBoy\DeliveryBoyWithdrawalStatusUpdatedNotification;
 use App\Listeners\Order\NewOrderNotification;
 use App\Listeners\Order\DispatchSellerOrderPopupOffers;
 use App\Listeners\Order\OrderStatusUpdatedNotification;
+use App\Listeners\Order\UpdateStockInventory;
 use App\Listeners\Order\UpdateStockOnOrderStatusChange;
 use App\Listeners\Product\ProductCreatedNotification;
 use App\Listeners\Product\ProductUpdatedNotification;
@@ -71,6 +72,7 @@ class EventServiceProvider extends ServiceProvider
         OrderPlaced::class => [
             NewOrderNotification::class,
             DispatchSellerOrderPopupOffers::class,
+            UpdateStockInventory::class,
         ],
 
         // DeliveryBoy Events

@@ -4,24 +4,22 @@ namespace App\Listeners\Order;
 
 use App\Enums\Order\OrderItemStatusEnum;
 use App\Events\Order\OrderStatusUpdated;
-use App\Services\OrderService;
+use App\Models\OrderItem;
 use App\Services\StockService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 class UpdateStockOnOrderStatusChange
 {
     protected StockService $stockService;
-    protected OrderService $orderService;
 
     /**
      * Create the event listener.
      */
-    public function __construct(StockService $stockService, OrderService $orderService)
+    public function __construct(StockService $stockService)
     {
         $this->stockService = $stockService;
-        $this->orderService = $orderService;
     }
 
     /**
@@ -29,17 +27,15 @@ class UpdateStockOnOrderStatusChange
      */
     public function handle(OrderStatusUpdated $event): void
     {
-        // Only process if the new status requires stock to be returned to inventory
-        // This includes REJECTED, CANCELLED, RETURNED, and REFUNDED (for completed returns)
+        // Only terminal item statuses that restore inventory are handled here.
         if (in_array($event->newStatus, [
             OrderItemStatusEnum::REJECTED(),
             OrderItemStatusEnum::CANCELLED(),
             OrderItemStatusEnum::RETURNED(),
             OrderItemStatusEnum::REFUNDED(),
+            OrderItemStatusEnum::FAILED(),
         ], true)) {
-            $orderItem = $event->orderItem;
-
-            if (!$orderItem) {
+            if (!$event->orderItem) {
                 Log::info('Skipping stock update for order-level status change', [
                     'old_status' => $event->oldStatus,
                     'new_status' => $event->newStatus,
@@ -48,35 +44,30 @@ class UpdateStockOnOrderStatusChange
                 return;
             }
 
-            try {
-                DB::beginTransaction();
+            DB::transaction(function () use ($event): void {
+                $orderItem = OrderItem::query()
+                    ->lockForUpdate()
+                    ->findOrFail($event->orderItem->id);
+
+                if (!$orderItem->stock_deducted_at || $orderItem->stock_restored_at) {
+                    return;
+                }
 
                 $quantity = $orderItem->quantity;
-                $productVariantId = $orderItem->product_variant_id;
-                $storeId = $orderItem->store_id;
-
-                // Add the stock back
                 $stockResult = $this->stockService->addStock(
-                    $storeId,
-                    $productVariantId,
+                    $orderItem->store_id,
+                    $orderItem->product_variant_id,
                     $quantity,
                     "Returned {$quantity} item(s) to stock due to {$event->newStatus} of Order Item #{$orderItem->id}."
                 );
 
                 if (!$stockResult['success']) {
-                    throw new \Exception($stockResult['message']);
+                    throw new RuntimeException($stockResult['message']);
                 }
-                DB::commit();
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Error updating stock after order item status change', [
-                    'order_item_id' => $orderItem?->id,
-                    'old_status' => $event->oldStatus,
-                    'new_status' => $event->newStatus,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+
+                $orderItem->stock_restored_at = now();
+                $orderItem->save();
+            });
         }
     }
 }

@@ -14,6 +14,7 @@ use App\Models\DeliveryBoyAssignment;
 use App\Models\OrderItemReturn;
 use App\Models\SellerStatement;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ReturnPickupService
@@ -246,55 +247,59 @@ class ReturnPickupService
 
             $update['seller_handover_otp_hash'] = null;
 
-            // Process refund to customer wallet and finalize statuses
             try {
-                $orderReturn->loadMissing('orderItem.order');
-                $orderItem = $orderReturn->orderItem;
+                DB::transaction(function () use ($orderReturn, &$update): void {
+                    $orderReturn->loadMissing('orderItem.order');
+                    $orderItem = $orderReturn->orderItem;
 
-                if ($orderItem) {
-                    $refundResult = $this->orderService->processOrderItemRefund(orderItem: $orderItem, type: 'return_pickup');
+                    if ($orderItem) {
+                        $refundResult = $this->orderService->processOrderItemRefund(orderItem: $orderItem, type: 'return_pickup');
 
-                    if (!($refundResult['success'] ?? false)) {
-                        // If refund fails, mark as received by seller but do not complete
+                        if (!($refundResult['success'] ?? false)) {
+                            $update['received_at'] = now();
+                            $update['return_status'] = OrderItemReturnStatusEnum::RECEIVED_BY_SELLER();
+                            Log::warning('Return refund failed on delivery to seller', [
+                                'return_id' => $orderReturn->id,
+                                'order_item_id' => $orderItem->id,
+                                'error' => $refundResult['message'] ?? 'unknown',
+                            ]);
+                        } else {
+                            $update['received_at'] = now();
+                            $update['return_status'] = OrderItemReturnStatusEnum::COMPLETED();
+                            $oldStatus = $orderItem->status;
+                            $orderItem->update(['status' => OrderItemStatusEnum::REFUNDED()]);
+                            event(new OrderStatusUpdated(
+                                orderItem: $orderItem,
+                                oldStatus: $oldStatus,
+                                newStatus: OrderItemStatusEnum::REFUNDED()
+                            ));
+                        }
+                    } else {
                         $update['received_at'] = now();
                         $update['return_status'] = OrderItemReturnStatusEnum::RECEIVED_BY_SELLER();
-                        Log::warning('Return refund failed on delivery to seller', [
+                        Log::warning('Order item missing while processing return delivery to seller', [
                             'return_id' => $orderReturn->id,
-                            'order_item_id' => $orderItem->id,
-                            'error' => $refundResult['message'] ?? 'unknown',
                         ]);
-                    } else {
-
-                        // Refund succeeded: mark return completed and order item refunded
-                        $update['received_at'] = now();
-                        $update['return_status'] = OrderItemReturnStatusEnum::COMPLETED();
-                        $oldStatus = $orderItem->status;
-                        $orderItem->update(['status' => OrderItemStatusEnum::REFUNDED()]);
-                        // Notify listeners (e.g., stock restock on return)
-                        event(new OrderStatusUpdated(
-                            orderItem: $orderItem,
-                            oldStatus: $oldStatus,
-                            newStatus: OrderItemStatusEnum::REFUNDED()
-                        ));
                     }
-                } else {
-                    // Fallback if order item missing
-                    $update['received_at'] = now();
-                    $update['return_status'] = OrderItemReturnStatusEnum::RECEIVED_BY_SELLER();
-                    Log::warning('Order item missing while processing return delivery to seller', [
-                        'return_id' => $orderReturn->id,
-                    ]);
-                }
+
+                    $orderReturn->update($update);
+                });
             } catch (\Throwable $e) {
-                $update['received_at'] = now();
-                $update['return_status'] = OrderItemReturnStatusEnum::RECEIVED_BY_SELLER();
-                Log::error('Exception during return refund processing', [
+                Log::error('Exception during return completion', [
                     'return_id' => $orderReturn->id,
                     'error' => $e->getMessage(),
                 ]);
+
+                return [
+                    'success' => false,
+                    'error' => 'return_completion_failed',
+                    'message' => 'Could not complete the return. Please retry.',
+                ];
             }
         }
-        $orderReturn->update($update);
+        if ($newStatus !== OrderItemReturnPickupStatusEnum::DELIVERED_TO_SELLER()) {
+            $orderReturn->update($update);
+        }
 
         // Update assignment status
         $assignment = DeliveryBoyAssignment::where('delivery_boy_id', $deliveryBoy->id)

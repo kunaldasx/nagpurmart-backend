@@ -2673,7 +2673,13 @@ class OrderService
                     OrderItemStatusEnum::FAILED()
                 ])) {
                     // Update item status
+                    $oldItemStatus = $orderItem->status;
                     $orderItem->update(['status' => OrderItemStatusEnum::CANCELLED()]);
+                    event(new OrderStatusUpdated(
+                        orderItem: $orderItem,
+                        oldStatus: $oldItemStatus,
+                        newStatus: OrderItemStatusEnum::CANCELLED()
+                    ));
 
                     // Process refund
                     // $this->processOrderItemRefund($orderItem);
@@ -2789,7 +2795,13 @@ class OrderService
                     OrderItemStatusEnum::FAILED()
                 ])) {
                     // Update item status
+                    $oldItemStatus = $orderItem->status;
                     $orderItem->update(['status' => OrderItemStatusEnum::CANCELLED()]);
+                    event(new OrderStatusUpdated(
+                        orderItem: $orderItem,
+                        oldStatus: $oldItemStatus,
+                        newStatus: OrderItemStatusEnum::CANCELLED()
+                    ));
 
                     // Process refund
                     // $this->processOrderItemRefund($orderItem);
