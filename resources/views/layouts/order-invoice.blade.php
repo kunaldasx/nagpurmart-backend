@@ -118,7 +118,7 @@
                 <th>Description</th>
                 <th>Qty</th>
                 <th>Status</th>
-                <th>Tax (%)</th>
+                <th>Tax details</th>
                 <th>Unit Price</th>
                 <th>Total</th>
             </tr>
@@ -131,7 +131,18 @@
                     <td>{{ $item['product']['short_description'] }}</td>
                     <td>{{ $item['quantity'] }}</td>
                     <td class="text-capitalize">{{ Str::replace('_',' ',$item['orderItem']['status']) }}</td>
-                    <td>{{ $item['orderItem']['tax_amount'] }} ({{ $item['orderItem']['tax_percent'] }}%)</td>
+                    <td>
+                        @if(!empty($item['orderItem']['is_tax_inclusive']))
+                            Included in price:<br>
+                        @endif
+                        @forelse($item['orderItem']['tax_breakdown'] ?? [] as $tax)
+                            {{ !empty($tax['tax_group']) ? $tax['tax_group'] . ' - ' : '' }}{{ $tax['name'] }} ({{ number_format($tax['rate'], 2) }}%):
+                            {{ $systemSettings['currencySymbol'] }}{{ number_format($tax['amount'], 2) }}<br>
+                        @empty
+                            {{ $systemSettings['currencySymbol'] }}{{ number_format($item['orderItem']['tax_total'] ?? (($item['orderItem']['tax_amount'] ?? 0) * $item['quantity']), 2) }}
+                            ({{ $item['orderItem']['tax_percent'] ?? 0 }}%)
+                        @endforelse
+                    </td>
                     <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item['price'], 2) }}</td>
                     <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item?->orderItem['subtotal'], 2) }}</td>
                 </tr>
@@ -285,7 +296,7 @@
                     <th>Description</th>
                     <th>Qty</th>
                     <th>Status</th>
-                    <th>Tax (%)</th>
+                    <th>Tax details</th>
                     <th>Unit Price</th>
                     <th>Total</th>
                 </tr>
@@ -297,7 +308,18 @@
                         <td>{{ $item['product']['short_description'] }}</td>
                         <td>{{ $item['quantity'] }}</td>
                         <td class="text-capitalize">{{ Str::replace('_',' ', $item['orderItem']['status']) }}</td>
-                        <td>{{ $item['orderItem']['tax_amount'] }} ({{ $item['orderItem']['tax_percent'] }}%)</td>
+                        <td>
+                            @if(!empty($item['orderItem']['is_tax_inclusive']))
+                                Included in price:<br>
+                            @endif
+                            @forelse($item['orderItem']['tax_breakdown'] ?? [] as $tax)
+                                {{ !empty($tax['tax_group']) ? $tax['tax_group'] . ' - ' : '' }}{{ $tax['name'] }} ({{ number_format($tax['rate'], 2) }}%):
+                                {{ $systemSettings['currencySymbol'] }}{{ number_format($tax['amount'], 2) }}<br>
+                            @empty
+                                {{ $systemSettings['currencySymbol'] }}{{ number_format($item['orderItem']['tax_total'] ?? (($item['orderItem']['tax_amount'] ?? 0) * $item['quantity']), 2) }}
+                                ({{ $item['orderItem']['tax_percent'] ?? 0 }}%)
+                            @endforelse
+                        </td>
                         <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item['price'], 2) }}</td>
                         <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item?->orderItem['subtotal'], 2) }}</td>
                     </tr>
