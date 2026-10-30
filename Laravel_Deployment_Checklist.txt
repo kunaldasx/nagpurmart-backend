@@ -18,9 +18,19 @@ The admin and seller order screens use headless Chromium to generate one PDF for
 
 sudo apt-get update
 sudo apt-get install -y chromium
-INVOICE_CHROMIUM_PATH=/usr/bin/chromium
 
-Set `INVOICE_CHROMIUM_PATH` in the application's environment (use the actual path returned by `command -v chromium`) and ensure the PHP-FPM user can execute Chromium and write to `storage/app`.
+Find and test the installed executable:
+
+command -v chromium || command -v chromium-browser || command -v google-chrome
+
+Run `<path-from-command-v> --version` to confirm the binary is executable.
+
+Set `INVOICE_CHROMIUM_PATH` in the application's `.env` to the actual executable path (for example, `INVOICE_CHROMIUM_PATH=/usr/bin/chromium`), then clear cached configuration. Verify that the PHP-FPM user can execute that exact binary and write to `storage/app`; a browser available only to the root shell is not sufficient. If the executable is named or located differently, use its actual path. The endpoint returns HTTP 503 when PDF rendering is unavailable.
+
+After changing the environment value:
+
+php artisan config:clear
+sudo systemctl restart php8.3-fpm
 
 **Run database migrations**:
 php artisan migrate --force
