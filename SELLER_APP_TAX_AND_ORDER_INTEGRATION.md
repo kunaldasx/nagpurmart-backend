@@ -158,6 +158,32 @@ To update a store, use `POST /api/seller/stores/{store_id}` with its existing up
 
 Current store values may change over time. Order items snapshot the supplier's tax name and number when an order is placed, so use those snapshots for historical order and invoice displays.
 
+## Download invoices for a date range
+
+Add a **Download invoices PDF** action to the seller app's Orders screen. Tapping it should open a dialog with:
+
+- Required start date and end date.
+- Optional order status selector, defaulting to **All statuses**.
+- A submit action to download the resulting PDF.
+
+Validate that both dates are selected and that the end date is not before the start date. Use the parent order's status values for the selector:
+
+`pending`, `awaiting_store_response`, `partially_accepted`, `rejected_by_seller`, `accepted_by_seller`, `ready_for_pickup`, `assigned`, `preparing`, `collected`, `out_for_delivery`, `delivered`, `cancelled`, `failed`.
+
+### Download request
+
+Use the authenticated seller web-panel route:
+
+```http
+GET /seller/orders/invoices/bulk?start_date=2026-10-01&end_date=2026-10-30&status=delivered
+```
+
+`status` is optional; omit it or send an empty value to include every status. Dates use `YYYY-MM-DD` and are inclusive, interpreted in the application's configured timezone. The response is a PDF file download (`Content-Type: application/pdf`) with a filename similar to `order-invoices-2026-10-01-to-2026-10-30.pdf`. Send the seller's existing authenticated web session/cookies; this is a web-panel route, not the `/api/seller/orders` JSON endpoint.
+
+The backend restricts results to the authenticated seller. If a parent order contains items from several sellers, the seller's PDF contains only their seller/store invoice portion, not other sellers' items. When a status is selected, it filters by the parent order status (not an individual order-item status).
+
+On success, let the browser download the response as a file; do not parse the PDF as JSON or try to assemble separate invoice PDFs in the client. Show a useful error if the request fails. An invalid date range is rejected; if there are no matching orders, the route returns 404. PDF generation depends on the server's configured Chromium executable; a renderer outage is reported as 503. Keep date ranges appropriately narrow for the seller's needs.
+
 ## Compliance and configuration limitations
 
 The app should present configured data accurately but should not claim the backend validates statutory GST treatment. Tax rates and groups are administrator-configured. The system does not verify GSTIN registration or legal-name ownership, infer tax rate from HSN/SAC, determine place of supply, or automatically choose CGST/SGST versus IGST. Have a tax professional verify the seller's registration, product HSN/SAC and rate, place-of-supply treatment, invoice numbering, and discount tax handling before relying on generated documents as statutory tax invoices.

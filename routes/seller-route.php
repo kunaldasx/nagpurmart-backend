@@ -282,6 +282,7 @@ Route::prefix('seller')->name('seller.')->group(function () {
             Route::get('/', [OrderController::class, 'index'])->name('index');
             Route::get('/datatable', [OrderController::class, 'getOrders'])->name('datatable');
             Route::get('/pending-regular', [OrderController::class, 'getPendingRegularOrders'])->name('pending-regular');
+            Route::get('/invoices/bulk', [OrderController::class, 'downloadInvoicesForDateRange'])->name('invoices.bulk');
             Route::post('/popup-presence', [OrderController::class, 'updateSellerOrderPopupPresence'])->name('popup-presence');
             Route::get('/rider-availability', [OrderController::class, 'getRiderAvailability'])->name('rider-availability');
             Route::post('/{id}/accept-items', [OrderController::class, 'acceptSellerOrderItems'])->name('accept-items');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\DateRangeFilterEnum;
 use App\Enums\DefaultSystemRolesEnum;
 use App\Enums\Order\OrderItemStatusEnum;
+use App\Enums\Order\OrderStatusEnum;
 use App\Enums\Product\ProductTypeEnum;
 use App\Enums\SellerPermissionEnum;
 use App\Http\Resources\OrderResource;
@@ -29,7 +30,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessStartFailedException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
@@ -746,6 +751,120 @@ class OrderController extends Controller
         } catch (AuthorizationException) {
             abort(403, __('messages.unauthorized_action'));
         }
+    }
+
+    public function downloadInvoicesForDateRange(Request $request): StreamedResponse
+    {
+        $validated = $request->validate([
+            'start_date' => ['required', 'date_format:Y-m-d'],
+            'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'status' => ['nullable', \Illuminate\Validation\Rule::in(OrderStatusEnum::values())],
+        ]);
+        $this->authorize('viewAny', SellerOrder::class);
+
+        $startDate = Carbon::createFromFormat('Y-m-d', $validated['start_date'])->startOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', $validated['end_date'])->endOfDay();
+        $sellerOrdersQuery = SellerOrder::query()
+            ->with([
+                'order',
+                'seller',
+                'items.product',
+                'items.variant',
+                'items.orderItem.store',
+            ])
+            ->whereHas('order', fn ($query) => $query->whereBetween('created_at', [$startDate, $endDate]));
+
+        if (!empty($validated['status'])) {
+            $sellerOrdersQuery->whereHas('order', fn ($query) => $query->where('status', $validated['status']));
+        }
+
+        if ($this->getPanel() === 'seller') {
+            $seller = auth()->user()?->seller();
+            abort_if(!$seller, 404, __('labels.seller_not_found'));
+            $sellerOrdersQuery->where('seller_id', $seller->id);
+        }
+
+        $sellerOrders = $sellerOrdersQuery->orderBy('id')->get();
+        abort_if($sellerOrders->isEmpty(), 404, 'No orders were found for the selected date range.');
+
+        $temporaryDirectory = storage_path('app/invoice-exports/' . Str::uuid());
+        if (!mkdir($temporaryDirectory, 0700, true) && !is_dir($temporaryDirectory)) {
+            throw new \RuntimeException('Unable to prepare a temporary directory for the invoice export.');
+        }
+
+        $htmlPath = $temporaryDirectory . '/invoices.html';
+        $pdfPath = $temporaryDirectory . '/invoices.pdf';
+
+        try {
+            $html = view('layouts.order-invoice-batch', [
+                'sellerOrders' => $sellerOrders,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'isAdmin' => $this->getPanel() === 'admin',
+            ])->render();
+            if (file_put_contents($htmlPath, $html, LOCK_EX) === false) {
+                throw new \RuntimeException('Unable to prepare the invoice export document.');
+            }
+
+            $process = new Process([
+                config('invoices.chromium_path', 'chromium'),
+                '--headless=new',
+                '--no-sandbox',
+                '--disable-gpu',
+                '--disable-dev-shm-usage',
+                '--no-pdf-header-footer',
+                '--print-to-pdf=' . $pdfPath,
+                'file://' . $htmlPath,
+            ]);
+            $process->setTimeout((int) config('invoices.timeout', 120));
+            $process->run();
+
+            if (!$process->isSuccessful() || !is_file($pdfPath) || filesize($pdfPath) === 0) {
+                Log::error('Bulk order invoice PDF generation failed.', [
+                    'exit_code' => $process->getExitCode(),
+                    'error' => $process->getErrorOutput(),
+                    'output' => $process->getOutput(),
+                ]);
+                abort(503, 'Invoice PDF generation is unavailable. Please contact the system administrator.');
+            }
+        } catch (ProcessStartFailedException $exception) {
+            Log::error('Bulk order invoice PDF renderer could not be started.', [
+                'error' => $exception->getMessage(),
+            ]);
+            @unlink($htmlPath);
+            @unlink($pdfPath);
+            @rmdir($temporaryDirectory);
+            abort(503, 'Invoice PDF generation is unavailable. Please contact the system administrator.');
+        } catch (\Throwable $exception) {
+            Log::error('Bulk order invoice PDF export failed.', [
+                'error' => $exception->getMessage(),
+            ]);
+            @unlink($htmlPath);
+            @unlink($pdfPath);
+            @rmdir($temporaryDirectory);
+            throw $exception;
+        }
+
+        @unlink($htmlPath);
+
+        $filename = sprintf(
+            'order-invoices-%s-to-%s.pdf',
+            $startDate->format('Y-m-d'),
+            $endDate->format('Y-m-d')
+        );
+
+        return response()->streamDownload(
+            static function () use ($pdfPath, $temporaryDirectory): void {
+                try {
+                    readfile($pdfPath);
+                } finally {
+                    @unlink($pdfPath);
+                    @rmdir($temporaryDirectory);
+                }
+            },
+            $filename,
+            ['Content-Type' => 'application/pdf']
+        );
     }
 
     /**
