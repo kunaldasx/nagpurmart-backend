@@ -182,7 +182,7 @@ GET /seller/orders/invoices/bulk?start_date=2026-10-01&end_date=2026-10-30&statu
 
 The backend restricts results to the authenticated seller. If a parent order contains items from several sellers, the seller's PDF contains only their seller/store invoice portion, not other sellers' items. When a status is selected, it filters by the parent order status (not an individual order-item status).
 
-On success, let the browser download the response as a file; do not parse the PDF as JSON or try to assemble separate invoice PDFs in the client. Show a useful error if the request fails. An invalid date range is rejected; if there are no matching orders, the route returns 404. PDF generation depends on the server's configured Chromium executable; a renderer outage is reported as 503. Keep date ranges appropriately narrow for the seller's needs.
+On success, let the browser download the response as a file; do not parse the PDF as JSON or try to assemble separate invoice PDFs in the client. If there are no matching orders, the route downloads a PDF containing a “no invoices matched” message. An invalid date range is rejected. PDF generation depends on the server's configured Chromium executable; a renderer outage is reported as 503. Keep date ranges appropriately narrow for the seller's needs.
 
 ## Compliance and configuration limitations
 

@@ -27,6 +27,9 @@
 <body>
 <h1>Order invoices · {{ $startDate->format('d M Y') }} – {{ $endDate->format('d M Y') }}</h1>
 
+@if($sellerOrders->isEmpty())
+    <p>No order invoices matched the selected date range{{ $status ? ' and status (' . Str::headline($status) . ')' : '' }}.</p>
+@else
 @foreach($sellerOrders as $sellerOrder)
     @php
         $order = $sellerOrder->order;
@@ -156,5 +159,6 @@
         @endif
     </section>
 @endforeach
+@endif
 </body>
 </html>

@@ -785,7 +785,6 @@ class OrderController extends Controller
         }
 
         $sellerOrders = $sellerOrdersQuery->orderBy('id')->get();
-        abort_if($sellerOrders->isEmpty(), 404, 'No orders were found for the selected date range.');
 
         $temporaryDirectory = storage_path('app/invoice-exports/' . Str::uuid());
         if (!mkdir($temporaryDirectory, 0700, true) && !is_dir($temporaryDirectory)) {
@@ -801,6 +800,7 @@ class OrderController extends Controller
                 'startDate' => $startDate,
                 'endDate' => $endDate,
                 'isAdmin' => $this->getPanel() === 'admin',
+                'status' => $validated['status'] ?? null,
             ])->render();
             if (file_put_contents($htmlPath, $html, LOCK_EX) === false) {
                 throw new \RuntimeException('Unable to prepare the invoice export document.');
