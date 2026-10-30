@@ -12,6 +12,16 @@ composer install --no-dev --optimize-autoloader
 npm install
 npm run build
 
+**Install Chromium for combined order-invoice PDF exports**:
+
+The admin and seller order screens use headless Chromium to generate one PDF for a selected date range. Install Chromium on the application server and configure its executable path if it is not on `PATH`:
+
+sudo apt-get update
+sudo apt-get install -y chromium
+INVOICE_CHROMIUM_PATH=/usr/bin/chromium
+
+Set `INVOICE_CHROMIUM_PATH` in the application's environment (use the actual path returned by `command -v chromium`) and ensure the PHP-FPM user can execute Chromium and write to `storage/app`.
+
 **Run database migrations**:
 php artisan migrate --force
 

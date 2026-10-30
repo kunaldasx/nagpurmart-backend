@@ -469,6 +469,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/datatable', [OrderController::class, 'getOrders'])->name('datatable');
             Route::get('/pending-regular', [OrderController::class, 'getPendingRegularOrders'])->name('pending-regular');
             Route::get('invoice', [OrderController::class, 'orderInvoice']);
+            Route::get('/invoices/bulk', [OrderController::class, 'downloadInvoicesForDateRange'])->name('invoices.bulk');
             Route::post('/cancel/{order}', [OrderController::class, 'cancelOrder'])->name('cancel');
             Route::get('/{id}', [OrderController::class, 'show'])->name('show');
             Route::post('/{id}/{status}', [OrderController::class, 'updateStatus'])->name('update_status');
