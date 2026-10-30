@@ -47,8 +47,16 @@
                     <strong>Seller / store</strong><br>
                     {{ $store?->name ?? $sellerOrder->seller?->name ?? 'N/A' }}<br>
                     @if($store)
-                        {{ $store->address }}@if($store->landmark), {{ $store->landmark }}@endif<br>
-                        {{ $store->city }}@if($store->state), {{ $store->state }}@endif<br>
+                        {{ $store->address }}
+                        @if($store->landmark)
+                            , {{ $store->landmark }}
+                        @endif
+                        <br>
+                        {{ $store->city }}
+                        @if($store->state)
+                            , {{ $store->state }}
+                        @endif
+                        <br>
                         {{ $store->country }} {{ $store->zipcode }}
                     @endif
                     @if(filled($supplierTaxNumber))
@@ -69,8 +77,13 @@
                     <strong>Billing information</strong><br>
                     {{ $order->billing_name }}<br>
                     {{ $order->billing_address_1 }}
-                    @if($order->billing_address_2), {{ $order->billing_address_2 }}@endif
-                    @if($order->billing_landmark), {{ $order->billing_landmark }}@endif<br>
+                    @if($order->billing_address_2)
+                        , {{ $order->billing_address_2 }}
+                    @endif
+                    @if($order->billing_landmark)
+                        , {{ $order->billing_landmark }}
+                    @endif
+                    <br>
                     {{ $order->billing_city }}, {{ $order->billing_state }} {{ $order->billing_zip }}<br>
                     {{ $order->billing_country }}
                     @if($order->customer_gstin)
@@ -84,8 +97,13 @@
                     <strong>Shipping information</strong><br>
                     {{ $order->shipping_name }}<br>
                     {{ $order->shipping_address_1 }}
-                    @if($order->shipping_address_2), {{ $order->shipping_address_2 }}@endif
-                    @if($order->shipping_landmark), {{ $order->shipping_landmark }}@endif<br>
+                    @if($order->shipping_address_2)
+                        , {{ $order->shipping_address_2 }}
+                    @endif
+                    @if($order->shipping_landmark)
+                        , {{ $order->shipping_landmark }}
+                    @endif
+                    <br>
                     {{ $order->shipping_city }}, {{ $order->shipping_state }} {{ $order->shipping_zip }}<br>
                     {{ $order->shipping_country }}<br>
                     Phone: {{ $order->shipping_phone }}
@@ -119,7 +137,9 @@
                         @if($sellerItem->variant?->title)
                             <br><span class="muted">{{ $sellerItem->variant->title }}</span>
                         @endif
-                        @if($item?->is_gift)<br>Gift item@endif
+                        @if($item?->is_gift)
+                            <br>Gift item
+                        @endif
                     </td>
                     <td>{{ $item?->hsn_code ?: '—' }}</td>
                     <td>{{ $item?->quantity ?? $sellerItem->quantity }}</td>
