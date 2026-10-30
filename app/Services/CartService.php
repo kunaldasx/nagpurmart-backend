@@ -514,6 +514,7 @@ class CartService
     {
         $itemsTotal = 0;
         $qualifyingItemsTotal = 0;
+        $productTaxTotal = 0;
         $storeIds = [];
 
         foreach ($cart->items as $key => $item) {
@@ -531,7 +532,14 @@ class CartService
             $cart->items[$key]->special_price = $item->quantity * $storeVariant->special_price;
             $cart->items[$key]->wholesale_price = $item->quantity * ($storeVariant->wholesale_price ?? 0);
 
-            $selectedPrice = $item->is_gift ? 1 : $storeVariant->getPriceForMode($orderMode);
+            $rawSelectedPrice = $storeVariant->getPriceForMode($orderMode, false);
+            $taxDetails = $item->is_gift || $rawSelectedPrice === null
+                ? ['price_with_tax' => 1, 'tax_amount' => 0]
+                : $storeVariant->getTaxDetailsForPrice($rawSelectedPrice);
+            $selectedPrice = $item->is_gift ? 1 : $taxDetails['price_with_tax'];
+            $productTaxTotal += $item->is_gift
+                ? 0
+                : $item->quantity * $taxDetails['tax_amount'];
             $itemsTotal += $item->quantity * ($selectedPrice ?? 0);
             if (!$item->is_gift) {
                 $qualifyingItemsTotal += $item->quantity * ($selectedPrice ?? 0);
@@ -543,6 +551,7 @@ class CartService
         return [
             'items_total' => $itemsTotal,
             'qualifying_items_total' => $qualifyingItemsTotal,
+            'product_tax_total' => round($productTaxTotal, 2),
             'store_ids' => $storeIds
         ];
     }
@@ -891,6 +900,7 @@ class CartService
             return [
                 'items_total' => (float)$itemsTotal,
                 'qualifying_items_total' => (float)$qualifyingItemsTotal,
+                'product_tax_total' => (float)$totalsResult['product_tax_total'],
                 'order_mode' => $orderMode,
                 'gift_minimum_cart_amount' => app(SettingService::class)->getSystemNumericSetting('giftMinimumCartAmount', 1500),
                 'wholesale_minimum_amount' => app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),
@@ -1032,6 +1042,7 @@ class CartService
         return [
             'items_total' => $itemsTotal,
             'qualifying_items_total' => $qualifyingItemsTotal,
+            'product_tax_total' => (float) ($totalsResult['product_tax_total'] ?? 0),
             'order_mode' => $orderMode,
             'gift_minimum_cart_amount' => app(SettingService::class)->getSystemNumericSetting('giftMinimumCartAmount', 1500),
             'wholesale_minimum_amount' => app(SettingService::class)->getSystemNumericSetting('wholesaleMinimumAmount', 1500),

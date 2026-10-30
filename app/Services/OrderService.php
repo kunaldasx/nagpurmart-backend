@@ -672,12 +672,12 @@ class OrderService
             ];
         }
 
-        [$subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax] =
+        [$subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax, $taxDetails] =
             $this->calculatePricing($order, $cartItem, $storeVariant);
 
         $storeTotalPrice += $subtotal;
 
-        $orderItem = $this->createOrderItem($order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax);
+        $orderItem = $this->createOrderItem($order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax, $taxDetails);
 
         // Attach required attachments to order item using Spatie Media Library
         $this->attachRequiredOrderItemAttachments($orderItem, $cartItem);
@@ -745,31 +745,54 @@ class OrderService
             $price = 1.00;
             $priceWithTax = 1.00;
             $subtotal = $cartItem->quantity * $priceWithTax;
-            return [$subtotal, $subtotal * $commission / 100, 0, 0, $price, $priceWithTax];
+            return [
+                $subtotal,
+                $subtotal * $commission / 100,
+                0,
+                0,
+                $price,
+                $priceWithTax,
+                ['is_inclusive' => false, 'tax_amount' => 0, 'tax_breakdown' => []],
+            ];
         }
 
         $price = $storeVariant->getPriceForMode($order->order_mode ?? 'regular', false);
-        $priceWithTax = $storeVariant->getPriceForMode($order->order_mode ?? 'regular');
-        if ($price === null || $priceWithTax === null) {
+        if ($price === null) {
             throw new Exception('Wholesale price is not configured for one or more products.');
         }
 
+        $taxDetails = $storeVariant->getTaxDetailsForPrice($price);
+        $priceWithTax = $taxDetails['price_with_tax'];
         $subtotal = $cartItem->quantity * $priceWithTax;
         $adminCommissionAmount = $subtotal * $commission / 100;
-
-        $taxPercent = StoreProductVariant::scopeTaxPercentage($price, $priceWithTax);
+        $taxPercent = $taxDetails['tax_percent'];
 
         $promoDiscount = 0;
         if (!empty($order['promo_code'])) {
             $promoDiscount = ((float)$subtotal / $order->subtotal) * $order->promo_discount;
         }
 
-        return [$subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax];
+        return [
+            $subtotal,
+            $adminCommissionAmount,
+            $promoDiscount,
+            $taxPercent,
+            $taxDetails['taxable_amount'],
+            $priceWithTax,
+            $taxDetails,
+        ];
     }
 
     private
-    function createOrderItem(Order $order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax): OrderItem
+    function createOrderItem(Order $order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax, $taxDetails = null): OrderItem
     {
+        $quantity = (float) $cartItem->quantity;
+        $taxDetails ??= [
+            'is_inclusive' => false,
+            'tax_amount' => (float) $priceWithTax - $price,
+            'tax_breakdown' => [],
+        ];
+
         return OrderItem::create([
             'order_id' => $order->id,
             'product_id' => $cartItem->product_id,
@@ -787,8 +810,14 @@ class OrderService
             'promo_discount' => $promoDiscount,
             'discount' => 0,
             'is_gift' => (bool)$cartItem->is_gift,
-            'tax_amount' => (float)$priceWithTax - $price,
+            'tax_amount' => $taxDetails['tax_amount'],
             'tax_percent' => (float)$taxPercent,
+            'tax_breakdown' => array_map(fn ($tax) => [
+                ...$tax,
+                'unit_amount' => $tax['amount'],
+                'amount' => round($tax['amount'] * $quantity, 2),
+            ], $taxDetails['tax_breakdown']),
+            'is_tax_inclusive' => $taxDetails['is_inclusive'],
             'sku' => $storeVariant->sku ?? "N/A",
             'quantity' => (float)$cartItem->quantity,
             'price' => (float)$price,

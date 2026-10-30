@@ -41,6 +41,8 @@ class OrderItem extends Model implements HasMedia
         'is_gift',
         'tax_amount',
         'tax_percent',
+        'tax_breakdown',
+        'is_tax_inclusive',
         'sku',
         'quantity',
         'stock_deducted_at',
@@ -55,10 +57,17 @@ class OrderItem extends Model implements HasMedia
     protected $casts = [
         'return_eligible' => 'boolean',
         'is_gift' => 'boolean',
+        'is_tax_inclusive' => 'boolean',
+        'tax_breakdown' => 'array',
         'return_deadline' => 'date',
         'stock_deducted_at' => 'datetime',
         'stock_restored_at' => 'datetime',
     ];
+
+    public function getTaxTotalAttribute(): float
+    {
+        return round((float) $this->tax_amount * (float) $this->quantity, 2);
+    }
 
     /**
      * Register media collections for order item.
