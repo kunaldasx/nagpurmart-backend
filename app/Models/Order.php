@@ -62,6 +62,8 @@ class Order extends Model
         'billing_state',
         'billing_country',
         'billing_country_code',
+        'customer_gstin',
+        'customer_gstin_legal_name',
         'shipping_name',
         'shipping_address_1',
         'shipping_address_2',

@@ -60,6 +60,7 @@ class SellerProductResource extends JsonResource
             'warranty_period' => $this->warranty_period,
             'guarantee_period' => $this->guarantee_period,
             'made_in' => $this->made_in,
+            'hsn_code' => $this->hsn_code,
             'tax_classes' => $this->taxClasses,
             'is_inclusive_tax' => $this->is_inclusive_tax,
             'video_type' => $this->video_type,

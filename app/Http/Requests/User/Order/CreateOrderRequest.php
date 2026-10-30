@@ -14,6 +14,17 @@ use Illuminate\Validation\Validator;
 
 class CreateOrderRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('customer_gstin') && is_string($this->input('customer_gstin'))) {
+            $this->merge(['customer_gstin' => strtoupper(trim($this->input('customer_gstin')))]);
+        }
+
+        if ($this->has('customer_gstin_legal_name') && is_string($this->input('customer_gstin_legal_name'))) {
+            $this->merge(['customer_gstin_legal_name' => trim($this->input('customer_gstin_legal_name')) ?: null]);
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -41,6 +52,15 @@ class CreateOrderRequest extends FormRequest
             'use_wallet' => ['boolean', 'nullable'],
             'order_note' => ['nullable', 'string', 'max:500'],
             'redirect_url' => ['nullable'],
+            'use_gstin' => ['sometimes', 'boolean'],
+            'customer_gstin' => [
+                'nullable',
+                'string',
+                'size:15',
+                'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/',
+            ],
+            'customer_gstin_legal_name' => ['nullable', 'string', 'max:255'],
+            'save_gstin' => ['sometimes', 'boolean'],
 
             // Attachments structure: attchment[productId][] or attachments[productId][]
             'attachments' => ['nullable', 'array'],
@@ -73,6 +93,23 @@ class CreateOrderRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            if ($this->boolean('use_gstin')
+                && !$this->filled('customer_gstin')
+                && !$this->user()?->customer_gstin) {
+                $validator->errors()->add('customer_gstin', 'Enter a GSTIN or save one to your profile before applying it to this order.');
+            }
+
+            if ($this->boolean('use_gstin')
+                && !$this->filled('customer_gstin')
+                && $this->user()?->customer_gstin
+                && !preg_match('/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/', strtoupper($this->user()->customer_gstin))) {
+                $validator->errors()->add('customer_gstin', 'The saved GSTIN is invalid. Update it in your profile before applying it to this order.');
+            }
+
+            if ($this->boolean('save_gstin') && (!$this->boolean('use_gstin') || !$this->filled('customer_gstin'))) {
+                $validator->errors()->add('save_gstin', 'A GSTIN must be provided and applied to this order before it can be saved.');
+            }
+
             if ($this->input('order_mode') !== 'wholesale' || !$this->filled('delivery_time_slot_id') || !$this->filled('delivery_date')) {
                 return;
             }

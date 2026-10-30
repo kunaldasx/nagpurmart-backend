@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tax Invoice - {{ $systemSettings['appName'] }}</title>
+    <title>Order Invoice - {{ $systemSettings['appName'] }}</title>
     <link rel="shortcut icon" type="image/png" href="{{ $systemSettings['favicon'] ?? asset('favicon.png') }}"/>
     <link href="{{ asset('assets/theme/css/tabler.css') }}" rel="stylesheet"/>
     <link href="{{ hyperAsset('assets/theme/css/style.css') }}" rel="stylesheet"/>
@@ -59,7 +59,7 @@
 </head>
 <body>
 <section class="main-pd-wrapper">
-    <h4 class="text-center"><b>Tax Invoice</b></h4>
+    <h4 class="text-center"><b>Order Invoice</b></h4>
 
     {{-- Header Section --}}
     <table style="margin-top: 10px;">
@@ -83,12 +83,18 @@
             </td>
             <td>
                 <b>Billing Information</b><br>
-                {{ $order['shipping_name'] }}<br>
-                {{ $order['shipping_address_1'] }},
-                {{ $order['shipping_landmark'] }},
-                {{ $order['shipping_city'] }},
-                {{ $order['shipping_state'] }},
-                {{ $order['shipping_country'] }} - {{ $order['shipping_zip'] }}<br>
+                {{ $order['billing_name'] }}<br>
+                {{ $order['billing_address_1'] }},
+                {{ $order['billing_landmark'] }},
+                {{ $order['billing_city'] }},
+                {{ $order['billing_state'] }},
+                {{ $order['billing_country'] }} - {{ $order['billing_zip'] }}<br>
+                @if(!empty($order['customer_gstin']))
+                    <b>GSTIN:</b> {{ $order['customer_gstin'] }}<br>
+                    @if(!empty($order['customer_gstin_legal_name']))
+                        <b>Registered Name:</b> {{ $order['customer_gstin_legal_name'] }}<br>
+                    @endif
+                @endif
                 Email: {{ $order['email'] }}<br>
                 Phone: {{ $order['shipping_phone'] }}
             </td>
@@ -103,24 +109,33 @@
             )</h5>
         @php
             $store = $vendor['items'][0]['orderItem']['store'] ?? null;
+            $itemOrder = $vendor['items'][0]['orderItem'] ?? null;
+            $supplierTaxName = $itemOrder['supplier_tax_name'] ?? $store['tax_name'] ?? null;
+            $supplierTaxNumber = $itemOrder['supplier_tax_number'] ?? $store['tax_number'] ?? null;
+            $hasSupplierTaxNumber = filled($supplierTaxNumber)
+                && !in_array(strtoupper(trim((string) $supplierTaxNumber)), ['0', '00000', 'N/A'], true);
         @endphp
-        @if($store)
+        @if($store || $hasSupplierTaxNumber)
             <p class="m-0">
-                <b>Store:</b> {{ $store['name'] ?? 'N/A' }} |
-                <b>Tax Name:</b> {{ $store['tax_name'] ?? 'N/A' }} |
-                <b>Tax Number:</b> {{ $store['tax_number'] ?? 'N/A' }}
+                @if($store)<b>Store:</b> {{ $store['name'] ?? 'N/A' }}@endif
+                @if($hasSupplierTaxNumber)
+                    @if($store) | @endif
+                    <b>{{ $supplierTaxName ?: 'GSTIN' }}:</b> {{ $supplierTaxNumber }}
+                @endif
             </p>
         @endif
         <table class="table-bordered">
             <thead>
             <tr>
                 <th>Item</th>
+                <th>HSN/SAC</th>
                 <th>Description</th>
                 <th>Qty</th>
                 <th>Status</th>
                 <th>Tax details</th>
-                <th>Unit Price</th>
-                <th>Total</th>
+                <th>Taxable value</th>
+                <th>Unit price (excl. tax)</th>
+                <th>Total (incl. tax)</th>
             </tr>
             </thead>
             <tbody>
@@ -128,6 +143,7 @@
 {{--                @dd($item)--}}
                 <tr>
                     <td>{{ $item['product']['title'] }}{{ !empty($item['orderItem']['is_gift']) ? ' (1 Rupee Gift)' : '' }}</td>
+                    <td>{{ $item['orderItem']['hsn_code'] ?? '-' }}</td>
                     <td>{{ $item['product']['short_description'] }}</td>
                     <td>{{ $item['quantity'] }}</td>
                     <td class="text-capitalize">{{ Str::replace('_',' ',$item['orderItem']['status']) }}</td>
@@ -143,6 +159,7 @@
                             ({{ $item['orderItem']['tax_percent'] ?? 0 }}%)
                         @endforelse
                     </td>
+                    <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item['orderItem']['subtotal'] - ($item['orderItem']['tax_total'] ?? (($item['orderItem']['tax_amount'] ?? 0) * $item['quantity'])), 2) }}</td>
                     <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item['price'], 2) }}</td>
                     <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item?->orderItem['subtotal'], 2) }}</td>
                 </tr>
@@ -150,7 +167,7 @@
             </tbody>
             <tfoot>
             <tr>
-                <td colspan="6" class="text-right"><b>Subtotal:</b></td>
+                <td colspan="8" class="text-right"><b>Subtotal:</b></td>
                 <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($vendor['total_price'], 2) }}</td>
             </tr>
             </tfoot>
@@ -158,10 +175,17 @@
     @endforeach
 
     {{-- Payment Summary --}}
+    @php
+        $productTaxTotal = $sellerOrder->sum(fn ($vendor) => $vendor->items->sum(fn ($item) => (float) ($item->orderItem?->tax_total ?? 0)));
+    @endphp
     <table style="margin-top: 20px;">
         <tr>
             <td class="text-right"><b>Items Subtotal:</b></td>
             <td>{{ $systemSettings['currencySymbol'] }}{{ $order['subtotal'] }}</td>
+        </tr>
+        <tr>
+            <td class="text-right"><b>Product taxes (included in items subtotal):</b></td>
+            <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($productTaxTotal, 2) }}</td>
         </tr>
         <tr>
             <td class="text-right"><b>Shipping & Handling:</b></td>
@@ -238,8 +262,14 @@
     @foreach($sellerOrder as $vendor)
         @php
             $store = $vendor['items'][0]['orderItem']['store'] ?? null;
+            $itemOrder = $vendor['items'][0]['orderItem'] ?? null;
+            $supplierTaxName = $itemOrder['supplier_tax_name'] ?? $store['tax_name'] ?? null;
+            $supplierTaxNumber = $itemOrder['supplier_tax_number'] ?? $store['tax_number'] ?? null;
+            $hasSupplierTaxNumber = filled($supplierTaxNumber)
+                && !in_array(strtoupper(trim((string) $supplierTaxNumber)), ['0', '00000', 'N/A'], true);
         @endphp
         <div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+            <h4 class="text-center"><b>{{ $hasSupplierTaxNumber ? 'Tax Invoice' : 'Invoice' }}</b></h4>
             <table style="margin-top: 10px;">
                 <tr>
                     <td>
@@ -266,12 +296,18 @@
                     </td>
                     <td>
                         <b>Billing Information</b><br>
-                        {{ $order['shipping_name'] }}<br>
-                        {{ $order['shipping_address_1'] }},
-                        {{ $order['shipping_landmark'] }},
-                        {{ $order['shipping_city'] }},
-                        {{ $order['shipping_state'] }},
-                        {{ $order['shipping_country'] }} - {{ $order['shipping_zip'] }}<br>
+                        {{ $order['billing_name'] }}<br>
+                        {{ $order['billing_address_1'] }},
+                        {{ $order['billing_landmark'] }},
+                        {{ $order['billing_city'] }},
+                        {{ $order['billing_state'] }},
+                        {{ $order['billing_country'] }} - {{ $order['billing_zip'] }}<br>
+                        @if(!empty($order['customer_gstin']))
+                            <b>GSTIN:</b> {{ $order['customer_gstin'] }}<br>
+                            @if(!empty($order['customer_gstin_legal_name']))
+                                <b>Registered Name:</b> {{ $order['customer_gstin_legal_name'] }}<br>
+                            @endif
+                        @endif
                         Email: {{ $order['email'] }}<br>
                         Phone: {{ $order['shipping_phone'] }}
                     </td>
@@ -281,11 +317,13 @@
             <h5 class="mt-2">Sold by: {{ $store['name'] ?? ($vendor['seller']['stores'][0]['name'] ?? 'N/A') }}
                 @if(isset($vendor['seller']['id'])) (Seller ID: {{ $vendor['seller']['id'] }}) @endif
             </h5>
-            @if($store)
+            @if($store || $hasSupplierTaxNumber)
                 <p class="m-0">
-                    <b>Store:</b> {{ $store['name'] ?? 'N/A' }} |
-                    <b>Tax Name:</b> {{ $store['tax_name'] ?? 'N/A' }} |
-                    <b>Tax Number:</b> {{ $store['tax_number'] ?? 'N/A' }}
+                    @if($store)<b>Store:</b> {{ $store['name'] ?? 'N/A' }}@endif
+                    @if($hasSupplierTaxNumber)
+                        @if($store) | @endif
+                        <b>{{ $supplierTaxName ?: 'GSTIN' }}:</b> {{ $supplierTaxNumber }}
+                    @endif
                 </p>
             @endif
 
@@ -293,18 +331,21 @@
                 <thead>
                 <tr>
                     <th>Item</th>
+                    <th>HSN/SAC</th>
                     <th>Description</th>
                     <th>Qty</th>
                     <th>Status</th>
                     <th>Tax details</th>
-                    <th>Unit Price</th>
-                    <th>Total</th>
+                    <th>Taxable value</th>
+                    <th>Unit price (excl. tax)</th>
+                    <th>Total (incl. tax)</th>
                 </tr>
                 </thead>
                 <tbody>
                 @foreach($vendor['items'] as $item)
                     <tr>
                         <td>{{ $item['product']['title'] }}</td>
+                        <td>{{ $item['orderItem']['hsn_code'] ?? '-' }}</td>
                         <td>{{ $item['product']['short_description'] }}</td>
                         <td>{{ $item['quantity'] }}</td>
                         <td class="text-capitalize">{{ Str::replace('_',' ', $item['orderItem']['status']) }}</td>
@@ -320,6 +361,7 @@
                                 ({{ $item['orderItem']['tax_percent'] ?? 0 }}%)
                             @endforelse
                         </td>
+                        <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item['orderItem']['subtotal'] - ($item['orderItem']['tax_total'] ?? (($item['orderItem']['tax_amount'] ?? 0) * $item['quantity'])), 2) }}</td>
                         <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item['price'], 2) }}</td>
                         <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($item?->orderItem['subtotal'], 2) }}</td>
                     </tr>
@@ -327,7 +369,7 @@
                 </tbody>
                 <tfoot>
                 <tr>
-                    <td colspan="6" class="text-right"><b>Store Subtotal:</b></td>
+                    <td colspan="8" class="text-right"><b>Store Subtotal:</b></td>
                     <td>{{ $systemSettings['currencySymbol'] }}{{ number_format($vendor['total_price'], 2) }}</td>
                 </tr>
                 </tfoot>

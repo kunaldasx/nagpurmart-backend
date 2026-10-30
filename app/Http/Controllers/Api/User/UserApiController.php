@@ -6,6 +6,7 @@ use App\Enums\SettingTypeEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\ChangePasswordRequest;
 use App\Http\Requests\User\UpdateProfileRequest;
+use App\Http\Requests\User\CustomerGstinRequest;
 use App\Http\Resources\User\UserResource;
 use App\Services\ProfileService;
 use App\Services\SettingService;
@@ -119,6 +120,45 @@ class UserApiController extends Controller
                 ['error' => $e->getMessage()]
             );
         }
+    }
+
+    public function getCustomerGstin(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return ApiResponseType::sendJsonResponse(true, 'Customer GSTIN fetched successfully.', [
+            'gstin' => $user->customer_gstin,
+            'legal_name' => $user->customer_gstin_legal_name,
+            'is_saved' => filled($user->customer_gstin),
+        ]);
+    }
+
+    public function saveCustomerGstin(CustomerGstinRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->customer_gstin = $request->validated('gstin');
+        $user->customer_gstin_legal_name = $request->validated('legal_name');
+        $user->save();
+
+        return ApiResponseType::sendJsonResponse(true, 'Customer GSTIN saved successfully.', [
+            'gstin' => $user->customer_gstin,
+            'legal_name' => $user->customer_gstin_legal_name,
+            'is_saved' => true,
+        ]);
+    }
+
+    public function deleteCustomerGstin(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->customer_gstin = null;
+        $user->customer_gstin_legal_name = null;
+        $user->save();
+
+        return ApiResponseType::sendJsonResponse(true, 'Customer GSTIN removed successfully.', [
+            'gstin' => null,
+            'legal_name' => null,
+            'is_saved' => false,
+        ]);
     }
 
 
