@@ -43,6 +43,9 @@ class OrderItem extends Model implements HasMedia
         'tax_percent',
         'tax_breakdown',
         'is_tax_inclusive',
+        'supplier_tax_name',
+        'supplier_tax_number',
+        'hsn_code',
         'sku',
         'quantity',
         'stock_deducted_at',
@@ -66,6 +69,10 @@ class OrderItem extends Model implements HasMedia
 
     public function getTaxTotalAttribute(): float
     {
+        if (is_array($this->tax_breakdown) && $this->tax_breakdown !== []) {
+            return round(array_sum(array_column($this->tax_breakdown, 'amount')), 2);
+        }
+
         return round((float) $this->tax_amount * (float) $this->quantity, 2);
     }
 

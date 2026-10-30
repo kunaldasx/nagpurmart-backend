@@ -534,15 +534,13 @@ class CartService
 
             $rawSelectedPrice = $storeVariant->getPriceForMode($orderMode, false);
             $taxDetails = $item->is_gift || $rawSelectedPrice === null
-                ? ['price_with_tax' => 1, 'tax_amount' => 0]
-                : $storeVariant->getTaxDetailsForPrice($rawSelectedPrice);
-            $selectedPrice = $item->is_gift ? 1 : $taxDetails['price_with_tax'];
-            $productTaxTotal += $item->is_gift
-                ? 0
-                : $item->quantity * $taxDetails['tax_amount'];
-            $itemsTotal += $item->quantity * ($selectedPrice ?? 0);
+                ? ['price_with_tax' => (float) $item->quantity, 'tax_amount' => 0]
+                : $storeVariant->getTaxDetailsForLine($rawSelectedPrice, (float) $item->quantity);
+            $selectedPrice = $item->is_gift ? (float) $item->quantity : $taxDetails['price_with_tax'];
+            $productTaxTotal += $item->is_gift ? 0 : $taxDetails['tax_amount'];
+            $itemsTotal += $selectedPrice;
             if (!$item->is_gift) {
-                $qualifyingItemsTotal += $item->quantity * ($selectedPrice ?? 0);
+                $qualifyingItemsTotal += $selectedPrice;
             }
         }
 

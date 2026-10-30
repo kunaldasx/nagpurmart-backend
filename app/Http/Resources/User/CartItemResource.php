@@ -28,16 +28,14 @@ class CartItemResource extends JsonResource
                 'is_inclusive' => false,
                 'tax_percent' => 0,
                 'taxable_amount' => $this->is_gift ? 1 : 0,
+                'unit_taxable_amount' => $this->is_gift ? 1 : 0,
                 'tax_amount' => 0,
+                'unit_tax_amount' => 0,
                 'price_with_tax' => $this->is_gift ? 1 : 0,
+                'unit_price_with_tax' => $this->is_gift ? 1 : 0,
                 'tax_breakdown' => [],
             ]
-            : $storeVariant->getTaxDetailsForPrice($rawPrice);
-        $taxBreakdown = array_map(fn ($tax) => [
-            ...$tax,
-            'unit_amount' => $tax['amount'],
-            'amount' => round($tax['amount'] * $this->quantity, 2),
-        ], $taxDetails['tax_breakdown']);
+            : $storeVariant->getTaxDetailsForLine($rawPrice, (float) $this->quantity);
         $reviews = Review::scopeProductRatingStats($this->product->id);
         if (isset($request->latitude) && isset($request->longitude)) {
             $this->product->user_latitude = $request->latitude;
@@ -76,14 +74,14 @@ class CartItemResource extends JsonResource
                 'price' => $variantPricing?->price ?? 0,
                 'special_price' => $variantPricing?->special_price ?? 0,
                 'wholesale_price' => $variantPricing?->wholesale_price ?? 0,
-                'taxable_price' => $taxDetails['taxable_amount'],
-                'price_with_tax' => $taxDetails['price_with_tax'],
+                'taxable_price' => $taxDetails['unit_taxable_amount'],
+                'price_with_tax' => $taxDetails['unit_price_with_tax'],
                 'tax_percent' => $taxDetails['tax_percent'],
-                'tax_amount' => $taxDetails['tax_amount'],
-                'tax_total' => round($taxDetails['tax_amount'] * $this->quantity, 2),
-                'taxable_subtotal' => round($taxDetails['taxable_amount'] * $this->quantity, 2),
-                'subtotal_with_tax' => round($taxDetails['price_with_tax'] * $this->quantity, 2),
-                'tax_breakdown' => $taxBreakdown,
+                'tax_amount' => $taxDetails['unit_tax_amount'],
+                'tax_total' => $taxDetails['tax_amount'],
+                'taxable_subtotal' => $taxDetails['taxable_amount'],
+                'subtotal_with_tax' => $taxDetails['price_with_tax'],
+                'tax_breakdown' => $taxDetails['tax_breakdown'],
                 'is_tax_inclusive' => $taxDetails['is_inclusive'],
                 'stock' => $storeVariant?->stock ?? 0,
                 'sku' => $storeVariant?->sku ?? null,

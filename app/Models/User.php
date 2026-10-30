@@ -42,6 +42,8 @@ class User extends Authenticatable implements HasMedia
         'access_panel',
         'iso_2',
         'country',
+        'customer_gstin',
+        'customer_gstin_legal_name',
     ];
 
     protected function casts(): array

@@ -120,6 +120,12 @@ class OrderService
                 return $finalizationResult;
             }
 
+            if (($data['use_gstin'] ?? false) && ($data['save_gstin'] ?? false) && !empty($data['customer_gstin'])) {
+                $user->customer_gstin = strtoupper(trim($data['customer_gstin']));
+                $user->customer_gstin_legal_name = $data['customer_gstin_legal_name'] ?? null;
+                $user->save();
+            }
+
             DB::commit();
 
             return [
@@ -516,6 +522,20 @@ class OrderService
         }
 
         // Create order
+        $applyCustomerGstin = filter_var($data['use_gstin'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $customerGstin = $applyCustomerGstin
+            ? strtoupper(trim((string) ($data['customer_gstin'] ?? $user->customer_gstin ?? '')))
+            : null;
+        $usingSavedGstin = $applyCustomerGstin && empty($data['customer_gstin']);
+        $customerGstinLegalName = $customerGstin
+            ? trim((string) (
+                $data['customer_gstin_legal_name']
+                ?? ($usingSavedGstin ? $user->customer_gstin_legal_name : null)
+                ?? $user->name
+                ?? ''
+            ))
+            : null;
+
         $order = Order::create([
             'uuid' => Str::uuid()->toString(),
             'order_number' => $orderNumber,
@@ -561,6 +581,8 @@ class OrderService
             'billing_state' => $data['address']['state'],
             'billing_country' => $data['address']['country'],
             'billing_country_code' => $data['address']['country_code'],
+            'customer_gstin' => $customerGstin,
+            'customer_gstin_legal_name' => $customerGstinLegalName !== '' ? $customerGstinLegalName : null,
 
             // Shipping info (same as billing)
             'shipping_name' => $user->name,
@@ -761,9 +783,9 @@ class OrderService
             throw new Exception('Wholesale price is not configured for one or more products.');
         }
 
-        $taxDetails = $storeVariant->getTaxDetailsForPrice($price);
-        $priceWithTax = $taxDetails['price_with_tax'];
-        $subtotal = $cartItem->quantity * $priceWithTax;
+        $taxDetails = $storeVariant->getTaxDetailsForLine($price, (float) $cartItem->quantity);
+        $priceWithTax = $taxDetails['unit_price_with_tax'];
+        $subtotal = $taxDetails['price_with_tax'];
         $adminCommissionAmount = $subtotal * $commission / 100;
         $taxPercent = $taxDetails['tax_percent'];
 
@@ -777,7 +799,7 @@ class OrderService
             $adminCommissionAmount,
             $promoDiscount,
             $taxPercent,
-            $taxDetails['taxable_amount'],
+            $taxDetails['unit_taxable_amount'],
             $priceWithTax,
             $taxDetails,
         ];
@@ -786,7 +808,6 @@ class OrderService
     private
     function createOrderItem(Order $order, $cartItem, $storeVariant, $subtotal, $adminCommissionAmount, $promoDiscount, $taxPercent, $price, $priceWithTax, $taxDetails = null): OrderItem
     {
-        $quantity = (float) $cartItem->quantity;
         $taxDetails ??= [
             'is_inclusive' => false,
             'tax_amount' => (float) $priceWithTax - $price,
@@ -810,14 +831,13 @@ class OrderService
             'promo_discount' => $promoDiscount,
             'discount' => 0,
             'is_gift' => (bool)$cartItem->is_gift,
-            'tax_amount' => $taxDetails['tax_amount'],
+            'tax_amount' => $taxDetails['unit_tax_amount'] ?? $taxDetails['tax_amount'],
             'tax_percent' => (float)$taxPercent,
-            'tax_breakdown' => array_map(fn ($tax) => [
-                ...$tax,
-                'unit_amount' => $tax['amount'],
-                'amount' => round($tax['amount'] * $quantity, 2),
-            ], $taxDetails['tax_breakdown']),
+            'tax_breakdown' => $taxDetails['tax_breakdown'],
             'is_tax_inclusive' => $taxDetails['is_inclusive'],
+            'supplier_tax_name' => $cartItem->store?->tax_name,
+            'supplier_tax_number' => $cartItem->store?->tax_number,
+            'hsn_code' => $cartItem->product?->hsn_code,
             'sku' => $storeVariant->sku ?? "N/A",
             'quantity' => (float)$cartItem->quantity,
             'price' => (float)$price,

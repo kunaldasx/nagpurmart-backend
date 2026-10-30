@@ -45,6 +45,9 @@ class OrderResource extends JsonResource
                 // Customer information
                 'billing_name' => $this->order->billing_name,
                 'billing_phone' => $this->order->billing_phone,
+                'customer_gstin' => $this->order->customer_gstin,
+                'customer_gstin_legal_name' => $this->order->customer_gstin_legal_name,
+                'customer_gstin_state_code' => $this->order->customer_gstin ? substr($this->order->customer_gstin, 0, 2) : null,
 
                 // Shipping information
                 'shipping_name' => $this->order->shipping_name,
@@ -85,8 +88,11 @@ class OrderResource extends JsonResource
                                 'tax_total' => $item->orderItem->tax_total,
                                 'tax_breakdown' => $item->orderItem->tax_breakdown ?? [],
                                 'is_tax_inclusive' => (bool) $item->orderItem->is_tax_inclusive,
-                                'taxable_subtotal' => round((float) $item->orderItem->price * (float) $item->quantity, 2),
+                                'taxable_subtotal' => round((float) $item->orderItem->subtotal - (float) $item->orderItem->tax_total, 2),
                                 'unit_price_with_tax' => round((float) $item->orderItem->subtotal / max((float) $item->quantity, 1), 2),
+                                'supplier_tax_name' => $item->orderItem->supplier_tax_name,
+                                'supplier_tax_number' => $item->orderItem->supplier_tax_number,
+                                'hsn_code' => $item->orderItem->hsn_code,
                             ],
                             'product' => $item->product ? [
                                 'id' => $item->product->id,
@@ -99,6 +105,8 @@ class OrderResource extends JsonResource
                             'store' => $item->store ? [
                                 'id' => $item->store->id,
                                 'name' => $item->store->name,
+                                'tax_name' => $item->orderItem?->supplier_tax_name,
+                                'tax_number' => $item->orderItem?->supplier_tax_number,
                             ] : null,
                             'price' => $item->price,
                             'tax_amount' => $item->orderItem?->tax_amount,
@@ -106,11 +114,14 @@ class OrderResource extends JsonResource
                             'tax_total' => $item->orderItem?->tax_total,
                             'tax_breakdown' => $item->orderItem?->tax_breakdown ?? [],
                             'is_tax_inclusive' => (bool) $item->orderItem?->is_tax_inclusive,
-                            'taxable_subtotal' => round((float) $item->orderItem?->price * (float) $item->quantity, 2),
+                            'taxable_subtotal' => round((float) $item->orderItem?->subtotal - (float) $item->orderItem?->tax_total, 2),
                             'unit_price_with_tax' => round((float) $item->orderItem?->subtotal / max((float) $item->quantity, 1), 2),
+                            'supplier_tax_name' => $item->orderItem?->supplier_tax_name,
+                            'supplier_tax_number' => $item->orderItem?->supplier_tax_number,
+                            'hsn_code' => $item->orderItem?->hsn_code,
                             'sub_total' => $item->orderItem?->subtotal,
                             'quantity' => $item->quantity,
-                            'subtotal' => $item->price * $item->quantity,
+                            'subtotal' => $item->orderItem?->subtotal,
                         ];
                     });
                 }),
@@ -142,10 +153,21 @@ class OrderResource extends JsonResource
             'per_store_drop_off_fee' => $this->per_store_drop_off_fee,
             'total_payable' => $this->total_payable,
             'final_total' => $this->final_total,
+            'tax_total' => $this->items->sum(fn ($item) => $item->tax_total),
 
             // Customer information
             'billing_name' => $this->billing_name,
             'billing_phone' => $this->billing_phone,
+            'billing_address_1' => $this->billing_address_1,
+            'billing_address_2' => $this->billing_address_2,
+            'billing_landmark' => $this->billing_landmark,
+            'billing_city' => $this->billing_city,
+            'billing_state' => $this->billing_state,
+            'billing_zip' => $this->billing_zip,
+            'billing_country' => $this->billing_country,
+            'customer_gstin' => $this->customer_gstin,
+            'customer_gstin_legal_name' => $this->customer_gstin_legal_name,
+            'customer_gstin_state_code' => $this->customer_gstin ? substr($this->customer_gstin, 0, 2) : null,
 
             // Shipping information
             'shipping_name' => $this->shipping_name,
@@ -181,6 +203,13 @@ class OrderResource extends JsonResource
                             'id' => $item->id,
                             'status' => $item->status,
                             'status_formatted' => Str::ucfirst(Str::replace("_", " ", $item->status)),
+                            'tax_percent' => $item->tax_percent,
+                            'tax_amount' => $item->tax_amount,
+                            'tax_total' => $item->tax_total,
+                            'tax_breakdown' => $item->tax_breakdown ?? [],
+                            'is_tax_inclusive' => (bool) $item->is_tax_inclusive,
+                            'supplier_tax_name' => $item->supplier_tax_name,
+                            'supplier_tax_number' => $item->supplier_tax_number,
                         ],
                         'product' => $item->product ? [
                             'id' => $item->product->id,
@@ -193,6 +222,8 @@ class OrderResource extends JsonResource
                         'store' => $item->store ? [
                             'id' => $item->store->id,
                             'name' => $item->store->name,
+                            'tax_name' => $item->supplier_tax_name,
+                            'tax_number' => $item->supplier_tax_number,
                         ] : null,
                         'price' => $item->price,
                         'tax_amount' => $item->tax_amount,
@@ -200,11 +231,12 @@ class OrderResource extends JsonResource
                         'tax_total' => $item->tax_total,
                         'tax_breakdown' => $item->tax_breakdown ?? [],
                         'is_tax_inclusive' => (bool) $item->is_tax_inclusive,
-                        'taxable_subtotal' => round((float) $item->price * (float) $item->quantity, 2),
+                        'taxable_subtotal' => round((float) $item->subtotal - (float) $item->tax_total, 2),
                         'unit_price_with_tax' => round((float) $item->subtotal / max((float) $item->quantity, 1), 2),
+                        'hsn_code' => $item->hsn_code,
                         'sub_total' => $item->subtotal,
                         'quantity' => $item->quantity,
-                        'subtotal' => $item->price * $item->quantity,
+                        'subtotal' => $item->subtotal,
                     ];
                 });
             }),

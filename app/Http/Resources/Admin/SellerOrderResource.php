@@ -45,6 +45,17 @@ class SellerOrderResource extends JsonResource
                     'status' => $this->order->status,
                     'billing_name' => $this->order->billing_name,
                     'billing_phone' => $this->order->billing_phone,
+                    'billing_address_1' => $this->order->billing_address_1,
+                    'billing_address_2' => $this->order->billing_address_2,
+                    'billing_city' => $this->order->billing_city,
+                    'billing_state' => $this->order->billing_state,
+                    'billing_zip' => $this->order->billing_zip,
+                    'billing_country' => $this->order->billing_country,
+                    'customer_gstin' => $this->order->customer_gstin,
+                    'customer_gstin_legal_name' => $this->order->customer_gstin_legal_name,
+                    'customer_gstin_state_code' => $this->order->customer_gstin
+                        ? substr($this->order->customer_gstin, 0, 2)
+                        : null,
                     'shipping_name' => $this->order->shipping_name,
                     'shipping_address_1' => $this->order->shipping_address_1,
                     'shipping_address_2' => $this->order->shipping_address_2,

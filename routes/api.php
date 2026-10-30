@@ -102,6 +102,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // profile
         Route::get('/profile', [UserApiController::class, 'getProfile']);
         Route::post('/profile', [UserApiController::class, 'updateProfile']);
+        Route::get('/profile/gstin', [UserApiController::class, 'getCustomerGstin'])->name('profile.gstin.show');
+        Route::put('/profile/gstin', [UserApiController::class, 'saveCustomerGstin'])->name('profile.gstin.save');
+        Route::delete('/profile/gstin', [UserApiController::class, 'deleteCustomerGstin'])->name('profile.gstin.delete');
         // Complete profile after OTP signup (Rapido-like flow)
         Route::post('/complete-profile', [UserApiController::class, 'completeProfile'])->name('complete-profile');
 
