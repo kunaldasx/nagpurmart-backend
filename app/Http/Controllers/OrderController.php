@@ -793,6 +793,7 @@ class OrderController extends Controller
 
         $htmlPath = $temporaryDirectory . '/invoices.html';
         $pdfPath = $temporaryDirectory . '/invoices.pdf';
+        $rendererUnavailable = false;
 
         try {
             $html = view('layouts.order-invoice-batch', [
@@ -825,24 +826,26 @@ class OrderController extends Controller
                     'error' => $process->getErrorOutput(),
                     'output' => $process->getOutput(),
                 ]);
-                abort(503, 'Invoice PDF generation is unavailable. Please contact the system administrator.');
+                $rendererUnavailable = true;
             }
         } catch (ProcessStartFailedException $exception) {
             Log::error('Bulk order invoice PDF renderer could not be started.', [
                 'error' => $exception->getMessage(),
             ]);
+            $rendererUnavailable = true;
+        } catch (\Throwable $exception) {
+            @unlink($htmlPath);
+            @unlink($pdfPath);
+            @rmdir($temporaryDirectory);
+            Log::error('Bulk order invoice PDF export failed.', ['error' => $exception->getMessage()]);
+            throw $exception;
+        }
+
+        if ($rendererUnavailable) {
             @unlink($htmlPath);
             @unlink($pdfPath);
             @rmdir($temporaryDirectory);
             abort(503, 'Invoice PDF generation is unavailable. Please contact the system administrator.');
-        } catch (\Throwable $exception) {
-            Log::error('Bulk order invoice PDF export failed.', [
-                'error' => $exception->getMessage(),
-            ]);
-            @unlink($htmlPath);
-            @unlink($pdfPath);
-            @rmdir($temporaryDirectory);
-            throw $exception;
         }
 
         @unlink($htmlPath);
