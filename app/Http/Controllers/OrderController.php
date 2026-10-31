@@ -767,7 +767,7 @@ class OrderController extends Controller
         $endDate = Carbon::createFromFormat('Y-m-d', $validated['end_date'])->endOfDay();
         $sellerOrdersQuery = SellerOrder::query()
             ->with([
-                'order',
+                'order.promoLine',
                 'seller',
                 'items.product',
                 'items.variant',
@@ -786,6 +786,12 @@ class OrderController extends Controller
         }
 
         $sellerOrders = $sellerOrdersQuery->orderBy('id')->get();
+        foreach ($sellerOrders as $sellerOrder) {
+            if ($sellerOrder->seller) {
+                $sellerOrder->seller->authorized_signature = $sellerOrder->seller
+                    ->getFirstMediaUrl(SpatieMediaCollectionName::AUTHORIZED_SIGNATURE()) ?: null;
+            }
+        }
 
         $temporaryDirectory = storage_path('app/invoice-exports/' . Str::uuid());
         if (!mkdir($temporaryDirectory, 0700, true) && !is_dir($temporaryDirectory)) {
@@ -860,7 +866,7 @@ class OrderController extends Controller
             $endDate->format('Y-m-d')
         );
 
-        return response()->streamDownload(
+        return response()->stream(
             static function () use ($pdfPath, $temporaryDirectory): void {
                 try {
                     readfile($pdfPath);
@@ -868,8 +874,11 @@ class OrderController extends Controller
                     File::deleteDirectory($temporaryDirectory);
                 }
             },
-            $filename,
-            ['Content-Type' => 'application/pdf']
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            ]
         );
     }
 
