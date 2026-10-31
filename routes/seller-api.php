@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Seller\SellerSystemUserApiController;
 use App\Http\Controllers\Api\Seller\SellerDeliveryBoyApiController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Api\Seller\SellerNotificationApiController;
+use App\Http\Controllers\Api\ProductExpiryBatchController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('seller')->name('seller-api.')->group(function () {
@@ -33,6 +34,13 @@ Route::middleware(['auth:sanctum', 'seller.user.approval',
 ])->prefix('seller')->name('seller.api.')->group(function () {
     Route::post('logout', [SellerAuthApiController::class, 'logout']);
     Route::post('fcm-token', [SellerAuthApiController::class, 'registerFcmToken'])->name('fcm-token');
+
+    Route::prefix('inventory/expiry-batches')->name('inventory.expiry-batches.')->group(function () {
+        Route::get('/', [ProductExpiryBatchController::class, 'sellerIndex'])->name('index');
+        Route::get('/summary', [ProductExpiryBatchController::class, 'sellerSummary'])->name('summary');
+        Route::post('/', [ProductExpiryBatchController::class, 'sellerStore'])->name('store');
+        Route::post('/{batchId}', [ProductExpiryBatchController::class, 'sellerUpdate'])->whereNumber('batchId')->name('update');
+    });
 
     Route::prefix('bags')->name('bags.')->group(function () {
         Route::get('/', [BagController::class, 'index'])->name('index');

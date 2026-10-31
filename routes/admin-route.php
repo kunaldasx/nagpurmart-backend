@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\VendorTypeController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\SubscriptionFeatureController;
+use App\Http\Controllers\Api\ProductExpiryBatchController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -477,6 +478,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('bags', [BagController::class, 'adminIndex'])->name('bags.index');
         Route::get('bags/data', [BagController::class, 'adminData'])->name('bags.data');
+
+        Route::prefix('inventory/expiry-batches')->name('inventory.expiry-batches.')->group(function () {
+            Route::get('/', [ProductExpiryBatchController::class, 'adminIndex'])->name('index');
+            Route::get('/summary', [ProductExpiryBatchController::class, 'adminSummary'])->name('summary');
+            Route::post('/', [ProductExpiryBatchController::class, 'adminStore'])->name('store');
+            Route::post('/{batchId}', [ProductExpiryBatchController::class, 'adminUpdate'])->whereNumber('batchId')->name('update');
+        });
 
         // products
         Route::prefix('products')->name('products.')->group(function () {
