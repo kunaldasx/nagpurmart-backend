@@ -19,7 +19,10 @@ return new class extends Migration {
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->index(['store_product_variant_id', 'expiry_date']);
+            $table->index(
+                ['store_product_variant_id', 'expiry_date'],
+                'expiry_batches_variant_expiry_idx'
+            );
         });
 
         Schema::create('order_item_expiry_batch_allocations', function (Blueprint $table) {
@@ -33,7 +36,10 @@ return new class extends Migration {
             $table->unsignedInteger('quantity_restored')->default(0);
             $table->timestamps();
 
-            $table->index(['order_item_id', 'expiry_batch_id']);
+            $table->index(
+                ['order_item_id', 'expiry_batch_id'],
+                'expiry_allocations_order_batch_idx'
+            );
         });
     }
 

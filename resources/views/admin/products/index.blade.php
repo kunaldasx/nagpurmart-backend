@@ -76,6 +76,12 @@
                                             {{ __('labels.refresh') }}
                                         </button>
                                     </div>
+                                    <div class="col-auto">
+                                        <a class="btn btn-outline-warning" href="{{ route('admin.inventory.expiry-management.index') }}">
+                                            <i class="ti ti-calendar-exclamation" aria-hidden="true"></i>
+                                            Expiry tracking
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>

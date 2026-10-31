@@ -166,6 +166,12 @@ return [
                     'sub_title' => 'Product Requests',
                     'permission' => 'product.view',
                 ],
+                'expiry_batches' => [
+                    'sub_active' => 'expiry_batches',
+                    'sub_route' => 'admin.inventory.expiry-management.index',
+                    'sub_title' => 'Expiry tracking',
+                    'permission' => 'product.view',
+                ],
                 'product_faqs' => [
                     'sub_active' => 'product_faqs',
                     'sub_route' => 'admin.product_faqs.index',
@@ -576,6 +582,12 @@ return [
                     'sub_active' => 'product_requests',
                     'sub_route' => 'seller.product-requests.index',
                     'sub_title' => 'Product Requests',
+                    'permission' => 'product.view'
+                ],
+                'expiry_batches' => [
+                    'sub_active' => 'expiry_batches',
+                    'sub_route' => 'seller.inventory.expiry-management.index',
+                    'sub_title' => 'Expiry tracking',
                     'permission' => 'product.view'
                 ],
                 'product_faqs' => [

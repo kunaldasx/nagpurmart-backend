@@ -60,6 +60,10 @@ class NotifyProductExpiryBatches extends Command
                             ->where('type', ProductExpiryAlertNotification::class)
                             ->where('data->batch_id', $batch->id)
                             ->where('data->alert_status', $status)
+                            ->when(
+                                $status === 'expired',
+                                fn ($query) => $query->where('data->policy_notice_version', 1)
+                            )
                             ->exists();
 
                         if (!$alreadyNotified) {

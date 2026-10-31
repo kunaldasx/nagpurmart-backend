@@ -275,16 +275,18 @@ class ProductExpiryBatchController extends Controller
                 'batch_code' => ['sometimes', 'nullable', 'string', 'max:100'],
                 'quantity_remaining' => ['sometimes', 'integer', 'min:0'],
                 'adjust_stock' => ['sometimes', 'boolean'],
+                'reason' => ['sometimes', 'nullable', 'string', 'max:255'],
             ]);
 
-            if ($validated === [] || (count($validated) === 1 && array_key_exists('adjust_stock', $validated))) {
+            $adjustStock = (bool) ($validated['adjust_stock'] ?? true);
+            $reason = $validated['reason'] ?? null;
+            unset($validated['adjust_stock']);
+            unset($validated['reason']);
+            if ($validated === []) {
                 throw ValidationException::withMessages([
                     'batch' => 'Provide at least one batch field to update.',
                 ]);
             }
-
-            $adjustStock = (bool) ($validated['adjust_stock'] ?? true);
-            unset($validated['adjust_stock']);
 
             $query = StoreProductExpiryBatch::query();
             if ($scope) {
@@ -294,7 +296,7 @@ class ProductExpiryBatchController extends Controller
             if ($authorizeBatch) {
                 $authorizeBatch($batch);
             }
-            $batch = $this->batchService->update($batch, $validated, $adjustStock);
+            $batch = $this->batchService->update($batch, $validated, $adjustStock, $reason);
 
             return ApiResponseType::sendJsonResponse(true, 'Expiry batch updated successfully', $this->formatBatch($batch));
         } catch (ValidationException $e) {

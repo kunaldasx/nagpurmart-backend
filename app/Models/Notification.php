@@ -169,6 +169,15 @@ class Notification extends BaseDatabaseNotification
         $sellerOrderId = $this->data['metadata']['seller_order_id'] ?? $this->order_id;
             $orderId = ($panel == "admin") ? $this->order_id : $sellerOrderId;
 
+        if ($type === 'product_expiry') {
+            $status = Arr::get($this->data ?? [], 'alert_status', 'all');
+            $routeName = $panel . '.inventory.expiry-management.index';
+
+            if (Route::has($routeName)) {
+                return route($routeName, ['status' => $status]);
+            }
+        }
+
         $productId = Arr::get($metadata, 'product_id');
         $withdrawalRequestId = Arr::get($metadata, 'withdrawal_request_id');
         $status = strtolower((string)Arr::get($metadata, 'new_status', Arr::get($metadata, 'status', '')));
