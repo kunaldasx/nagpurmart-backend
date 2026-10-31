@@ -76,7 +76,7 @@
                                     <div class="col-auto">
                                         <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#bulkInvoiceModal">
                                             <i class="ti ti-file-type-pdf" aria-hidden="true"></i>
-                                            Download invoices PDF
+                                            Preview invoices PDF
                                         </button>
                                     </div>
                                 </div>
@@ -99,11 +99,11 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <form class="modal-content" method="GET" action="{{ route('admin.orders.invoices.bulk') }}" target="_blank">
                 <div class="modal-header">
-                    <h5 class="modal-title">Download order invoices</h5>
+                    <h5 class="modal-title">Preview order invoices</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-secondary">Download all order invoices placed within the selected dates in one PDF.</p>
+                    <p class="text-secondary">Preview all order invoices placed within the selected dates in one PDF. Use the PDF viewer to print or download it.</p>
                     <div class="mb-3">
                         <label class="form-label" for="bulk-invoice-start-date">Start date</label>
                         <input class="form-control" id="bulk-invoice-start-date" type="date" name="start_date"
@@ -126,7 +126,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-link" type="button" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary" type="submit">Download PDF</button>
+                    <button class="btn btn-primary" type="submit">Preview PDF</button>
                 </div>
             </form>
         </div>
