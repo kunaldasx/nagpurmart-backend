@@ -67,10 +67,11 @@ class ProductExpiryBatchService
     public function update(
         StoreProductExpiryBatch $batch,
         array $attributes,
-        bool $adjustStock = true
+        bool $adjustStock = true,
+        ?string $reason = null
     ): StoreProductExpiryBatch
     {
-        return DB::transaction(function () use ($batch, $attributes, $adjustStock) {
+        return DB::transaction(function () use ($batch, $attributes, $adjustStock, $reason) {
             $storeVariant = StoreProductVariant::whereKey($batch->store_product_variant_id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -118,7 +119,9 @@ class ProductExpiryBatchService
                         $storeVariant,
                         $change > 0 ? StockInventoryTypeEnum::ADD() : StockInventoryTypeEnum::REMOVE(),
                         abs($change),
-                        "Expiry batch {$batch->id} quantity adjustment"
+                        trim((string) $reason) !== ''
+                            ? trim($reason)
+                            : "Expiry batch {$batch->id} quantity adjustment"
                     );
                 }
 

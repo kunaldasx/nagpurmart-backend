@@ -6,8 +6,30 @@ left unchanged and remains untracked until it is assigned to a batch.
 
 Tracked quantities are reduced in earliest-expiry-first order when stock is
 sold. If an order is cancelled or returned, its quantities are restored to the
-same batches where possible. Expired and near-expiry stock raises alerts; it is
-not automatically removed from total stock or made unsellable.
+same batches where possible. Expired and near-expiry stock raises alerts; by
+policy, it is not automatically removed from total stock or made unsellable.
+Admins and sellers review alerts and record any disposition or stock
+correction themselves.
+
+## Admin and seller panel workflow
+
+Open **Products → Expiry tracking** in either panel, or use the link on the
+Products page. Search for a product, variant, or store, then record a delivery
+batch with its expiry date and optional supplier lot code. New deliveries add
+units to stock by default. To assign expiry data to units already included in
+on-hand stock, uncheck the stock-add option; the service checks that enough
+untracked inventory remains.
+
+The batch list shows expired and near-expiry quantities, supports seller,
+store, status, and warning-window filters, and allows authorized users to
+correct the expiry date, batch code, or remaining units. A stock-changing
+correction requires a reason and writes an inventory log. Setting remaining
+units to zero is a manual write-off; the batch record remains for traceability.
+No expiry alert automatically changes sellable stock.
+
+The summary also reports on-hand units without any expiry batch assignment.
+Use the product/store search and record each existing lot with stock adjustment
+disabled to reduce the untracked-stock count.
 
 ## Seller endpoints
 
@@ -69,16 +91,24 @@ untracked stock and the total stock will not change.
 Only provided fields are updated. `quantity_remaining` cannot exceed the
 received quantity less units still sold and not yet restored. With
 `adjust_stock: true` (default), changing the remaining quantity also adjusts
-total store stock. With `false`, the quantity is reassigned between tracked
-and untracked stock without changing the total. Set the remaining quantity to
-zero to mark the batch depleted; batch records are retained for traceability.
+total store stock. Include an optional `reason` string (max 255 characters) to
+describe stock corrections in the inventory log. With `false`, the quantity is
+reassigned between tracked and untracked stock without changing the total. Set
+the remaining quantity to zero to mark the batch depleted; batch records are
+retained for traceability.
 
 ## Alerts
 
 The seller and admin notification feeds receive a database notification once
 when a batch enters the 15-day near-expiry window and again when it becomes
-expired. The `product-expiry:notify` command is scheduled daily at 08:00 and
-can also be run manually.
+expired. An expired-stock notification explicitly says that stock remains in
+on-hand inventory and may remain sellable until reviewed: the system does not
+block sales or automatically write it off. It links directly to the filtered
+expiry-management page so staff can record the required manual stock action.
+The `product-expiry:notify` command is scheduled daily at 08:00 and can also be
+run manually. After deploying this policy notice, run the command once to send
+the updated message for already-expired batches that were notified under the
+previous message; it is version-deduplicated and will not repeat on later runs.
 
 Existing product stock is not assigned an expiry date by migration. Sellers or
 admins should register each existing lot with `adjust_stock: false` and record

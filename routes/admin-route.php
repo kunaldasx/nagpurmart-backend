@@ -19,6 +19,7 @@ use App\Http\Controllers\CartRecommendationSectionController;
 use App\Http\Controllers\DeliveryBoyController;
 use App\Http\Controllers\DeliveryZoneController;
 use App\Http\Controllers\DeliveryTimeSlotController;
+use App\Http\Controllers\ExpiryBatchManagementController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeaturedSectionController;
 use App\Http\Controllers\GiftSectionController;
@@ -484,6 +485,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/summary', [ProductExpiryBatchController::class, 'adminSummary'])->name('summary');
             Route::post('/', [ProductExpiryBatchController::class, 'adminStore'])->name('store');
             Route::post('/{batchId}', [ProductExpiryBatchController::class, 'adminUpdate'])->whereNumber('batchId')->name('update');
+        });
+
+        Route::prefix('inventory/expiry-management')->name('inventory.expiry-management.')->group(function () {
+            Route::get('/', [ExpiryBatchManagementController::class, 'adminIndex'])->name('index');
+            Route::post('/receive', [ExpiryBatchManagementController::class, 'adminReceive'])->name('receive');
+            Route::post('/{batchId}', [ExpiryBatchManagementController::class, 'adminUpdate'])->whereNumber('batchId')->name('update');
         });
 
         // products
