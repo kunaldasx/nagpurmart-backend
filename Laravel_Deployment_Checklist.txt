@@ -12,20 +12,19 @@ composer install --no-dev --optimize-autoloader
 npm install
 npm run build
 
-**Install Chromium for combined order-invoice PDF exports**:
+**Install Chrome/Chromium for combined order-invoice PDF exports**:
 
-The admin and seller order screens use headless Chromium to generate one PDF for a selected date range. Install Chromium on the application server and configure its executable path if it is not on `PATH`:
+The admin and seller order screens use headless Chromium to generate one PDF for a selected date range. On Ubuntu, `apt install chromium` may install the Snap package. Snap Chromium cannot run from the PHP-FPM service under its systemd cgroup, so use a non-Snap browser package instead. For an amd64 server, Google's official Chrome `.deb` package can be installed with:
 
-sudo apt-get update
-sudo apt-get install -y chromium
+curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o /tmp/google-chrome-stable_current_amd64.deb
+sudo apt-get install -y /tmp/google-chrome-stable_current_amd64.deb
 
-Find and test the installed executable:
+Find the installed executable and verify it runs as the PHP-FPM user:
 
-command -v chromium || command -v chromium-browser || command -v google-chrome
+command -v google-chrome
+sudo -u www-data /usr/bin/google-chrome --version
 
-Run `<path-from-command-v> --version` to confirm the binary is executable.
-
-Set `INVOICE_CHROMIUM_PATH` in the application's `.env` to the actual executable path (for example, `INVOICE_CHROMIUM_PATH=/usr/bin/chromium`), then clear cached configuration. Verify that the PHP-FPM user can execute that exact binary and write to `storage/app`; a browser available only to the root shell is not sufficient. If the executable is named or located differently, use its actual path. The endpoint returns HTTP 503 when PDF rendering is unavailable.
+Set `INVOICE_CHROMIUM_PATH` in the application's `.env` to the actual executable path (commonly `/usr/bin/google-chrome`), then clear cached configuration. Verify that the PHP-FPM user can execute that exact binary and write to `storage/app`; a browser available only to the root shell is not sufficient. Each export uses a temporary Chrome profile under its writable `storage/app/invoice-exports` directory, so PHP-FPM must be able to create and remove directories there. The endpoint returns HTTP 503 when PDF rendering is unavailable.
 
 After changing the environment value:
 

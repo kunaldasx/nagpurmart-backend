@@ -30,6 +30,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
@@ -813,9 +814,18 @@ class OrderController extends Controller
                 '--no-sandbox',
                 '--disable-gpu',
                 '--disable-dev-shm-usage',
+                '--no-first-run',
+                '--no-default-browser-check',
+                '--user-data-dir=' . $temporaryDirectory . '/chrome-profile',
                 '--no-pdf-header-footer',
                 '--print-to-pdf=' . $pdfPath,
                 'file://' . $htmlPath,
+            ]);
+            $process->setEnv([
+                'HOME' => $temporaryDirectory,
+                'XDG_CONFIG_HOME' => $temporaryDirectory . '/.config',
+                'XDG_CACHE_HOME' => $temporaryDirectory . '/.cache',
+                'XDG_DATA_HOME' => $temporaryDirectory . '/.local/share',
             ]);
             $process->setTimeout((int) config('invoices.timeout', 120));
             $process->run();
@@ -834,21 +844,15 @@ class OrderController extends Controller
             ]);
             $rendererUnavailable = true;
         } catch (\Throwable $exception) {
-            @unlink($htmlPath);
-            @unlink($pdfPath);
-            @rmdir($temporaryDirectory);
+            File::deleteDirectory($temporaryDirectory);
             Log::error('Bulk order invoice PDF export failed.', ['error' => $exception->getMessage()]);
             throw $exception;
         }
 
         if ($rendererUnavailable) {
-            @unlink($htmlPath);
-            @unlink($pdfPath);
-            @rmdir($temporaryDirectory);
+            File::deleteDirectory($temporaryDirectory);
             abort(503, 'Invoice PDF generation is unavailable. Please contact the system administrator.');
         }
-
-        @unlink($htmlPath);
 
         $filename = sprintf(
             'order-invoices-%s-to-%s.pdf',
@@ -861,8 +865,7 @@ class OrderController extends Controller
                 try {
                     readfile($pdfPath);
                 } finally {
-                    @unlink($pdfPath);
-                    @rmdir($temporaryDirectory);
+                    File::deleteDirectory($temporaryDirectory);
                 }
             },
             $filename,
