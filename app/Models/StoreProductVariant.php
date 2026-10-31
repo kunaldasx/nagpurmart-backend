@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
@@ -41,6 +42,11 @@ class StoreProductVariant extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function expiryBatches(): HasMany
+    {
+        return $this->hasMany(StoreProductExpiryBatch::class);
     }
 
     private function getTaxAdjustedPrice($price): ?float

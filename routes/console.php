@@ -9,6 +9,7 @@ use App\Models\SellerSubscription;
 use App\Models\SellerUser;
 use App\Enums\Subscription\SellerSubscriptionStatusEnum;
 use App\Services\DeliveryBoyLoginService;
+use App\Console\Commands\NotifyProductExpiryBatches;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -83,3 +84,5 @@ Artisan::command('delivery-boys:expire-login-sessions', function () {
 })->purpose('Mark riders inactive when their login session has expired');
 
 Schedule::command('delivery-boys:expire-login-sessions')->everyMinute();
+
+Schedule::command(NotifyProductExpiryBatches::class)->dailyAt('08:00');

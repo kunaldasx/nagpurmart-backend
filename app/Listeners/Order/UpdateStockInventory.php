@@ -39,7 +39,8 @@ class UpdateStockInventory
                     $orderItem->store_id,
                     $orderItem->product_variant_id,
                     $orderItem->quantity,
-                    "Moved {$orderItem->quantity} item(s) from stock to Order #{$event->order->id}."
+                    "Moved {$orderItem->quantity} item(s) from stock to Order #{$event->order->id}.",
+                    (int) $orderItem->id
                 );
 
                 if (!$stockResult['success']) {

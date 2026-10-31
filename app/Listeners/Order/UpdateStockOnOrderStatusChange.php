@@ -54,7 +54,8 @@ class UpdateStockOnOrderStatusChange
                 }
 
                 $quantity = $orderItem->quantity;
-                $stockResult = $this->stockService->addStock(
+                $stockResult = $this->stockService->restoreOrderStock(
+                    (int) $orderItem->id,
                     $orderItem->store_id,
                     $orderItem->product_variant_id,
                     $quantity,
